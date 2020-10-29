@@ -126,6 +126,7 @@ struct tree_processor {
 	}
 
 	void transform_json_tree(boost::property_tree::ptree &p_tree) {
+		std::cout << "asdads";
 		std::string expr = p_tree.get<std::string>("expr", "");
 		if (is_sort(expr)){
 			auto limit_expr = expr;
