@@ -11,6 +11,11 @@ using namespace std::chrono_literals;
 namespace ral {
 namespace cache {
 
+int dummyFunction()
+{
+	return 10;
+}
+
 std::size_t CacheMachine::cache_count(900000000);
 
 std::string randomString(std::size_t length) {

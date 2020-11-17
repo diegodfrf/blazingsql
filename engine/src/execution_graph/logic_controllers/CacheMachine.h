@@ -70,10 +70,7 @@ const std::string PARTITION_COUNT = "partition_count"; /**< A message metadata f
 * purpose is to hold data until it is ready to be operated on by calling
 * the decache method.
 */
-int dummyFunction()
-{
-	return 10;
-}
+int dummyFunction();
 
 class CacheData {
 public:
