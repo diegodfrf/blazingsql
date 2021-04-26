@@ -1,3 +1,5 @@
+#pragma once
+
 #include "CacheData.h"
 #include <arrow/table.h>
 
