@@ -1,4 +1,9 @@
 #include "CacheMachine.h"
+#include "CPUCacheData.h"
+#include "GPUCacheData.h"
+#include "ConcatCacheData.h"
+#include "CacheDataLocalFile.h"
+
 #include <sys/stat.h>
 #include <random>
 #include <utilities/CommonOperations.h>
@@ -10,7 +15,7 @@
 
 #include "Util/StringUtil.h"
 #include <src/utilities/DebuggingUtils.h>
-using namespace std::chrono_literals;
+
 namespace ral {
 namespace cache {
 
@@ -495,7 +500,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullFromCache() {
 	if (message_data == nullptr) {
 		return nullptr;
 	}
-    
+
     size_t num_rows = message_data->get_data().num_rows();
     size_t num_bytes = message_data->get_data().sizeInBytes();
     int dataType = static_cast<int>(message_data->get_data().get_type());
@@ -926,5 +931,5 @@ std::unique_ptr<ral::cache::CacheData> ConcatenatingCacheMachine::pullCacheData(
 	return output;
 }
 
-}  // namespace cache
+} // namespace cache
 } // namespace ral

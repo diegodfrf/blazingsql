@@ -8,6 +8,7 @@
 #include "../io/data_parser/ArrowParser.h"
 #include "../io/data_parser/ParquetParser.h"
 #include "../io/data_provider/GDFDataProvider.h"
+#include "../io/data_provider/ArrowDataProvider.h"
 #include "../io/data_provider/UriDataProvider.h"
 #include "../skip_data/SkipDataProcessor.h"
 #include "../execution_graph/logic_controllers/LogicalFilter.h"
@@ -83,7 +84,7 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 		} else if(fileType == ral::io::DataType::CSV) {
 			parser = std::make_shared<ral::io::csv_parser>(args_map);
 		} else if(fileType == ral::io::DataType::ARROW){
-	     	parser = std::make_shared<ral::io::arrow_parser>(tableSchema.arrow_table);
+			parser = std::make_shared<ral::io::arrow_parser>();
 		} else if(fileType == ral::io::DataType::MYSQL) {
 #ifdef MYSQL_SUPPORT
       parser = std::make_shared<ral::io::mysql_parser>();
@@ -112,22 +113,25 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
       throw std::runtime_error("ERROR: This BlazingSQL version doesn't support SQLite integration");
 #endif
     }
-
 		std::vector<Uri> uris;
 		for(size_t fileIndex = 0; fileIndex < filesAll[i].size(); fileIndex++) {
 			uris.push_back(Uri{filesAll[i][fileIndex]});
 			schema.add_file(filesAll[i][fileIndex]);
 		}
 
-    if (!isSqlProvider) {
-      if(fileType == ral::io::DataType::CUDF || fileType == ral::io::DataType::DASK_CUDF) {
-        // is gdf
-        provider = std::make_shared<ral::io::gdf_data_provider>(tableSchema.blazingTableViews, uri_values[i]);
-      } else {
-        // is file (this includes the case where fileType is UNDEFINED too)
-        provider = std::make_shared<ral::io::uri_data_provider>(uris, uri_values[i]);
-      }
-    }
+		if (!isSqlProvider) {
+			if(fileType == ral::io::DataType::CUDF || fileType == ral::io::DataType::DASK_CUDF) {
+				// is gdf
+				provider = std::make_shared<ral::io::gdf_data_provider>(tableSchema.blazingTableViews, uri_values[i]);
+			} else if (fileType == ral::io::DataType::ARROW) {
+				std::vector<std::shared_ptr<arrow::Table>> arrow_tables = {tableSchema.arrow_table};
+				provider = std::make_shared<ral::io::arrow_data_provider>(arrow_tables, uri_values[i]);
+			} else {
+				// is file (this includes the case where fileType is UNDEFINED too)
+				provider = std::make_shared<ral::io::uri_data_provider>(uris, uri_values[i]);
+			}
+		}
+
 		ral::io::data_loader loader(parser, provider);
 		input_loaders.push_back(loader);
 		schemas.push_back(schema);
@@ -241,8 +245,10 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
 
 	fix_column_names_duplicated(result->names);
 
-	for(auto& cudfTable : frames){
-		result->cudfTables.emplace_back(std::move(cudfTable->releaseCudfTable()));
+	for(auto& table : frames){
+    bool is_arrow = table->is_arrow();
+		result->tables.emplace_back(is_arrow? std::make_unique<ResultTable>(table->arrow_table()) : 
+                                          std::make_unique<ResultTable>(table->releaseCudfTable()));
 	}
 
 	result->skipdata_analysis_fail = false;
@@ -319,7 +325,7 @@ std::unique_ptr<ResultSet> runSkipData(ral::frame::BlazingTableView metadata,
 		result->skipdata_analysis_fail = result_pair.second;
 		if (!result_pair.second){ // if could process skip-data
 			result->names = result_pair.first->names();
-			result->cudfTable = result_pair.first->releaseCudfTable();
+			result->table = std::make_unique<ResultTable>(result_pair.first->releaseCudfTable());
 		}
 		return result;
 

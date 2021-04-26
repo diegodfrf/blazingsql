@@ -93,6 +93,8 @@ ral::execution::task_result kernel::process(std::vector<std::unique_ptr<ral::fra
         rows += input->num_rows();
     }
     auto result = do_process(std::move(inputs), output, stream, args);
+    
+    
     if(result.status == ral::execution::SUCCESS){
          // increment these AFTER its been processed successfully
         total_input_bytes_processed += bytes;

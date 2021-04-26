@@ -18,6 +18,10 @@ BlazingHostTable::BlazingHostTable(const std::vector<ColumnTransport> &columns_o
 
 }
 
+BlazingHostTable::BlazingHostTable(std::shared_ptr<arrow::Table> arrow_table)
+  : arrow_table_(arrow_table) {
+}
+
 BlazingHostTable::~BlazingHostTable() {
     auto size = sizeInBytes();
     blazing_host_memory_resource::getInstance().deallocate(size); // this only decrements the memory usage counter for the host memory. This does not actually allocate
@@ -50,6 +54,10 @@ void BlazingHostTable::set_names(std::vector<std::string> names) {
 }
 
 cudf::size_type BlazingHostTable::num_rows() const {
+  if (this->arrow_table_ != nullptr) {
+    return this->arrow_table_->num_rows();
+  }
+
     return columns_offsets.empty() ? 0 : columns_offsets.front().metadata.size;
 }
 
@@ -77,15 +85,14 @@ const std::vector<ColumnTransport> &BlazingHostTable::get_columns_offsets() cons
     return columns_offsets;
 }
 
-
-
 std::unique_ptr<BlazingTable> BlazingHostTable::get_gpu_table() const {
-
+    if (this->is_arrow()) {
+      return std::make_unique<ral::frame::BlazingTable>(this->arrow_table_);
+    }
 
     std::vector<rmm::device_buffer> gpu_raw_buffers(chunked_column_infos.size());
-	
-	try{
-        
+
+    try{
         int buffer_index = 0;
         for(auto & chunked_column_info : chunked_column_infos){
             gpu_raw_buffers[buffer_index].resize(chunked_column_info.use_size);
@@ -99,18 +106,18 @@ std::unique_ptr<BlazingTable> BlazingHostTable::get_gpu_table() const {
             }
             buffer_index++;
         }
-    	cudaStreamSynchronize(0);
-	}catch(std::exception & e){
-		auto logger = spdlog::get("batch_logger");
+        cudaStreamSynchronize(0);
+    }catch(std::exception & e){
+        auto logger = spdlog::get("batch_logger");
         if (logger){
             logger->error("|||{info}|||||",
                     "info"_a="ERROR in BlazingHostTable::get_gpu_table(). What: {}"_format(e.what()));
         }
-		throw;
-	}
+        throw;
+    }
 
     return std::move(comm::deserialize_from_gpu_raw_buffers(columns_offsets,
-									  gpu_raw_buffers));
+                                    gpu_raw_buffers));
 }
 
 std::vector<ral::memory::blazing_allocation_chunk> BlazingHostTable::get_raw_buffers() const {

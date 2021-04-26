@@ -406,6 +406,7 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
 
 
 cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args):
+    cdef unique_ptr[ResultTable] resultTable
     cdef vector[string] files
     for file in fileList:
       files.push_back(str.encode(file))
@@ -433,7 +434,8 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args):
     for i in range(names.size()): # Increment the iterator to the net element
         decoded_names.append(names[i].decode('utf-8'))
 
-    df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(resultSet).cudfTable), decoded_names)._data)
+    resultTable = blaz_move(dereference(resultSet.get()).table)
+    df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(resultTable).cudf_table), decoded_names)._data)
     df._rename_columns(decoded_names)
     return df
 
@@ -563,6 +565,9 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
           blazingTableViews.push_back(BlazingTableView(table_view(column_views), names))
         currentTableSchemaCpp.blazingTableViews = blazingTableViews
 
+      if table.fileType == 6: # if arrow Table
+        currentTableSchemaCpp.arrow_table =  pyarrow_unwrap_table(table.arrow_table)
+
       currentTableSchemaCpp.names = names
       currentTableSchemaCpp.types = types
 
@@ -599,7 +604,10 @@ cpdef startExecuteGraphCaller(PyBlazingGraph graph, int ctx_token):
 
 cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_single_node):
 
+    cdef PandasOptions c_pandas_options
+    cdef PyObject* result_pandas_obj
     cdef shared_ptr[cio.graph] ptr = graph.ptr
+    cdef ResultTable resultTable
     graph = None
     resultSet = blaz_move(getExecuteGraphResultPython(blaz_move(ptr),ctx_token))
     names = dereference(resultSet).names
@@ -608,12 +616,31 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
         decoded_names.append(names[i].decode('utf-8'))
 
     if is_single_node: # the engine returns a concatenated dataframe
-        df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(resultSet).cudfTables[0]), decoded_names)._data)
+        df = None
+        is_arrow = dereference(dereference(resultSet.get()).tables[0].get()).is_arrow
+        if is_arrow:
+            # TODO percy arrow
+            pandas_options_dict = {}
+            #c_pandas_options = _convert_pandas_options(pandas_options_dict)
+            ConvertTableToPandas(c_pandas_options, dereference(dereference(resultSet.get()).tables[0].get()).arrow_table, &result_pandas_obj)
+            df = PyObject_to_object(result_pandas_obj)
+        else:
+            df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[0].get()).cudf_table), decoded_names)._data)
         return df
     else: # the engine returns a vector of dataframes
         dfs = []
-        for i in range(dereference(resultSet).cudfTables.size()):
-            dfs.append(cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(resultSet).cudfTables[i]), decoded_names)._data))
+        for i in range(dereference(resultSet).tables.size()):
+            df = None
+            is_arrow = dereference(dereference(resultSet.get()).tables[0].get()).is_arrow
+            if resultTable.is_arrow:
+                pandas_options_dict = {}
+                # TODO percy arrow
+                #c_pandas_options = _convert_pandas_options(pandas_options_dict)
+                ConvertTableToPandas(c_pandas_options, dereference(dereference(resultSet.get()).tables[i].get()).arrow_table, &result_pandas_obj)
+                df = PyObject_to_object(result_pandas_obj)
+            else:
+                df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[i].get()).cudf_table), decoded_names)._data)
+            dfs.append(df)
         return dfs
 
 cpdef runSkipDataCaller(table, queryPy):
@@ -651,7 +678,7 @@ cpdef runSkipDataCaller(table, queryPy):
       for i in range(names.size()):
           decoded_names.append(names[i].decode('utf-8'))
 
-      df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(resultSet).cudfTable), decoded_names)._data)
+      df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet).table).cudf_table), decoded_names)._data)
       return_object['metadata'] = df
       return return_object
 

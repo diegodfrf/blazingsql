@@ -23,9 +23,13 @@ class BlazingTable;  // forward declaration
 class BlazingHostTable {
 public:
 
+    // for data from cudf
     BlazingHostTable(const std::vector<ColumnTransport> &columns_offsets,
         std::vector<ral::memory::blazing_chunked_column_info> && chunked_column_infos,
         std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>> && allocations);
+
+    // for data from arrow
+    BlazingHostTable(std::shared_ptr<arrow::Table> arrow_table);
 
     ~BlazingHostTable();
 
@@ -53,6 +57,9 @@ public:
 
     const std::vector<ral::memory::blazing_chunked_column_info> &  get_blazing_chunked_column_infos() const;
 
+    std::shared_ptr<arrow::Table> arrow_table() const { return this->arrow_table_; }
+    bool is_arrow() const { return (this->arrow_table_ != nullptr); }
+
 private:
     std::vector<ColumnTransport> columns_offsets;
     std::vector<ral::memory::blazing_chunked_column_info> chunked_column_infos;
@@ -60,6 +67,8 @@ private:
 
     
     size_t part_id;
+
+    std::shared_ptr<arrow::Table> arrow_table_;
 };
 
 }  // namespace frame

@@ -14,14 +14,26 @@
 
 typedef ral::io::DataType DataType;
 
+struct ResultTable {
+  ResultTable();
+  ResultTable(std::unique_ptr<cudf::table> cudf_table);
+  ResultTable(std::shared_ptr<arrow::Table> arrow_table);
+  ResultTable(ResultTable &&) = default;
+  virtual ~ResultTable() = default;
+  ResultTable & operator=(ResultTable &&) = default;
+  bool is_arrow = false;
+  std::unique_ptr<cudf::table> cudf_table;
+  std::shared_ptr<arrow::Table> arrow_table;
+};
+
 struct PartitionedResultSet {
-	std::vector<std::unique_ptr<cudf::table>> cudfTables;
+	std::vector<std::unique_ptr<ResultTable>> tables;
 	std::vector<std::string> names;
 	bool skipdata_analysis_fail;
 };
 
 struct ResultSet {
-	std::unique_ptr<cudf::table> cudfTable;
+	std::unique_ptr<ResultTable> table;
 	std::vector<std::string> names;
 	bool skipdata_analysis_fail;
 };
@@ -39,7 +51,7 @@ struct TableSchema {
 
 	ral::frame::BlazingTableView metadata;
 	std::vector<std::vector<int>> row_groups_ids;
-	std::shared_ptr<arrow::Table> arrow_table;
+	std::shared_ptr<arrow::Table> arrow_table; //must be a vector?
 };
 
 struct HDFS {

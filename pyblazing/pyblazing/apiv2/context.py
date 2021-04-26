@@ -1014,10 +1014,11 @@ class BlazingTable(object):
         if fileType == DataType.ARROW:
             if force_conversion:
                 # converts to cudf for querying
-                self.input = cudf.DataFrame.from_arrow(input)
-                self.fileType = DataType.CUDF
+                self.input = input
+                self.fileType = DataType.ARROW
+                self.arrow_table = input
             else:
-                self.input = cudf.DataFrame.from_arrow(input.schema.empty_table())
+                self.input = input.schema.empty_table()
                 self.arrow_table = input
         else:
             self.input = input

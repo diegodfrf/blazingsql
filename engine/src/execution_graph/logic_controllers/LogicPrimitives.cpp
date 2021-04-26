@@ -29,6 +29,10 @@ BlazingTable::BlazingTable(const CudfTableView & table, const std::vector<std::s
 	this->columnNames = columnNames;
 }
 
+BlazingTable::BlazingTable(std::shared_ptr<arrow::Table> arrow_table)
+  : arrow_table_(arrow_table) {
+}
+
 void BlazingTable::ensureOwnership(){
 	for (size_t i = 0; i < columns.size(); i++){
 		columns[i] = std::make_unique<BlazingColumnOwner>(std::move(columns[i]->release()));
@@ -41,6 +45,13 @@ CudfTableView BlazingTable::view() const{
 		column_views[i] = columns[i]->view();
 	}
 	return CudfTableView(column_views);
+}
+
+cudf::size_type BlazingTable::num_rows() const {
+  if (this->arrow_table_ != nullptr) {
+    return this->arrow_table_->num_rows();
+  }
+  return columns.size() == 0 ? 0 : (columns[0] == nullptr ? 0 : columns[0]->view().size());
 }
 
 std::vector<std::string> BlazingTable::names() const{

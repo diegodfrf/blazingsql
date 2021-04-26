@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <arrow/table.h>
 #include "cudf/table/table.hpp"
 #include "cudf/table/table_view.hpp"
 #include <memory>
@@ -25,13 +26,17 @@ public:
 	BlazingTable(std::vector<std::unique_ptr<BlazingColumn>> columns, const std::vector<std::string> & columnNames);
 	BlazingTable(std::unique_ptr<CudfTable> table, const std::vector<std::string> & columnNames);
 	BlazingTable(const CudfTableView & table, const std::vector<std::string> & columnNames);
+  BlazingTable(std::shared_ptr<arrow::Table> arrow_table);
 	BlazingTable(BlazingTable &&) = default;
 	BlazingTable & operator=(BlazingTable const &) = delete;
 	BlazingTable & operator=(BlazingTable &&) = delete;
 
+  std::shared_ptr<arrow::Table> arrow_table() const { return this->arrow_table_; }
+  bool is_arrow() const { return (this->arrow_table_ != nullptr); }
+
 	CudfTableView view() const;
 	cudf::size_type num_columns() const { return columns.size(); }
-	cudf::size_type num_rows() const { return columns.size() == 0 ? 0 : (columns[0] == nullptr ? 0 : columns[0]->view().size()); }
+	cudf::size_type num_rows() const;
 	std::vector<std::string> names() const;
 	std::vector<cudf::data_type> get_schema() const;
 	// set columnNames
@@ -53,6 +58,7 @@ private:
 	std::vector<std::string> columnNames;
 	std::vector<std::unique_ptr<BlazingColumn>> columns;
 	bool valid=true;
+  std::shared_ptr<arrow::Table> arrow_table_;
 };
 
 class BlazingTableView {

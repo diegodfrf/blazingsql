@@ -34,6 +34,16 @@ using namespace fmt::literals;
 
 #include <numeric>
 
+ResultTable::ResultTable() {
+}
+
+ResultTable::ResultTable(std::unique_ptr<cudf::table> cudf_table)
+  : is_arrow(false), cudf_table(std::move(cudf_table)), arrow_table(nullptr){
+}
+
+ResultTable::ResultTable(std::shared_ptr<arrow::Table> arrow_table)
+  : is_arrow(true), cudf_table(nullptr), arrow_table(arrow_table){
+}
 
 TableSchema parseSchema(std::vector<std::string> files,
 	std::string file_format_hint,
@@ -207,7 +217,7 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
 		result->names = names;
 		auto table = ral::utilities::create_empty_table(dtypes);
-		result->cudfTable = std::move(table);
+		result->table = std::make_unique<ResultTable>(std::move(table));
 		result->skipdata_analysis_fail = false;
 		return result;
 	}
@@ -236,7 +246,7 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 		// ral::utilities::print_blazing_table_view(metadata->toBlazingTableView());
 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
 		result->names = metadata->names();
-		result->cudfTable = metadata->releaseCudfTable();
+		result->table = std::make_unique<ResultTable>(metadata->releaseCudfTable());
 		result->skipdata_analysis_fail = false;
 		return result;
 	} catch(std::exception & e) {

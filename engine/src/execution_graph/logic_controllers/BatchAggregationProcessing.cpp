@@ -2,6 +2,32 @@
 #include "taskflow/executor.h"
 #include "utilities/CommonOperations.h"
 #include <cudf/partitioning.hpp>
+#include <arrow/compute/api.h>
+
+// TODO percy arrow move code
+namespace ral_cpu {
+
+std::shared_ptr<arrow::Table> compute_groupby_without_aggregations(
+	std::shared_ptr<arrow::Table> table, const std::vector<int> & group_column_indices) {
+
+  std::vector<std::shared_ptr<arrow::Array>> result;
+  result.resize(group_column_indices.size());
+ 
+  auto f = [&table] (int col_idx) -> std::shared_ptr<arrow::Array> {
+    auto uniques = arrow::compute::Unique(table->column(col_idx));
+    if (!uniques.ok()) {
+      // TODO throw/handle error here
+      return nullptr;
+    }
+    return std::move(uniques.ValueOrDie());
+  };
+
+  std::transform(group_column_indices.begin(), group_column_indices.end(), result.begin(), f);
+
+  return arrow::Table::Make(table->schema(), result, table->num_rows());
+}
+
+} // namespace ral_cpu
 
 namespace ral {
 namespace batch {

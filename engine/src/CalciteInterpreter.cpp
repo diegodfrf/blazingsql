@@ -186,8 +186,10 @@ std::vector<std::unique_ptr<ral::frame::BlazingTable>> get_execute_graph_results
 		graph->finish_execute();
 
 		auto output_frame = static_cast<ral::batch::OutputKernel&>(*(graph->get_last_kernel())).release();
+    
+    
 		assert(!output_frame.empty());
-
+    
 		if(logger){
             logger->info("{query_id}|{step}|{substep}|{info}|{duration}||||",
                                         "query_id"_a=context_token,

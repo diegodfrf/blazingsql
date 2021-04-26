@@ -48,7 +48,7 @@ def use_gtest_lib():
     return True
 
 def get_libs():
-    ret = ["blazingsql-engine"]
+    ret = ["blazingsql-engine", "arrow_python"]
     if use_gtest_lib():
         ret.append("gtest")
     return ret
