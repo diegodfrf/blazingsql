@@ -77,37 +77,69 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<BlazingTableView>
 	return false;
 }
 
+// TODO percy arrow here we need to think about how we want to manage hybrid tables
+// for now we will concat either cudf tables or arrow tables
 std::unique_ptr<BlazingTable> concatTables(const std::vector<BlazingTableView> & tables) {
 	assert(tables.size() >= 0);
 
 	std::vector<std::string> names;
 	std::vector<CudfTableView> table_views_to_concat;
+  std::vector<std::shared_ptr<arrow::Table>> arrow_tables_to_concat;
 	for(size_t i = 0; i < tables.size(); i++) {
 		if (tables[i].names().size() > 0){ // lets make sure we get the names from a table that is not empty
 			names = tables[i].names();
 		}
-		if(tables[i].view().num_columns() > 0) { // lets make sure we are trying to concatenate tables that are not empty
-			table_views_to_concat.push_back(tables[i].view());
-		}
+    if (tables[i].is_arrow()) {
+      if(tables[i].num_columns() > 0) { // lets make sure we are trying to concatenate tables that are not empty
+      	arrow_tables_to_concat.push_back(tables[i].arrow_table());
+      }
+    } else {
+      if(tables[i].view().num_columns() > 0) { // lets make sure we are trying to concatenate tables that are not empty
+      	table_views_to_concat.push_back(tables[i].view());
+      }
+    }
 	}
 	// TODO want to integrate data type normalization.
 	// Data type normalization means that only some columns from a table would get normalized,
 	// so we would need to manage the lifecycle of only a new columns that get allocated
 
 	size_t empty_count = 0;
-	for(size_t i = 0; i < table_views_to_concat.size(); i++) {
-		if (table_views_to_concat[i].num_rows() == 0){
-			++empty_count;
-		}
-	}
+  bool is_arrow = !arrow_tables_to_concat.empty();
+  
+  if (is_arrow) {
+    for(size_t i = 0; i < arrow_tables_to_concat.size(); i++) {
+      if (arrow_tables_to_concat[i]->num_rows() == 0){
+        ++empty_count;
+      }
+    }
+  } else {
+    for(size_t i = 0; i < table_views_to_concat.size(); i++) {
+      if (table_views_to_concat[i].num_rows() == 0){
+        ++empty_count;
+      }
+    }
+  }
 
  	// All tables are empty so we just need to return the 1st one
-	if (empty_count == table_views_to_concat.size()) {
-		return std::make_unique<ral::frame::BlazingTable>(table_views_to_concat[0], names);
-	}
-
-	std::unique_ptr<CudfTable> concatenated_tables = cudf::concatenate(table_views_to_concat);
-	return std::make_unique<BlazingTable>(std::move(concatenated_tables), names);
+  if (is_arrow) {
+    if (empty_count == arrow_tables_to_concat.size()) {
+      return std::make_unique<ral::frame::BlazingTable>(arrow_tables_to_concat[0]);
+    }
+    std::shared_ptr<arrow::Table> concatenated_tables = arrow::ConcatenateTables(arrow_tables_to_concat).ValueOrDie();
+    
+    std::cout << "------->>>>>>>>>>AROW CONCAT: \n" << "\t" << concatenated_tables->ToString() << "\n\n";
+    std::cout << "FINDELGATO!!!!\n\n"; 
+    
+    return std::make_unique<BlazingTable>(concatenated_tables);
+  } else {
+    if (empty_count == table_views_to_concat.size()) {
+      return std::make_unique<ral::frame::BlazingTable>(table_views_to_concat[0], names);
+    }
+    std::unique_ptr<CudfTable> concatenated_tables = cudf::concatenate(table_views_to_concat);
+    return std::make_unique<BlazingTable>(std::move(concatenated_tables), names);
+  }
+  
+  return nullptr;
 }
 
 std::unique_ptr<BlazingTable> getLimitedRows(const BlazingTableView& table, cudf::size_type num_rows, bool front){

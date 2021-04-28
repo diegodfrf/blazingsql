@@ -62,6 +62,11 @@ cudf::size_type BlazingHostTable::num_rows() const {
 }
 
 cudf::size_type BlazingHostTable::num_columns() const {
+  if (this->is_arrow()) {
+    int a = this->arrow_table()->num_columns();
+    return a;
+  }
+
     return columns_offsets.size();
 }
 

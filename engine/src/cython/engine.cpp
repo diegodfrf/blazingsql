@@ -52,7 +52,7 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 	std::vector<ral::io::Schema> schemas;
 
 	for(size_t i = 0; i < tableSchemas.size(); i++) {
-		auto tableSchema = tableSchemas[i];
+		const TableSchema &tableSchema = tableSchemas.at(i);
 		auto files = filesAll[i];
 		auto fileType = fileTypes[i];
 
@@ -63,11 +63,28 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 			types.push_back(tableSchemas[i].types[col]);
 		}
 
-		auto schema = ral::io::Schema(tableSchema.names,
-			tableSchema.calcite_to_file_indices,
-			types,
-			tableSchema.in_file,
-			tableSchema.row_groups_ids);
+    auto _name = tableSchema.names;
+    std::cout << "ALFA 1\n";
+    auto _calcite_to_file_indices = tableSchema.calcite_to_file_indices;
+    std::cout << "ALFA 2\n";
+    auto _in_file = tableSchema.in_file;
+    std::cout << "ALFA 3\n";
+    std::cout << tableSchema.row_groups_ids.size() << "\n";
+    auto _row_groups_ids = tableSchema.row_groups_ids;
+    std::cout << "ALFA 4\n";
+    
+    ral::io::Schema schema;
+    try {
+      schema = ral::io::Schema(_name,
+        _calcite_to_file_indices,
+        types,
+        _in_file,
+        _row_groups_ids);
+    } catch (const std::exception &exc) {
+        // catch anything thrown within try block that derives from std::exception
+        std::cout << "NODISOSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n";
+        std::cout << exc.what() << "\n";
+    }
 
     bool isSqlProvider = false;
     std::shared_ptr<ral::io::data_provider> provider;
@@ -249,6 +266,10 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
     bool is_arrow = table->is_arrow();
 		result->tables.emplace_back(is_arrow? std::make_unique<ResultTable>(table->arrow_table()) : 
                                           std::make_unique<ResultTable>(table->releaseCudfTable()));
+    if (is_arrow) {
+      std::cout << "ASDASDAAAAAAAAAAAAAAAAAAAAAAAAAA \n\n" << result->tables.back()->arrow_table->ToString() << "\n\n";
+      std::cout << "LISTO!\n" << std::flush;
+    }
 	}
 
 	result->skipdata_analysis_fail = false;

@@ -1,5 +1,6 @@
 #include "ArrowCacheData.h"
 #include <cudf/interop.hpp>
+#include "CalciteExpressionParsing.h"
 
 namespace ral {
 namespace cache {
@@ -16,11 +17,21 @@ size_t get_arrow_data_size(std::shared_ptr<arrow::ArrayData> data) {
   return ret;
 }
 
-ArrowCacheData::ArrowCacheData(std::shared_ptr<arrow::Table> table, ral::io::Schema schema)
-    : CacheData(CacheDataType::ARROW, schema.get_names(), schema.get_data_types(), table->num_rows()), data{table} {}
+ArrowCacheData::ArrowCacheData(ral::io::data_handle handle,
+	std::shared_ptr<ral::io::data_parser> parser,
+	ral::io::Schema schema,
+	std::vector<int> row_group_ids,
+	std::vector<int> projections)
+	: CacheData(CacheDataType::ARROW, schema.get_names(), schema.get_data_types(), handle.arrow_table->num_rows()),
+	handle(handle), parser(parser), schema(schema),
+	row_group_ids(row_group_ids),
+	projections(projections)
+	{
+
+	}
 
 std::unique_ptr<ral::frame::BlazingTable> ArrowCacheData::decache() {
-  return std::make_unique<ral::frame::BlazingTable>(data);
+  return parser->parse_batch(handle, schema, projections, row_group_ids);
 }
 
 size_t ArrowCacheData::sizeInBytes() const {
@@ -36,7 +47,7 @@ size_t ArrowCacheData::sizeInBytes() const {
 }
 
 void ArrowCacheData::set_names(const std::vector<std::string> & names) {
-	this->col_names = names;
+	this->schema.set_names(names);
 }
 
 ArrowCacheData::~ArrowCacheData() {}

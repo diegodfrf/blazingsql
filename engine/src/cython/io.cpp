@@ -45,6 +45,10 @@ ResultTable::ResultTable(std::shared_ptr<arrow::Table> arrow_table)
   : is_arrow(true), cudf_table(nullptr), arrow_table(arrow_table){
 }
 
+TableSchema::TableSchema() {
+  row_groups_ids.resize(0);
+}
+
 TableSchema parseSchema(std::vector<std::string> files,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,

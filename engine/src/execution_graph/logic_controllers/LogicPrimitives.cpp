@@ -5,6 +5,8 @@
 #include "execution_graph/logic_controllers/BlazingColumnView.h"
 #include "execution_graph/logic_controllers/BlazingColumnOwner.h"
 
+#include <cudf/detail/interop.hpp>
+
 namespace ral {
 
 namespace frame{
@@ -30,13 +32,21 @@ BlazingTable::BlazingTable(const CudfTableView & table, const std::vector<std::s
 }
 
 BlazingTable::BlazingTable(std::shared_ptr<arrow::Table> arrow_table)
-  : arrow_table_(arrow_table) {
+  : columnNames(arrow_table->ColumnNames()), arrow_table_(arrow_table) {
 }
 
 void BlazingTable::ensureOwnership(){
 	for (size_t i = 0; i < columns.size(); i++){
 		columns[i] = std::make_unique<BlazingColumnOwner>(std::move(columns[i]->release()));
 	}
+}
+
+cudf::size_type BlazingTable::num_columns() const {
+  if (this->is_arrow()) {
+    int a = this->arrow_table()->num_columns();
+    return a;
+  }
+  return columns.size();
 }
 
 CudfTableView BlazingTable::view() const{
@@ -48,7 +58,7 @@ CudfTableView BlazingTable::view() const{
 }
 
 cudf::size_type BlazingTable::num_rows() const {
-  if (this->arrow_table_ != nullptr) {
+  if (this->is_arrow()) {
     return this->arrow_table_->num_rows();
   }
   return columns.size() == 0 ? 0 : (columns[0] == nullptr ? 0 : columns[0]->view().size());
@@ -59,13 +69,36 @@ std::vector<std::string> BlazingTable::names() const{
 }
 
 std::vector<cudf::data_type> BlazingTable::get_schema() const {
+  if (this->is_arrow()) {
+    std::vector<cudf::data_type> ret;
+    for (auto f : this->arrow_table_->schema()->fields()) {
+      ret.push_back(cudf::detail::arrow_to_cudf_type(*f->type()));
+    }
+    return ret;
+  }
+
 	std::vector<cudf::data_type> data_types(this->num_columns());
 	auto view = this->view();
 	std::transform(view.begin(), view.end(), data_types.begin(), [](auto & col){ return col.type(); });
 	return data_types;
 }
 
+void BlazingTable::setNames(const std::vector<std::string> & names) {
+  if (this->is_arrow()) {
+    assert(names.size() == this->arrow_table()->fields().size());
+    int i = 0;
+    for (auto f : this->arrow_table()->fields()) {
+      this->arrow_table()->schema()->SetField(i, f->WithName(names[i]));
+      ++i;
+    } 
+  }
+  this->columnNames = names; 
+}
+
 BlazingTableView BlazingTable::toBlazingTableView() const{
+  if (this->is_arrow()) {
+    return BlazingTableView(this->arrow_table_);
+  }
 	return BlazingTableView(this->view(), this->columnNames);
 }
 
@@ -124,6 +157,24 @@ BlazingTableView::BlazingTableView(
 
 }
 
+BlazingTableView::BlazingTableView(std::shared_ptr<arrow::Table> arrow_table)
+  : columnNames(arrow_table->ColumnNames()), arrow_table_(arrow_table) {
+}
+
+BlazingTableView::BlazingTableView(BlazingTableView const &other)
+  : columnNames(other.columnNames)
+  , table(other.table)
+  , arrow_table_(other.arrow_table_)
+{
+}
+
+BlazingTableView & BlazingTableView::operator=(BlazingTableView const &other) {
+  this->columnNames = other.columnNames;
+  this->table = other.table;
+  this->arrow_table_ = other.arrow_table_;
+  return *this;
+}
+
 CudfTableView BlazingTableView::view() const{
 	return this->table;
 }
@@ -136,11 +187,38 @@ std::vector<std::string> BlazingTableView::names() const{
 	return this->columnNames;
 }
 
+void BlazingTableView::setNames(const std::vector<std::string> & names) {
+  this->columnNames = names;
+}
+
 std::vector<cudf::data_type> BlazingTableView::get_schema() const {
+  if (this->is_arrow()) {
+    std::vector<cudf::data_type> ret;
+    for (auto f : this->arrow_table_->schema()->fields()) {
+      ret.push_back(cudf::detail::arrow_to_cudf_type(*f->type()));
+    }
+    return ret;
+  }
+
 	std::vector<cudf::data_type> data_types(this->num_columns());
 	auto view = this->view();
 	std::transform(view.begin(), view.end(), data_types.begin(), [](auto & col){ return col.type(); });
 	return data_types;
+}
+
+cudf::size_type BlazingTableView::num_columns() const {
+  if (this->is_arrow()) {
+    int a = this->arrow_table()->num_columns();
+    return a;
+  }
+  return table.num_columns();
+}
+
+cudf::size_type BlazingTableView::num_rows() const {
+  if (this->is_arrow()) {
+    return this->arrow_table_->num_rows();
+  }
+  return table.num_rows();
 }
 
 unsigned long long BlazingTableView::sizeInBytes()

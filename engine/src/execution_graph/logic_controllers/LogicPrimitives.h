@@ -35,12 +35,12 @@ public:
   bool is_arrow() const { return (this->arrow_table_ != nullptr); }
 
 	CudfTableView view() const;
-	cudf::size_type num_columns() const { return columns.size(); }
+	cudf::size_type num_columns() const;
 	cudf::size_type num_rows() const;
 	std::vector<std::string> names() const;
 	std::vector<cudf::data_type> get_schema() const;
 	// set columnNames
-	void setNames(const std::vector<std::string> & names) { this->columnNames = names; }
+	void setNames(const std::vector<std::string> & names);
 
 	BlazingTableView toBlazingTableView() const;
 
@@ -65,12 +65,16 @@ class BlazingTableView {
 public:
 	BlazingTableView();
 	BlazingTableView(CudfTableView table, std::vector<std::string> columnNames);
-	BlazingTableView(BlazingTableView const &) = default;
+  BlazingTableView(std::shared_ptr<arrow::Table> arrow_table);
+  BlazingTableView(BlazingTableView const &other);
 	BlazingTableView(BlazingTableView &&) = default;
 
-	BlazingTableView & operator=(BlazingTableView const &) = default;
+	BlazingTableView & operator=(BlazingTableView const &other);
 	BlazingTableView & operator=(BlazingTableView &&) = default;
 
+  std::shared_ptr<arrow::Table> arrow_table() const { return this->arrow_table_; }
+  bool is_arrow() const { return (this->arrow_table_ != nullptr); }
+  
 	CudfTableView view() const;
 
 	cudf::column_view const & column(cudf::size_type column_index) const { return table.column(column_index); }
@@ -79,11 +83,11 @@ public:
 	std::vector<cudf::data_type> get_schema() const;
 
 	std::vector<std::string> names() const;
-	void setNames(const std::vector<std::string> & names) { this->columnNames = names; }
+	void setNames(const std::vector<std::string> & names);
 
-	cudf::size_type num_columns() const { return table.num_columns(); }
+	cudf::size_type num_columns() const;
 
-	cudf::size_type num_rows() const { return table.num_rows(); }
+	cudf::size_type num_rows() const;
 
 	unsigned long long sizeInBytes();
 
@@ -92,6 +96,7 @@ public:
 private:
 	std::vector<std::string> columnNames;
 	CudfTableView table;
+  std::shared_ptr<arrow::Table> arrow_table_;
 };
 
 std::unique_ptr<ral::frame::BlazingTable> createEmptyBlazingTable(std::vector<cudf::data_type> column_types,

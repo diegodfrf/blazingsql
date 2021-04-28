@@ -38,6 +38,7 @@ import errno
 import os
 import pandas
 import numpy as np
+import pyarrow as pa
 import pyarrow
 from pathlib import PurePath
 from glob import glob
@@ -1011,17 +1012,7 @@ class BlazingTable(object):
         # of row_groups per file
         self.name = name
         self.fileType = fileType
-        if fileType == DataType.ARROW:
-            if force_conversion:
-                # converts to cudf for querying
-                self.input = input
-                self.fileType = DataType.ARROW
-                self.arrow_table = input
-            else:
-                self.input = input.schema.empty_table()
-                self.arrow_table = input
-        else:
-            self.input = input
+        self.input = input
 
         self.calcite_to_file_indices = calcite_to_file_indices
         self.files = files
@@ -1070,6 +1061,86 @@ class BlazingTable(object):
         elif self.fileType == DataType.DASK_CUDF:
             self.column_names = [x for x in input.columns]
             self.column_types = [cio.np_to_cudf_types_int(x) for x in input.dtypes]
+        elif self.fileType == DataType.ARROW:
+            self.arrow_table = input
+
+            cudf_type_ids = [
+                "EMPTY",
+                "INT8",
+                "INT16",
+                "INT32",
+                "INT64",
+                "UINT8",
+                "UINT16",
+                "UINT32",
+                "UINT64",
+                "FLOAT32",
+                "FLOAT64",
+                "BOOL8",
+                "TIMESTAMP_DAYS",
+                "TIMESTAMP_SECONDS",
+                "TIMESTAMP_MILLISECONDS",
+                "TIMESTAMP_MICROSECONDS",
+                "TIMESTAMP_NANOSECONDS",
+                "DURATION_DAYS",
+                "DURATION_SECONDS",
+                "DURATION_MILLISECONDS",
+                "DURATION_MICROSECONDS",
+                "DURATION_NANOSECONDS",
+                "DICTIONARY32",
+                "STRING",
+                "LIST",
+                "DECIMAL32",
+                "DECIMAL64",
+                "STRUCT",
+                "NUM_TYPE_IDS",
+            ]
+
+            to_cudf_type = {}
+            to_cudf_type[pa.null()] = cudf_type_ids.index("EMPTY")
+            to_cudf_type[pa.bool_()] = cudf_type_ids.index("BOOL8")
+            to_cudf_type[pa.int8()] = cudf_type_ids.index("INT8")
+            to_cudf_type[pa.int16()] = cudf_type_ids.index("INT16")
+            to_cudf_type[pa.int32()] = cudf_type_ids.index("INT32")
+            to_cudf_type[pa.int64()] = cudf_type_ids.index("INT64")
+            to_cudf_type[pa.uint8()] = cudf_type_ids.index("UINT8")
+            to_cudf_type[pa.uint16()] = cudf_type_ids.index("UINT16")
+            to_cudf_type[pa.uint32()] = cudf_type_ids.index("UINT32")
+            to_cudf_type[pa.uint64()] = cudf_type_ids.index("UINT64")
+            to_cudf_type[pa.float16()] = cudf_type_ids.index("FLOAT32") # TODO percy arrow
+            to_cudf_type[pa.float32()] = cudf_type_ids.index("FLOAT32")
+            to_cudf_type[pa.float64()] = cudf_type_ids.index("FLOAT64")
+            #to_cudf_type[pa.time32(unit)] = cudf_type_ids.index("")
+            #to_cudf_type[pa.time64(unit)] = cudf_type_ids.index("")
+            to_cudf_type[pa.timestamp('s')] = cudf_type_ids.index("TIMESTAMP_SECONDS")
+            to_cudf_type[pa.timestamp('ms')] = cudf_type_ids.index("TIMESTAMP_MILLISECONDS")
+            to_cudf_type[pa.timestamp('us')] = cudf_type_ids.index("TIMESTAMP_MICROSECONDS")
+            to_cudf_type[pa.timestamp('ns')] = cudf_type_ids.index("TIMESTAMP_NANOSECONDS")
+            to_cudf_type[pa.date32()] = cudf_type_ids.index("TIMESTAMP_DAYS")
+            #to_cudf_type[pa.date64()] = cudf_type_ids.index("")
+            to_cudf_type[pa.string()] = cudf_type_ids.index("STRING")
+            to_cudf_type[pa.utf8()] = cudf_type_ids.index("STRING") # TODO percy arrow
+            #to_cudf_type[pa.large_binary()] = cudf_type_ids.index("")
+            to_cudf_type[pa.large_string()] = cudf_type_ids.index("STRING") # TODO percy arrow
+            to_cudf_type[pa.large_utf8()] = cudf_type_ids.index("STRING") # TODO percy arrow
+            #to_cudf_type[pa.decimal128(intprecision, int scale=0)] = cudf_type_ids.index("")
+            #to_cudf_type[pa.list_(value_type,intlist_size=-1)] = cudf_type_ids.index("")
+            #to_cudf_type[pa.large_list(value_type)] = cudf_type_ids.index("")
+            #to_cudf_type[pa.map_(key_type,item_type[, keys_sorted])] = cudf_type_ids.index("")
+            #to_cudf_type[pa.struct(fields)] = cudf_type_ids.index("")
+            #to_cudf_type[pa.dictionary(index_type,value_type, …)] = cudf_type_ids.index("")
+            #to_cudf_type[pa.field(name,type,boolnullable=True[, metadata])] = cudf_type_ids.index("")
+            #to_cudf_type[pa.schema(fields[,metadata])] = cudf_type_ids.index("")
+            #to_cudf_type[pa.from_numpy_dtype(dtype)] = cudf_type_ids.index("")
+
+            col_types = []
+            for arrow_data_type in self.arrow_table.schema.types:
+                col_types.append(to_cudf_type[arrow_data_type])
+
+            self.column_types = col_types
+            self.column_names = self.arrow_table.column_names
+        else:
+            self.input = input
 
         # file_column_names are usually the same as column_names, except
         # for when in a hive table the column names defined by the hive schema
@@ -2300,10 +2371,7 @@ class BlazingContext(object):
             input = cudf.DataFrame.from_pandas(input)
 
         if isinstance(input, pyarrow.Table):
-            if self.dask_client is not None:
-                input = cudf.DataFrame.from_arrow(input)
-            else:
-                table = BlazingTable(table_name, input, DataType.ARROW)
+            table = BlazingTable(table_name, input, DataType.ARROW)
 
         if isinstance(input, cudf.DataFrame):
             if self.dask_client is not None:

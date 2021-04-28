@@ -30,6 +30,10 @@ enum AggregateKind{
 namespace ral {
 namespace operators {
 
+  // NOTE percy arrow we need these public
+  cudf::type_id get_aggregation_output_type(cudf::type_id input_type, AggregateKind aggregation, bool have_groupby);
+  std::string aggregator_to_string(AggregateKind aggregation);
+
 	// offset param is needed for `LAG` and `LEAD` aggs
 	std::unique_ptr<cudf::aggregation> makeCudfAggregation(AggregateKind input, int offset = 0);
 

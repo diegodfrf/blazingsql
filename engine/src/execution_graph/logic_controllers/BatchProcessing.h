@@ -357,14 +357,5 @@ protected:
     std::atomic<bool> done;
 };
 
-template<typename T1, typename T2, typename T3, typename ...Params>
-std::unique_ptr<ral::cache::CacheData> CacheDataDispatcher(T1 handle, T2 parser, T3 schema, Params&&... params) {
-    if(parser->type() == ral::io::DataType::ARROW){
-        return std::make_unique<ral::cache::ArrowCacheData>(handle.arrow_table, schema);
-    } else {
-        return std::make_unique<ral::cache::CacheDataIO>(handle, parser, schema, std::forward<Params>(params)...);
-    }
-}
-
 } // namespace batch
 } // namespace ral

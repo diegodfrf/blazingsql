@@ -306,6 +306,7 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
     // we dont want to add empty tables to a cache, unless we have never added anything
 	if (!this->something_added || table->num_rows() > 0 || always_add){
 		for (auto col_ind = 0; col_ind < table->num_columns(); col_ind++){
+      if (table->is_arrow()) continue;
 			if (table->view().column(col_ind).offset() > 0){
 				table->ensureOwnership();
 				break;

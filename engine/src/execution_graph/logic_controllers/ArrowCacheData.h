@@ -12,11 +12,12 @@ namespace cache {
 */
 class ArrowCacheData : public CacheData {
 public:
-	/**
-	* Constructor
-	* @param table The BlazingTable that is moved into the CacheData.
-	*/
-	ArrowCacheData(std::shared_ptr<arrow::Table> table, ral::io::Schema schema);
+  ArrowCacheData(ral::io::data_handle handle,
+		std::shared_ptr<ral::io::data_parser> parser,
+		ral::io::Schema schema,
+		std::vector<int> row_group_ids,
+		std::vector<int> projections
+	);
 
 // 	/**
 // 	* Constructor
@@ -69,8 +70,11 @@ public:
 // 	}
 
 protected:
-	std::vector<std::string> col_names; /**< The names of the columns */
-	std::shared_ptr<arrow::Table> data; /**< Stores the data to be returned in decache */
+  ral::io::data_handle handle;
+	std::shared_ptr<ral::io::data_parser> parser;
+	ral::io::Schema schema;
+	std::vector<int> row_group_ids;
+	std::vector<int> projections;
 };
 
 } // namespace cache

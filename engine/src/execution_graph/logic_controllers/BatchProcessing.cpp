@@ -34,6 +34,7 @@ std::vector<int> get_projections_wrapper(size_t num_columns, const std::string &
   if (expression.empty()) {
     std::vector<int> projections(num_columns);
     std::iota(projections.begin(), projections.end(), 0);
+    std::cout << "ESEMPTY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
     return projections;
   }
 
@@ -42,6 +43,7 @@ std::vector<int> get_projections_wrapper(size_t num_columns, const std::string &
       projections.resize(num_columns);
       std::iota(projections.begin(), projections.end(), 0);
   }
+  std::cout << "PROJECTIONSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS!\n" << projections.size() << "\n";
   return projections;
 }
 
@@ -175,7 +177,7 @@ kstatus TableScan::run() {
 
     //if its empty we can just add it to the cache without scheduling
     if (!provider->has_next()) {
-        this->add_to_output_cache(std::move(schema.makeEmptyBlazingTable(projections)));
+        this->add_to_output_cache(schema.makeEmptyBlazingTable(projections));
     } else {
 
         while(provider->has_next()) {
@@ -186,8 +188,13 @@ kstatus TableScan::run() {
             auto file_schema = schema.fileSchema(file_index);
             auto row_group_ids = schema.get_rowgroup_ids(file_index);
             //this is the part where we make the task now
-            std::unique_ptr<ral::cache::CacheData> input =
-                CacheDataDispatcher(handle, parser, schema, file_schema, row_group_ids, projections);
+
+            std::unique_ptr<ral::cache::CacheData> input = nullptr;
+            if (this->parser->type() == DataType::ARROW) {
+              input = std::make_unique<ral::cache::ArrowCacheData>(handle, parser, schema, row_group_ids, projections);
+            } else {
+              input = std::make_unique<ral::cache::CacheDataIO>(handle, parser, schema, file_schema, row_group_ids, projections);
+            }
 
             std::vector<std::unique_ptr<ral::cache::CacheData> > inputs;
             inputs.push_back(std::move(input));
@@ -348,8 +355,14 @@ kstatus BindableTableScan::run() {
             auto file_schema = schema.fileSchema(file_index);
             auto row_group_ids = schema.get_rowgroup_ids(file_index);
             //this is the part where we make the task now
-            std::unique_ptr<ral::cache::CacheData> input =
-                CacheDataDispatcher(handle, parser, schema, file_schema, row_group_ids, projections);
+
+            std::unique_ptr<ral::cache::CacheData> input = nullptr;
+            if (this->parser->type() == DataType::ARROW) {
+              input = std::make_unique<ral::cache::ArrowCacheData>(handle, parser, schema, row_group_ids, projections);
+            } else {
+              input = std::make_unique<ral::cache::CacheDataIO>(handle, parser, schema, file_schema, row_group_ids, projections);
+            }
+
             std::vector<std::unique_ptr<ral::cache::CacheData>> inputs;
             inputs.push_back(std::move(input));
             auto output_cache = this->output_cache();

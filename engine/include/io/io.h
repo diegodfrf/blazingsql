@@ -39,6 +39,13 @@ struct ResultSet {
 };
 
 struct TableSchema {
+  TableSchema();
+  TableSchema(TableSchema const &other) = default;
+	TableSchema(TableSchema &&) = default;
+
+	TableSchema & operator=(TableSchema const &other) = default;
+	TableSchema & operator=(TableSchema &&) = default;
+
 	std::vector<ral::frame::BlazingTableView> blazingTableViews;
 	std::vector<cudf::type_id> types;
 	std::vector<std::string> files;
