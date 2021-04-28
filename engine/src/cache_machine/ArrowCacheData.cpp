@@ -1,6 +1,6 @@
 #include "ArrowCacheData.h"
 #include <cudf/interop.hpp>
-#include "CalciteExpressionParsing.h"
+#include "parser/CalciteExpressionParsing.h"
 
 namespace ral {
 namespace cache {

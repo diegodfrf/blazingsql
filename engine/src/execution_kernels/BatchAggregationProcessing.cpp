@@ -6,9 +6,9 @@
 
 // TODO percy arrow move code
 #include "parser/expression_utils.hpp"
-#include "execution_graph/logic_controllers/LogicalProject.h"
+#include "execution_kernels/LogicalProject.h"
 #include "operators/GroupBy.h"
-#include "CalciteExpressionParsing.h"
+#include "parser/CalciteExpressionParsing.h"
 #include <cudf/aggregation.hpp>
 #include <cudf/reduction.hpp>
 namespace ral {
