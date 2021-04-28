@@ -143,7 +143,7 @@ cdef extern from "../include/io/io.h" nogil:
     vector[FolderPartitionMetadata] inferFolderPartitionMetadata(string folder_path) except +raiseInferFolderPartitionMetadataError
 
 
-cdef extern from "../src/execution_graph/logic_controllers/execution_kernels/LogicPrimitives.h" namespace "ral::frame":
+cdef extern from "../src/execution_kernels/LogicPrimitives.h" namespace "ral::frame":
         cdef cppclass BlazingTable:
             BlazingTable(unique_ptr[CudfTable] table, const vector[string] & columnNames)
             BlazingTable(const CudfTableView & table, const vector[string] & columnNames)
@@ -160,7 +160,7 @@ cdef extern from "../src/execution_graph/logic_controllers/execution_kernels/Log
             CudfTableView view()
             vector[string] names()
 
-cdef extern from "../src/execution_graph/logic_controllers/execution_graph/graph.h" namespace "ral::cache":
+cdef extern from "../src/execution_graph/graph.h" namespace "ral::cache":
         cdef struct graph_progress:
             vector[string] kernel_descriptions
             vector[bool] finished
@@ -172,7 +172,7 @@ cdef extern from "../src/execution_graph/logic_controllers/execution_graph/graph
             bool query_is_complete()
             graph_progress get_progress()
 
-cdef extern from "../src/execution_graph/logic_controllers/cache_machine/CacheMachine.h" namespace "ral::cache":
+cdef extern from "../src/cache_machine/CacheMachine.h" namespace "ral::cache":
         cdef cppclass MetadataDictionary:
             void set_values(map[string,string] new_values)
             map[string,string] get_values()
@@ -184,12 +184,12 @@ cdef extern from "../src/execution_graph/logic_controllers/cache_machine/CacheMa
             unique_ptr[CacheData] pullCacheData(string message_id) nogil except +
             bool has_next_now() except +
 
-cdef extern from "../src/execution_graph/logic_controllers/cache_machine/CacheData.h" namespace "ral::cache":
+cdef extern from "../src/cache_machine/CacheData.h" namespace "ral::cache":
         cdef cppclass CacheData:
             unique_ptr[BlazingTable] decache()
             MetadataDictionary getMetadata()
 
-cdef extern from "../src/execution_graph/logic_controllers/cache_machine/GPUCacheData.h" namespace "ral::cache":
+cdef extern from "../src/cache_machine/GPUCacheData.h" namespace "ral::cache":
         cdef cppclass GPUCacheData:
             unique_ptr[BlazingTable] decache()
             MetadataDictionary getMetadata()
