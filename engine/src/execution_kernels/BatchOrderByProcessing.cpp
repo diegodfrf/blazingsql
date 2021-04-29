@@ -610,7 +610,11 @@ ral::execution::task_result LimitKernel::do_process(std::vector< std::unique_ptr
             bool output_is_just_input;
 
             eventTimer.start();
-            std::tie(limited_input, output_is_just_input, rows_limit) = ral::operators::limit_table(input->toBlazingTableView(), rows_limit);
+            if (input->is_arrow()){
+                std::tie(limited_input, output_is_just_input, rows_limit) = ral::cpu::operators::limit_table(input->arrow_table(), rows_limit);
+            } else {
+                std::tie(limited_input, output_is_just_input, rows_limit) = ral::operators::limit_table(input->toBlazingTableView(), rows_limit);
+            }
             eventTimer.stop();
 
             auto log_output_num_rows = output_is_just_input ? input->num_rows() : limited_input->num_rows();
