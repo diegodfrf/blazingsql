@@ -52,12 +52,16 @@ class sql_connection:
         username = kwargs.get("username", "")
         password = kwargs.get("password", "")
         schema = kwargs.get("schema", "")
+        database = kwargs.get("database", "")
+        dsn = kwargs.get("dsn", "")
 
         self.hostname = hostname
         self.port = port
         self.username = username
         self.password = password
         self.schema = schema
+        self.database = database
+        self.dsn = dsn
 
 
 def get_sql_connection(fileSchemaType: DataType):
@@ -69,6 +73,9 @@ def get_sql_connection(fileSchemaType: DataType):
 
     if fileSchemaType is DataType.POSTGRESQL:
         return get_postgresql_connection()
+
+    if fileSchemaType is DataType.SNOWFLAKE:
+        return get_snowflake_connection()
 
     raise ValueError('Unsupported data type {fileSchemaType}')
 
@@ -129,6 +136,30 @@ def get_sqlite_connection() -> sql_connection:
                           username='',
                           password='',
                           schema=sql_schema)
+
+
+def get_snowflake_connection() -> sql_connection:
+    sql_dsn = os.getenv("BLAZINGSQL_E2E_SNOWFLAKE_DSN", "")
+    if not sql_dsn: return None
+
+    sql_username = os.getenv("BLAZINGSQL_E2E_SNOWFLAKE_USERNAME", "")
+    if not sql_username: return None
+
+    sql_password = os.getenv("BLAZINGSQL_E2E_SNOWFLAKE_PASSWORD", "")
+    if not sql_password: return None
+
+    sql_database = os.getenv("BLAZINGSQL_E2E_SNOWFLAKE_DATABASE", "")
+    if not sql_database: return None
+
+    sql_schema = os.getenv("BLAZINGSQL_E2E_SNOWFLAKE_SCHEMA", "")
+    if not sql_schema: return None
+
+    ret = sql_connection(username=sql_username,
+                         password=sql_password,
+                         dsn=sql_dsn,
+                         database=sql_database,
+                         schema=sql_schema)
+    return ret
 
 
 def getFiles_to_tmp(tpch_dir, n_files, ext):

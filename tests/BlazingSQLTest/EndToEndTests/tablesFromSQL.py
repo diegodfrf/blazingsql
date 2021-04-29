@@ -226,7 +226,7 @@ def main(dask_client, drill, spark, dir_data_lc, bc, nRals):
         sql = None
         is_file_ds = False
         # we can change the datatype for these tests and it should works just fine
-        if data_type not in [DataType.MYSQL, DataType.POSTGRESQL, DataType.SQLITE]:
+        if data_type not in [DataType.MYSQL, DataType.POSTGRESQL, DataType.SQLITE, DataType.SNOWFLAKE]:
             is_file_ds = True
         else:
             sql = setup_test(data_type)
