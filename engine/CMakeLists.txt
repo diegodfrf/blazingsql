@@ -325,7 +325,6 @@ set(SRC_FILES ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
               ${PROJECT_SOURCE_DIR}/src/utilities/scalar_timestamp_parser.cpp
               ${PROJECT_SOURCE_DIR}/src/utilities/DebuggingUtils.cpp
               ${PROJECT_SOURCE_DIR}/src/utilities/transform.cu
-              ${PROJECT_SOURCE_DIR}/src/utilities/CudfArrowUtils.cpp
               ${PROJECT_SOURCE_DIR}/src/parser/CalciteExpressionParsing.cpp
               ${PROJECT_SOURCE_DIR}/src/io/DataLoader.cpp
               ${PROJECT_SOURCE_DIR}/src/Interpreter/interpreter_cpp.cu
