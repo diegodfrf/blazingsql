@@ -33,26 +33,11 @@ const std::unordered_map<cudf::type_id, const char *> & MapDataTypeName() {
   return dt2name;
 }
 
-struct SQLProviderTest : public BlazingUnitTest {};
-
-TEST_F(SQLProviderTest, DISABLED_postgresql_select_all) {
-  ral::io::sql_info sql;
-  sql.host = "localhost";
-  sql.port = 5432;
-  sql.user = "myadmin";
-  sql.password = "";
-  sql.schema = "pagila";
-  sql.table = "prueba5";
-  sql.table_filter = "";
-  sql.table_batch_size = 2000;
-
-  auto postgresql_provider =
-      std::make_shared<ral::io::postgresql_data_provider>(sql, 1, 0);
-
-  ral::io::postgresql_parser parser;
+static inline void ParseSchema(
+    const std::shared_ptr<ral::io::abstractsql_data_provider> & provider,
+    ral::io::abstractsql_parser & parser) {
   ral::io::Schema schema;
-  // false so we make sure dont go to the  db and get the schema info only
-  auto handle = postgresql_provider->get_next(true);
+  auto handle = provider->get_next(true);
 
   parser.parse_schema(handle, schema);
 
@@ -84,8 +69,33 @@ TEST_F(SQLProviderTest, DISABLED_postgresql_select_all) {
   std::cout << "TABLE" << std::endl
             << " ncolumns =  " << table->num_columns() << std::endl
             << " nrows =  " << table->num_rows() << std::endl;
+
+  auto tv = table->toBlazingTableView();
+
+  for (cudf::size_type i = 0; i < static_cast<cudf::size_type>(num_cols); i++) {
+    cudf::test::print(tv.column(i));
+  }
 }
 
+struct SQLProviderTest : public BlazingUnitTest {};
+
+TEST_F(SQLProviderTest, DISABLED_postgresql_select_all) {
+  ral::io::sql_info sql;
+  sql.host = "localhost";
+  sql.port = 5432;
+  sql.user = "myadmin";
+  sql.password = "";
+  sql.schema = "pagila";
+  sql.table = "prueba5";
+  sql.table_filter = "";
+  sql.table_batch_size = 2000;
+
+  auto postgresql_provider =
+      std::make_shared<ral::io::postgresql_data_provider>(sql, 1, 0);
+  ral::io::postgresql_parser parser;
+
+  ParseSchema(postgresql_provider, parser);
+}
 
 void print_batch(const ral::io::data_handle & handle,
                  const ral::io::Schema & schema,
@@ -213,47 +223,9 @@ TEST_F(SQLProviderTest, DISABLED_sqlite_select_all) {
 
   auto sqlite_provider =
       std::make_shared<ral::io::sqlite_data_provider>(sql, 1, 0);
-
   ral::io::sqlite_parser parser;
-  ral::io::Schema schema;
-  auto handle = sqlite_provider->get_next(true);
 
-  parser.parse_schema(handle, schema);
-
-  const std::unordered_map<cudf::type_id, const char *> & dt2name =
-      MapDataTypeName();
-
-  std::cout << "SCHEMA" << std::endl
-            << "  length = " << schema.get_num_columns() << std::endl
-            << "  columns" << std::endl;
-  for (std::size_t i = 0; i < schema.get_num_columns(); i++) {
-    const std::string & name = schema.get_name(i);
-    std::cout << "    " << name << ": ";
-    try {
-      const std::string dtypename = dt2name.at(schema.get_dtype(i));
-      std::cout << dtypename << std::endl;
-    } catch (std::exception &) {
-      std::cout << static_cast<int>(schema.get_dtype(i)) << std::endl;
-    }
-  }
-
-  auto num_cols = schema.get_num_columns();
-
-  std::vector<int> column_indices(num_cols);
-  std::iota(column_indices.begin(), column_indices.end(), 0);
-
-  std::vector<cudf::size_type> row_groups;
-  auto table = parser.parse_batch(handle, schema, column_indices, row_groups);
-
-  std::cout << "TABLE" << std::endl
-            << " ncolumns =  " << table->num_columns() << std::endl
-            << " nrows =  " << table->num_rows() << std::endl;
-
-  auto tv = table->toBlazingTableView();
-
-  for (cudf::size_type i = 0; i < static_cast<cudf::size_type>(num_cols); i++) {
-    cudf::test::print(tv.column(i));
-  }
+  ParseSchema(sqlite_provider, parser);
 }
 
 TEST_F(SQLProviderTest, DISABLED_snowflake_select_all) {
@@ -269,45 +241,7 @@ TEST_F(SQLProviderTest, DISABLED_snowflake_select_all) {
 
   auto snowflake_provider =
       std::make_shared<ral::io::snowflake_data_provider>(sql, 1, 0);
-
   ral::io::snowflake_parser parser;
-  ral::io::Schema schema;
-  auto handle = snowflake_provider->get_next(true);
 
-  parser.parse_schema(handle, schema);
-
-  const std::unordered_map<cudf::type_id, const char *> & dt2name =
-      MapDataTypeName();
-
-  std::cout << "SCHEMA" << std::endl
-            << "  length = " << schema.get_num_columns() << std::endl
-            << "  columns" << std::endl;
-  for (std::size_t i = 0; i < schema.get_num_columns(); i++) {
-    const std::string & name = schema.get_name(i);
-    std::cout << "    " << name << ": ";
-    try {
-      const std::string dtypename = dt2name.at(schema.get_dtype(i));
-      std::cout << dtypename << std::endl;
-    } catch (std::exception &) {
-      std::cout << static_cast<int>(schema.get_dtype(i)) << std::endl;
-    }
-  }
-
-  auto num_cols = schema.get_num_columns();
-
-  std::vector<int> column_indices(num_cols);
-  std::iota(column_indices.begin(), column_indices.end(), 0);
-
-  std::vector<cudf::size_type> row_groups;
-  auto table = parser.parse_batch(handle, schema, column_indices, row_groups);
-
-  std::cout << "TABLE" << std::endl
-            << " ncolumns =  " << table->num_columns() << std::endl
-            << " nrows =  " << table->num_rows() << std::endl;
-
-  auto tv = table->toBlazingTableView();
-
-  for (cudf::size_type i = 0; i < static_cast<cudf::size_type>(num_cols); i++) {
-    cudf::test::print(tv.column(i));
-  }
+  ParseSchema(snowflake_provider, parser);
 }
