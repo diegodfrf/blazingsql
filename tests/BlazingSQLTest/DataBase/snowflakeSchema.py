@@ -1,14 +1,14 @@
 import os
 import glob
 
-from .createSchema import get_sql_connection, get_column_names, sql_connection
+import snowflake.connector
+
+from .createSchema import get_sql_connection, get_column_names, snowflake_connection
 
 from blazingsql import DataType
 
-import psycopg2
 
-
-postgresql_tpch_table_descriptions = {
+snowflake_tpch_table_descriptions = {
     "nation": """create table nation  ( n_nationkey  integer,
                                 n_name       char(25),
                                 n_regionkey  integer,
@@ -73,65 +73,76 @@ postgresql_tpch_table_descriptions = {
 }
 
 
-# if table already exists returns False
-def create_postgresql_table(table_description: str, cursor) -> bool:
+def create_snowflake_table(table_description: str, cursor) -> bool:
     print("Creating table {}: ".format(table_description), end='')
     cursor.execute(table_description)
     return True
 
 
-def copy(cursor, csvFile, tableName):
-    csvDelimiter = "'|'"
-    csvQuoteCharacter = "'\"'"
-    query = "COPY %s FROM STDIN WITH CSV QUOTE %s DELIMITER AS %s NULL as 'null'" % (tableName, csvQuoteCharacter, csvDelimiter)
-    cursor.copy_expert(sql = query, file = csvFile)
-
-
-def postgresql_load_data_in_file(table: str, full_path_wildcard: str, cursor, cnx):
+def snowflake_load_data_in_file(
+        table: str,
+        full_path_wildcard: str,
+        cursor,
+        cnx):
     cols = get_column_names(table)
     h = ""
     b = ""
-    for i,c in enumerate(cols):
+    for i, c in enumerate(cols):
         h = h + "@" + c
-        hj = "%s = NULLIF(@%s,'null')" % (c,c)
+        hj = "%s = NULLIF(@%s,'null')" % (c, c)
         b = b + hj
         if i + 1 != len(cols):
             h = h + ",\n"
             b = b + ",\n"
 
-    a = glob.glob(full_path_wildcard)
-    for fi in a:
-        with open(fi, 'r') as csvFile:
-            copy(cursor, csvFile, table)
-            cnx.commit()
+    csvDelimiter = "'|'"
+    csvQuoteCharacter = "'\"'"
+    for fullname in glob.glob(full_path_wildcard):
+        cursor.execute(f'put file://{fullname} @e2estage')
+        basename = os.path.basename(fullname)
+        cursor.execute(f'copy into {table} from @e2estage/{basename}'
+                       ' file_format = (format_name = e2ecsv)')
+        cnx.commit()
     print("load data done!")
 
 
-# using the nulls dataset
-def create_and_load_tpch_schema(sql: sql_connection, only_create_tables : bool = False):
-    #allow_local_infile = True)
-    cnx = psycopg2.connect(
-        dbname=sql.schema,
+def create_and_load_tpch_schema(  # using the nulls dataset
+        sql: snowflake_connection,
+        only_create_tables: bool = False):
+
+    cnx = snowflake.connector.connect(
         user=sql.username,
-        host=sql.hostname,
-        port=int(sql.port),
-        password=sql.password
-    )
+        password=sql.password,
+        account=sql.account)
     cursor = cnx.cursor()
+
+    cursor.execute(f'use database {sql.database}')
+    cursor.execute(f'use schema {sql.schema}')
+
+    csvDelimiter = '\'|\''
+    csvQuoteCharacter = "'\"'"
+    cursor.execute('create or replace file format e2ecsv type = \'CSV\''
+                   f' field_delimiter = {csvDelimiter} null_if = (\'null\')'
+                   f' field_optionally_enclosed_by = {csvQuoteCharacter}'
+                   f' file_extension = \'psv\'')
+
+    cursor.execute('create or replace stage e2estage file_format = e2ecsv')
 
     conda_prefix = os.getenv("CONDA_PREFIX", "")
     tabs_dir = conda_prefix + "/" + "blazingsql-testing-files/data/tpch-with-nulls/"
 
-    for table, table_description in postgresql_tpch_table_descriptions.items():
+    for table, table_description in snowflake_tpch_table_descriptions.items():
         cursor.execute(f"DROP TABLE IF EXISTS {table}")
         cnx.commit()
-        ok = create_postgresql_table(table_description, cursor)
+        ok = create_snowflake_table(table_description, cursor)
         cnx.commit()
         if ok and not only_create_tables:
             table_files = "%s/%s_*.psv" % (tabs_dir, table)
-            postgresql_load_data_in_file(table, table_files, cursor, cnx)
+            snowflake_load_data_in_file(table, table_files, cursor, cnx)
         else:
-            print("PostgreSQL table %s already exists, will not load any data!" % table)
+            print(
+                "SnowFlake table %s already exists, will not load any data!" %
+                table)
 
     cursor.close()
     cnx.close()
