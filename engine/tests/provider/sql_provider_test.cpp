@@ -13,6 +13,26 @@
 
 #include <sqlite3.h>
 
+
+const std::unordered_map<cudf::type_id, const char *> & MapDataTypeName() {
+  static std::unordered_map<cudf::type_id, const char *> dt2name{
+      {cudf::type_id::INT8, "INT8"},
+      {cudf::type_id::INT16, "INT16"},
+      {cudf::type_id::INT32, "INT32"},
+      {cudf::type_id::INT64, "INT64"},
+      {cudf::type_id::UINT8, "UINT8"},
+      {cudf::type_id::UINT16, "UINT16"},
+      {cudf::type_id::UINT32, "UINT32"},
+      {cudf::type_id::UINT64, "UINT64"},
+      {cudf::type_id::FLOAT32, "FLOAT32"},
+      {cudf::type_id::FLOAT64, "FLOAT64"},
+      {cudf::type_id::DECIMAL64, "DECIMAL64"},
+      {cudf::type_id::BOOL8, "BOOL8"},
+      {cudf::type_id::STRING, "STRING"},
+  };
+  return dt2name;
+}
+
 struct SQLProviderTest : public BlazingUnitTest {};
 
 TEST_F(SQLProviderTest, DISABLED_postgresql_select_all) {
@@ -36,21 +56,8 @@ TEST_F(SQLProviderTest, DISABLED_postgresql_select_all) {
 
   parser.parse_schema(handle, schema);
 
-  std::unordered_map<cudf::type_id, const char *> dt2name{
-      {cudf::type_id::INT8, "INT8"},
-      {cudf::type_id::INT16, "INT16"},
-      {cudf::type_id::INT32, "INT32"},
-      {cudf::type_id::INT64, "INT64"},
-      {cudf::type_id::UINT8, "UINT8"},
-      {cudf::type_id::UINT16, "UINT16"},
-      {cudf::type_id::UINT32, "UINT32"},
-      {cudf::type_id::UINT64, "UINT64"},
-      {cudf::type_id::FLOAT32, "FLOAT32"},
-      {cudf::type_id::FLOAT64, "FLOAT64"},
-      {cudf::type_id::DECIMAL64, "DECIMAL64"},
-      {cudf::type_id::BOOL8, "BOOL8"},
-      {cudf::type_id::STRING, "STRING"},
-  };
+  const std::unordered_map<cudf::type_id, const char *> & dt2name =
+      MapDataTypeName();
 
   std::cout << "SCHEMA" << std::endl
             << "  length = " << schema.get_num_columns() << std::endl
@@ -59,7 +66,7 @@ TEST_F(SQLProviderTest, DISABLED_postgresql_select_all) {
     const std::string & name = schema.get_name(i);
     std::cout << "    " << name << ": ";
     try {
-      const std::string dtypename = dt2name[schema.get_dtype(i)];
+      const std::string dtypename = dt2name.at(schema.get_dtype(i));
       std::cout << dtypename << std::endl;
     } catch (std::exception &) {
       std::cout << static_cast<int>(schema.get_dtype(i)) << std::endl;
@@ -156,11 +163,11 @@ TEST_F(SQLProviderTest, DISABLED_mysql_select_all) {
   // aliases=[[l_orderkey, l_partkey, l_linestatus, l_shipdate]])";  std::string
   // exp = "BindableTableScan(table=[[main, orders]], filters=[[NOT(LIKE($2,
   // '%special%requests%'))]], projects=[[0, 1, 8]], aliases=[[o_orderkey,
-  // o_custkey, o_comment]])";  std::string exp = "BindableTableScan(table=[[main,
-  // lineitem]], filters=[[AND(OR(=($4, 'MAIL'), =($4, 'SHIP')), <($2, $3), <($1,
-  // $2), >=($3, 1994-01-01), <($3, 1995-01-01))]], projects=[[0, 10, 11, 12,
-  // 14]], aliases=[[l_orderkey, l_shipdate, l_commitdate, l_receiptdate,
-  // l_shipmode]])";
+  // o_custkey, o_comment]])";  std::string exp =
+  // "BindableTableScan(table=[[main, lineitem]], filters=[[AND(OR(=($4,
+  // 'MAIL'), =($4, 'SHIP')), <($2, $3), <($1, $2), >=($3, 1994-01-01), <($3,
+  // 1995-01-01))]], projects=[[0, 10, 11, 12, 14]], aliases=[[l_orderkey,
+  // l_shipdate, l_commitdate, l_receiptdate, l_shipmode]])";
   std::string exp =
       "BindableTableScan(table=[[main, lineitem]], filters=[[AND(>=($3, "
       "1995-09-01), <($3, 1995-10-01))]], projects=[[1, 5, 6, 10]], "
@@ -213,21 +220,8 @@ TEST_F(SQLProviderTest, DISABLED_sqlite_select_all) {
 
   parser.parse_schema(handle, schema);
 
-  std::unordered_map<cudf::type_id, const char *> dt2name{
-      {cudf::type_id::INT8, "INT8"},
-      {cudf::type_id::INT16, "INT16"},
-      {cudf::type_id::INT32, "INT32"},
-      {cudf::type_id::INT64, "INT64"},
-      {cudf::type_id::UINT8, "UINT8"},
-      {cudf::type_id::UINT16, "UINT16"},
-      {cudf::type_id::UINT32, "UINT32"},
-      {cudf::type_id::UINT64, "UINT64"},
-      {cudf::type_id::FLOAT32, "FLOAT32"},
-      {cudf::type_id::FLOAT64, "FLOAT64"},
-      {cudf::type_id::DECIMAL64, "DECIMAL64"},
-      {cudf::type_id::BOOL8, "BOOL8"},
-      {cudf::type_id::STRING, "STRING"},
-  };
+  const std::unordered_map<cudf::type_id, const char *> & dt2name =
+      MapDataTypeName();
 
   std::cout << "SCHEMA" << std::endl
             << "  length = " << schema.get_num_columns() << std::endl
@@ -236,7 +230,7 @@ TEST_F(SQLProviderTest, DISABLED_sqlite_select_all) {
     const std::string & name = schema.get_name(i);
     std::cout << "    " << name << ": ";
     try {
-      const std::string dtypename = dt2name[schema.get_dtype(i)];
+      const std::string dtypename = dt2name.at(schema.get_dtype(i));
       std::cout << dtypename << std::endl;
     } catch (std::exception &) {
       std::cout << static_cast<int>(schema.get_dtype(i)) << std::endl;
@@ -282,21 +276,8 @@ TEST_F(SQLProviderTest, DISABLED_snowflake_select_all) {
 
   parser.parse_schema(handle, schema);
 
-  std::unordered_map<cudf::type_id, const char *> dt2name{
-      {cudf::type_id::INT8, "INT8"},
-      {cudf::type_id::INT16, "INT16"},
-      {cudf::type_id::INT32, "INT32"},
-      {cudf::type_id::INT64, "INT64"},
-      {cudf::type_id::UINT8, "UINT8"},
-      {cudf::type_id::UINT16, "UINT16"},
-      {cudf::type_id::UINT32, "UINT32"},
-      {cudf::type_id::UINT64, "UINT64"},
-      {cudf::type_id::FLOAT32, "FLOAT32"},
-      {cudf::type_id::FLOAT64, "FLOAT64"},
-      {cudf::type_id::DECIMAL64, "DECIMAL64"},
-      {cudf::type_id::BOOL8, "BOOL8"},
-      {cudf::type_id::STRING, "STRING"},
-  };
+  const std::unordered_map<cudf::type_id, const char *> & dt2name =
+      MapDataTypeName();
 
   std::cout << "SCHEMA" << std::endl
             << "  length = " << schema.get_num_columns() << std::endl
@@ -305,7 +286,7 @@ TEST_F(SQLProviderTest, DISABLED_snowflake_select_all) {
     const std::string & name = schema.get_name(i);
     std::cout << "    " << name << ": ";
     try {
-      const std::string dtypename = dt2name[schema.get_dtype(i)];
+      const std::string dtypename = dt2name.at(schema.get_dtype(i));
       std::cout << dtypename << std::endl;
     } catch (std::exception &) {
       std::cout << static_cast<int>(schema.get_dtype(i)) << std::endl;
