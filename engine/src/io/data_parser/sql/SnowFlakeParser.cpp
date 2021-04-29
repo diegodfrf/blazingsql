@@ -169,11 +169,11 @@ std::uint8_t snowflake_parser::parse_cudf_float64(void * src,
                                                   std::vector<double> * v) {
   return ParseCudfType(src, col, row, v);
 }
-std::uint8_t snowflake_parser::parse_cudf_bool8(void *,
-                                                std::size_t,
-                                                std::size_t,
-                                                std::vector<std::int8_t> *) {
-  throw std::runtime_error("Unsupported type bool8");
+std::uint8_t snowflake_parser::parse_cudf_bool8(void * src,
+                                                std::size_t col,
+                                                std::size_t row,
+                                                std::vector<std::int8_t> * v) {
+  return ParseCudfType(src, col, row, v);
 }
 std::uint8_t snowflake_parser::parse_cudf_timestamp_days(void *,
                                                          std::size_t,
