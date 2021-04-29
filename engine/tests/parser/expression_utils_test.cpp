@@ -111,13 +111,21 @@ TEST_F(ExpressionUtilsTest, gettings_bounds_from_window_expression) {
 	EXPECT_EQ(preceding_value, expected_preceding);
 	EXPECT_EQ(following_value, expected_following);
 	
-	int expected_preceding2 = 1;
-	int expected_following2 = 2;
-	std::string query_part_2 = "max_keys=[MAX($0) OVER (PARTITION BY $1 ORDER BY $0 ROWS BETWEEN 1 PRECEDING AND 2 FOLLOWING)]";
-	std::tie(preceding_value, following_value) = get_bounds_from_window_expression(query_part_2);
-
-	EXPECT_EQ(preceding_value, expected_preceding2);
-	EXPECT_EQ(following_value, expected_following2);	
+	std::vector<std::string> preceding_options ={"UNBOUNDED PRECEDING", "4 PRECEDING", "CURRENT ROW"};
+	std::vector<std::string> following_options ={"UNBOUNDED FOLLOWING", "4 FOLLOWING", "CURRENT ROW"};
+	std::vector<int> expected = {-1, 4, 0};
+	for (int i = 0; i < preceding_options.size(); ++i) {
+		for (int j = 0; j < following_options.size(); ++j) {
+			if (!(preceding_options[i] == "CURRENT ROW" && following_options[j] == "CURRENT ROW")){
+				int expected_preceding2 = expected[i];
+				int expected_following2 = expected[j];
+				std::string query_part_2 = "max_keys=[MAX($0) OVER (PARTITION BY $1 ORDER BY $0 ROWS BETWEEN " +  preceding_options[i] + " AND " + following_options[j] + ")]";
+				std::tie(preceding_value, following_value) = get_bounds_from_window_expression(query_part_2);
+				EXPECT_EQ(preceding_value, expected_preceding2);
+				EXPECT_EQ(following_value, expected_following2);
+			}
+		}
+	}		
 }
 
 TEST_F(ExpressionUtilsTest, getting_cols_to_apply_window_and_cols_to_apply_agg) {
@@ -127,7 +135,8 @@ TEST_F(ExpressionUtilsTest, getting_cols_to_apply_window_and_cols_to_apply_agg) 
 	std::string query_part = "LogicalComputeWindow(min_keys=[MIN($0) OVER (PARTITION BY $2 ORDER BY $1)], max_keys=[MAX($3) OVER (PARTITION BY $2 ORDER BY $1)])";
 	std::tie(column_indices_to_agg, type_aggs_as_str, agg_param_values) = get_cols_to_apply_window_and_cols_to_apply_agg(query_part);
 
-	std::vector<int> column_indices_expect = {0, 3}, agg_param_expect;
+	std::vector<int> column_indices_expect = {0, 3};
+	std::vector<int> agg_param_expect = {0, 0};
 	std::vector<std::string> type_aggs_expect = {"MIN", "MAX"};
 
 	EXPECT_EQ(column_indices_to_agg.size(), column_indices_expect.size());
@@ -137,6 +146,7 @@ TEST_F(ExpressionUtilsTest, getting_cols_to_apply_window_and_cols_to_apply_agg) 
 	for (int i = 0; i < column_indices_to_agg.size(); ++i) {
 		EXPECT_EQ(column_indices_to_agg[i], column_indices_expect[i]);
 		EXPECT_EQ(type_aggs_as_str[i], type_aggs_expect[i]);
+		EXPECT_EQ(agg_param_values[i], agg_param_expect[i]);
 	}
 }
 
@@ -354,6 +364,18 @@ TEST_F(ExpressionUtilsTest, replace_is_not_distinct_as_calcite__contains)
 	EXPECT_EQ(out_expression, expected_str);
 }
 
+TEST_F(ExpressionUtilsTest, reinterpreting_timestamp_ms_complex)
+{
+	std::string expression = "CAST(/INT(Reinterpret(-(1996-12-01 12:00:01, $2)), 86400000)):INTEGER";
+	std::vector<cudf::data_type> schema {cudf::data_type{cudf::type_id::INT32},
+										 cudf::data_type{cudf::type_id::STRING},
+										 cudf::data_type{cudf::type_id::TIMESTAMP_MILLISECONDS}};
+	std::string out_expression = reinterpret_timestamp(expression, schema);
+	std::string expected_str = "CAST(/INT(Reinterpret(-(CAST(1996-12-01 12:00:01):TIMESTAMP_MILLISECONDS, $2)), 86400000)):INTEGER";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
 TEST_F(ExpressionUtilsTest, replace_is_not_distinct_as_calcite__wrong_expression)
 {
 	try {
@@ -444,4 +466,139 @@ TEST_F(ExpressionUtilsTest, update_join_filter__multiple_conditions_unordered)
 
 	EXPECT_EQ(join_expres, "=($0, $4)");
 	EXPECT_EQ(filter_expres, "AND(>($3, $6), OR(AND(IS NULL($2), IS NULL($5)), IS TRUE(=($2 , $5))))");
+}
+
+TEST_F(ExpressionUtilsTest, convert_ms_to_ns_units_empty_expr)
+{
+	std::string expression = "";
+	std::string out_expression = convert_ms_to_ns_units(expression);
+}
+
+TEST_F(ExpressionUtilsTest, convert_ms_to_ns_units_add_day)
+{
+	std::string expression = "+(CAST($0):TIMESTAMP, 1468800000:INTERVAL DAY)";
+	std::string out_expression = convert_ms_to_ns_units(expression);
+	std::string expected_str = "+(CAST($0):TIMESTAMP, 1468800000000000:INTERVAL DAY)";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, convert_ms_to_ns_units_add_hour)
+{
+	std::string expression = "+(CAST($0):TIMESTAMP, 172800000:INTERVAL HOUR)";
+	std::string out_expression = convert_ms_to_ns_units(expression);
+	std::string expected_str = "+(CAST($0):TIMESTAMP, 172800000000000:INTERVAL HOUR)";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, convert_ms_to_ns_units_add_minute)
+{
+	std::string expression = "+(CAST($0):TIMESTAMP(0), 4500000:INTERVAL MINUTE)";
+	std::string out_expression = convert_ms_to_ns_units(expression);
+	std::string expected_str = "+(CAST($0):TIMESTAMP(0), 4500000000000:INTERVAL MINUTE)";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, convert_ms_to_ns_units_add_second)
+{
+	std::string expression = "+(CAST($0):TIMESTAMP, 150000:INTERVAL SECOND)";
+	std::string out_expression = convert_ms_to_ns_units(expression);
+	std::string expected_str = "+(CAST($0):TIMESTAMP, 150000000000:INTERVAL SECOND)";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, convert_ms_to_ns_units_diff_day)
+{
+	std::string expression = "CAST(/INT(Reinterpret(-(2020-10-15 10:58:02, CAST($0):TIMESTAMP(0))), 86400000)):INTEGER";
+	std::string out_expression = convert_ms_to_ns_units(expression);
+	std::string expected_str = "CAST(/INT(Reinterpret(-(2020-10-15 10:58:02, CAST($0):TIMESTAMP(0))), 86400000000000)):INTEGER";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, convert_ms_to_ns_units_diff_hour)
+{
+	std::string expression = "CAST(/INT(Reinterpret(-(1996-12-01 12:00:01, CAST($0):TIMESTAMP(0))), 3600000)):INTEGER";
+	std::string out_expression = convert_ms_to_ns_units(expression);
+	std::string expected_str = "CAST(/INT(Reinterpret(-(1996-12-01 12:00:01, CAST($0):TIMESTAMP(0))), 3600000000000)):INTEGER";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, convert_ms_to_ns_units_diff_minute)
+{
+	std::string expression = "CAST(/INT(Reinterpret(-(1996-12-01 12:00:01, CAST($0):TIMESTAMP(0))), 60000)):INTEGER";
+	std::string out_expression = convert_ms_to_ns_units(expression);
+	std::string expected_str = "CAST(/INT(Reinterpret(-(1996-12-01 12:00:01, CAST($0):TIMESTAMP(0))), 60000000000)):INTEGER";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, convert_ms_to_ns_units_diff_second)
+{
+	std::string expression = "CAST(/INT(Reinterpret(-(1996-12-01 12:00:01, CAST($0):TIMESTAMP(0))), 1000)):INTEGER";
+	std::string out_expression = convert_ms_to_ns_units(expression);
+	std::string expected_str = "CAST(/INT(Reinterpret(-(1996-12-01 12:00:01, CAST($0):TIMESTAMP(0))), 1000000000)):INTEGER";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, reinterpreting_timestamp_empty_expression)
+{
+	std::string expression = "";
+	std::vector<cudf::data_type> schema {cudf::data_type{cudf::type_id::TIMESTAMP_SECONDS}};
+	std::string out_expression = reinterpret_timestamp(expression, schema);
+
+	EXPECT_EQ(out_expression, expression);
+}
+
+TEST_F(ExpressionUtilsTest, reinterpreting_timestamp_empty_schema)
+{
+	std::string expression = "+(CAST($0):TIMESTAMP(0), 8000:INTERVAL SECOND)";
+	std::vector<cudf::data_type> schema;
+	std::string out_expression = reinterpret_timestamp(expression, schema);
+
+	EXPECT_EQ(out_expression, expression);
+}
+
+TEST_F(ExpressionUtilsTest, reinterpreting_timestamp_s)
+{
+	std::string expression = "Reinterpret(-(1996-12-01 12:00:01, $0))";
+	std::vector<cudf::data_type> schema {cudf::data_type{cudf::type_id::TIMESTAMP_SECONDS}};
+	std::string out_expression = reinterpret_timestamp(expression, schema);
+	std::string expected_str = "Reinterpret(-(CAST(1996-12-01 12:00:01):TIMESTAMP_SECONDS, $0))";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, reinterpreting_timestamp_ms)
+{
+	std::string expression = "Reinterpret(-(1996-12-01 12:00:01, $0))";
+	std::vector<cudf::data_type> schema {cudf::data_type{cudf::type_id::TIMESTAMP_MILLISECONDS}};
+	std::string out_expression = reinterpret_timestamp(expression, schema);
+	std::string expected_str = "Reinterpret(-(CAST(1996-12-01 12:00:01):TIMESTAMP_MILLISECONDS, $0))";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, reinterpreting_timestamp_us)
+{
+	std::string expression = "Reinterpret(-(1996-12-01 12:00:01, $1))";
+	std::vector<cudf::data_type> schema {cudf::data_type{cudf::type_id::INT64}, cudf::data_type{cudf::type_id::TIMESTAMP_MICROSECONDS}};
+	std::string out_expression = reinterpret_timestamp(expression, schema);
+	std::string expected_str = "Reinterpret(-(CAST(1996-12-01 12:00:01):TIMESTAMP_MICROSECONDS, $1))";
+
+	EXPECT_EQ(out_expression, expected_str);
+}
+
+TEST_F(ExpressionUtilsTest, reinterpreting_timestamp_ns)
+{
+	std::string expression = "Reinterpret(-(1996-12-01 12:00:01, $1))";
+	std::vector<cudf::data_type> schema {cudf::data_type{cudf::type_id::INT32}, cudf::data_type{cudf::type_id::TIMESTAMP_NANOSECONDS}};
+	std::string out_expression = reinterpret_timestamp(expression, schema);
+
+	EXPECT_EQ(out_expression, expression);
 }
