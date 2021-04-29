@@ -61,8 +61,8 @@ samples = define_samples([
 data_types = [
     # DataType.MYSQL,
     # DataType.POSTGRESQL,
-    # DataType.SQLITE
-    DataType.SNOWFLAKE
+    DataType.SQLITE
+    # DataType.SNOWFLAKE
 ]
 
 tables = [
