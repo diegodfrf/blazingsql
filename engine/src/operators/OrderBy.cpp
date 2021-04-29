@@ -15,6 +15,24 @@
 using namespace fmt::literals;
 
 namespace ral {
+namespace cpu {
+namespace operators {
+
+std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t>
+limit_table(std::shared_ptr<arrow::Table> table, int64_t num_rows_limit) {
+	cudf::size_type table_rows = table->num_rows();
+	if (num_rows_limit <= 0) {
+		return std::make_tuple(std::make_unique<ral::frame::BlazingTable>(arrow::Table::Make(table->schema(), table->columns(), 0)), false, 0);
+	} else if (num_rows_limit >= table_rows) {
+		return std::make_tuple(std::make_unique<ral::frame::BlazingTable>(arrow::Table::Make(table->schema(), table->columns())), true, num_rows_limit - table_rows);
+	} else {
+		return std::make_tuple(ral::cpu::utilities::getLimitedRows(table, num_rows_limit), false, 0);
+	}
+}
+
+}  // namespace operators
+}  // namespace cpu
+
 namespace operators {
 
 using blazingdb::manager::Context;

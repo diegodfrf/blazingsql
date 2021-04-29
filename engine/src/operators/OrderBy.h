@@ -13,6 +13,13 @@
 
 
 namespace ral {
+
+namespace cpu {
+namespace operators {
+  std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t> limit_table(std::shared_ptr<arrow::Table> table, int64_t num_rows_limit);
+}  // namespace operators
+}  // namespace cpu
+
 namespace operators {
 
 namespace {

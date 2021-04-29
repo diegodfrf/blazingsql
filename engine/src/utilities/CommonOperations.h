@@ -6,6 +6,13 @@
 #include "cudf/column/column_factories.hpp"
 
 namespace ral {
+
+namespace cpu {
+namespace utilities {
+	std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<arrow::Table> table, cudf::size_type num_rows, bool front=true);
+}  // namespace utilities
+}  // namespace cpu
+
 namespace utilities {
 
 using namespace ral::frame;
