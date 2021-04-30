@@ -1,162 +1,140 @@
-
 #pragma once
 
 #include <arrow/table.h>
 #include "cudf/table/table.hpp"
 #include "cudf/table/table_view.hpp"
-#include <memory>
-#include <string>
-#include <vector>
-#include "blazing_table/BlazingColumn.h"
-#include "blazing_table/BlazingHostTable.h"
 
-typedef cudf::table CudfTable;
-typedef cudf::table_view CudfTableView;
+#include "execution_graph/backend.hpp"
+#include "blazing_table/BlazingColumn.h"
 
 namespace ral {
-
 namespace frame {
 
-class BlazingCudaTable;
-class BlazingCudfTableView;
-class BlazingHostTable;
-
-class BlazingTable{
-	public:
-		BlazingTable(const execution_backend & backend, const bool & valid);
-		virtual cudf::size_type num_columns() const = delete;
-		virtual cudf::size_type num_rows() const = delete;
-		virtual std::vector<std::string> names() const = delete;
-		virtual std::vector<cudf::data_type> get_schema() const = delete;
-		virtual void setNames(const std::vector<std::string> & names) = delete;
-		operator bool() const { return this->is_valid(); }
-
-		bool is_valid() const { return valid; }
-		virtual void ensureOwnership() = delete;	
-		virtual unsigned long long sizeInBytes() = delete;
-
-	private:
-		execution_backend backend; //<-- Just a wrapper for an enum incase we want to add more to it
-		
-		bool valid=true;
-
-};
-
-class BlazingArrowTable : public BlazingTable{
-	public:
-  		BlazingArrowTable(std::shared_ptr<arrow::Table> arrow_table);
-
-		cudf::size_type num_columns() const;
-		cudf::size_type num_rows() const;
-		std::vector<std::string> names() const;
-		std::vector<cudf::data_type> get_schema() const;
-		void setNames(const std::vector<std::string> & names);
-
-		void ensureOwnership();	
-		unsigned long long sizeInBytes();
-		std::shared_ptr<arrow::Table> arrow_table() const { return this->arrow_table_; }
-	private:
-  		std::shared_ptr<arrow::Table> arrow_table_;
-};
-
-class BlazingCudfTable : public BlazingTable{
+class BlazingObject {
 public:
-	BlazingCudfTable(std::vector<std::unique_ptr<BlazingColumn>> columns, const std::vector<std::string> & columnNames);
-	BlazingCudfTable(std::unique_ptr<CudfTable> table, const std::vector<std::string> & columnNames);
-	BlazingCudfTable(const CudfTableView & table, const std::vector<std::string> & columnNames);
+  BlazingObject(execution::backend_id execution_backend_id) : execution_backend(execution_backend_id) {}
+  BlazingObject(BlazingObject &&) = default;
+  virtual ~BlazingObject() {}
 
-	BlazingCudfTable(BlazingCudfTable &&) = default;
-	BlazingCudfTable & operator=(BlazingCudfTable const &) = delete;
-	BlazingCudfTable & operator=(BlazingCudfTable &&) = delete;
-
-
-	CudfTableView view() const;
-
-	BlazingCudfTableView toBlazingCudfTableView() const;
-
-	
-	std::unique_ptr<CudfTable> releaseCudfTable();
-	std::vector<std::unique_ptr<BlazingColumn>> releaseBlazingColumns();
-
-
-
+  execution::execution_backend get_execution_backend() const { return this->execution_backend; }
 
 private:
-	std::vector<std::string> columnNames;
-	std::vector<std::unique_ptr<BlazingColumn>> columns;
-
-
+  execution::execution_backend execution_backend;
 };
 
-class BlazingTableView{
+class BlazingTable : public BlazingObject {
 public:
-	virtual std::vector<cudf::data_type> get_schema() const = delete;
+  BlazingTable(execution::backend_id execution_backend_id, const bool & valid);
+  BlazingTable(BlazingTable &&) = default;
+  virtual ~BlazingTable() {}
 
-	virtual std::vector<std::string> names() const = delete;
-	virtual void setNames(const std::vector<std::string> & names) = delete;
+  bool is_valid() const { return valid; }
+  operator bool() const { return this->is_valid(); }
 
-	virtual cudf::size_type num_columns() const = delete;
-
-	virtual cudf::size_type num_rows() const = delete;
-
-	virtual unsigned long long sizeInBytes() = delete;
+  virtual size_t num_columns() const = 0;
+  virtual size_t num_rows() const = 0;
+  virtual std::vector<std::string> column_names() const = 0;
+  virtual std::vector<arrow::Type::type> column_types() const = 0;
+  virtual void set_column_names(const std::vector<std::string> & column_names) = 0;
+  virtual unsigned long long size_in_bytes() const = 0;
 
 private:
+  bool valid = true;
+};
 
-}
+class BlazingArrowTable : public BlazingTable {
+public:
+  BlazingArrowTable(std::shared_ptr<arrow::Table> arrow_table);
+  BlazingArrowTable(BlazingArrowTable &&other);
 
-class BlazingArrowTableview {
-	public:
-	  	std::shared_ptr<arrow::Table> arrow_table() const { return this->arrow_table_->arrow_table(); }
-		std::vector<cudf::data_type> get_schema() const;
+  virtual size_t num_columns() const override;
+  virtual size_t num_rows() const override;
+  virtual std::vector<std::string> column_names() const override;
+  virtual std::vector<arrow::Type::type> column_types() const override;
+  virtual void set_column_names(const std::vector<std::string> & column_names) override;
+  unsigned long long size_in_bytes() const override;
+  std::shared_ptr<arrow::Table> view() const { return this->arrow_table; };
 
-		std::vector<std::string> names() const;
-		void setNames(const std::vector<std::string> & names);
+private:
+  std::shared_ptr<arrow::Table> arrow_table;
+};
 
-		cudf::size_type num_columns() const;
+class BlazingCudfTable;
 
-		cudf::size_type num_rows() const;
-
-		unsigned long long sizeInBytes();
-
-	private:
-		BlazingArrowTable arrow_table_;
-}
-
-class BlazingCudfTableView {
+class BlazingCudfTableView : public BlazingTable {
 public:
 	BlazingCudfTableView();
-	BlazingCudfTableView(CudfTableView table, std::vector<std::string> columnNames);
-  	BlazingCudfTableView(BlazingCudfTableView const &other);
-	BlazingCudfTableView(BlazingCudfTableView &&) = default;
+	BlazingCudfTableView(cudf::table_view table, std::vector<std::string> columnNames);
+  BlazingCudfTableView(BlazingCudfTableView const &other);
+	BlazingCudfTableView(BlazingCudfTableView &&other);
 
 	BlazingCudfTableView & operator=(BlazingCudfTableView const &other);
-	BlazingCudfTableView & operator=(BlazingCudfTableView &&) = default;
-
-
-  
-	CudfTableView view() const;
+	BlazingCudfTableView & operator=(BlazingCudfTableView &&);
 
 	cudf::column_view const & column(cudf::size_type column_index) const { return table.column(column_index); }
 	std::vector<std::unique_ptr<BlazingColumn>> toBlazingColumns() const;
 
-	std::vector<cudf::data_type> get_schema() const;
-
-	std::vector<std::string> names() const;
-	void setNames(const std::vector<std::string> & names);
-
-	cudf::size_type num_columns() const;
-
-	cudf::size_type num_rows() const;
-
-	unsigned long long sizeInBytes();
+  size_t num_columns() const override;
+  size_t num_rows() const override;
+  std::vector<std::string> column_names() const override;
+  std::vector<arrow::Type::type> column_types() const override;
+  void set_column_names(const std::vector<std::string> & column_names) override;
+  unsigned long long size_in_bytes() const override;
+  cudf::table_view view() const;
 
 	std::unique_ptr<BlazingCudfTable> clone() const;
 
 private:
 	std::vector<std::string> columnNames;
-	CudfTableView table;
- 
+	cudf::table_view table;
+};
+
+class BlazingCudfTable : public BlazingTable {
+public:
+	BlazingCudfTable(std::vector<std::unique_ptr<BlazingColumn>> columns, const std::vector<std::string> & columnNames);
+	BlazingCudfTable(std::unique_ptr<cudf::table> table, const std::vector<std::string> & columnNames);
+	BlazingCudfTable(const cudf::table_view & table, const std::vector<std::string> & columnNames);
+	BlazingCudfTable(BlazingCudfTable &&other);
+
+	BlazingCudfTable & operator=(BlazingCudfTable const &) = delete;
+	BlazingCudfTable & operator=(BlazingCudfTable &&) = delete;
+
+	cudf::table_view view() const;
+	BlazingCudfTableView toBlazingCudfTableView() const;	
+	std::unique_ptr<cudf::table> releaseCudfTable();
+	std::vector<std::unique_ptr<BlazingColumn>> releaseBlazingColumns();
+
+private:
+	std::vector<std::string> columnNames;
+	std::vector<std::unique_ptr<BlazingColumn>> columns;
+};
+
+// TODO percy arrow cudf scalar
+class BlazingScalar: public BlazingObject {
+public:
+  BlazingScalar(execution::backend_id execution_backend_id);
+  BlazingScalar(BlazingScalar &&) = default;
+  virtual ~BlazingScalar() = default;
+
+  virtual arrow::Type::type type() const = 0;
+};
+
+class BlazingArrowScalar: public BlazingScalar {
+public:
+  BlazingArrowScalar(execution::backend_id execution_backend_id);
+  BlazingArrowScalar(BlazingArrowScalar &&) = default;
+  virtual ~BlazingArrowScalar() = default;
+
+  virtual arrow::Type::type type() const override;
+};
+
+class BlazingCudfScalar: public BlazingScalar {
+public:
+  BlazingCudfScalar(execution::backend_id execution_backend_id);
+  BlazingCudfScalar(BlazingCudfScalar &&) = default;
+  virtual ~BlazingCudfScalar() = default;
+
+  virtual arrow::Type::type type() const override;
 };
 
 std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<cudf::data_type> column_types,
@@ -165,7 +143,7 @@ std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::v
 std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<cudf::type_id> column_types,
 									   std::vector<std::string> column_names);
 
-std::vector<std::unique_ptr<BlazingColumn>> cudfTableViewToBlazingColumns(const CudfTableView & table);
+std::vector<std::unique_ptr<BlazingColumn>> cudfTableViewToBlazingColumns(const cudf::table_view & table);
 
 }  // namespace frame
 }  // namespace ral

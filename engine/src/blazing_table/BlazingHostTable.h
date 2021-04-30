@@ -12,7 +12,6 @@ namespace ral {
 namespace frame {
 
 using ColumnTransport = blazingdb::transport::ColumnTransport;
-class BlazingTable;  // forward declaration
 
 /**
 	@brief A class that represents the BlazingTable store in host memory.
@@ -51,24 +50,21 @@ public:
 
     const std::vector<ColumnTransport> & get_columns_offsets() const ;
 
-    std::unique_ptr<BlazingTable> get_gpu_table() const;
+    std::unique_ptr<BlazingCudfTable> get_cudf_table() const;
+    std::unique_ptr<BlazingArrowTable> get_arrow_table() const;
 
     std::vector<ral::memory::blazing_allocation_chunk> get_raw_buffers() const;
 
     const std::vector<ral::memory::blazing_chunked_column_info> &  get_blazing_chunked_column_infos() const;
 
-    std::shared_ptr<arrow::Table> arrow_table() const { return this->arrow_table_; }
-    bool is_arrow() const { return (this->arrow_table_ != nullptr); }
+    bool is_arrow() const { return (this->arrow_table != nullptr); }
 
 private:
     std::vector<ColumnTransport> columns_offsets;
     std::vector<ral::memory::blazing_chunked_column_info> chunked_column_infos;
     std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>> allocations;
-
-    
     size_t part_id;
-
-    std::shared_ptr<arrow::Table> arrow_table_;
+    std::shared_ptr<arrow::Table> arrow_table;
 };
 
 }  // namespace frame

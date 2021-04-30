@@ -11,6 +11,10 @@ namespace ral {
 
 namespace frame{
 
+BlazingTable::BlazingTable(execution::backend_id execution_backend_id, const bool & valid)
+  : execution_backend(execution_backend_id), valid(valid) {
+}
+
 BlazingCudfTable::BlazingCudfTable(std::vector<std::unique_ptr<BlazingColumn>> columns, const std::vector<std::string> & columnNames)
 	: columnNames(columnNames), columns(std::move(columns)) {}
 

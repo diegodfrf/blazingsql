@@ -69,7 +69,7 @@ struct data_handle {
 	std::shared_ptr<arrow::io::RandomAccessFile> file_handle;
 	std::map<std::string, std::string> column_values;  // allows us to add hive values
 	Uri uri;										  // in case the data was loaded from a file
-	frame::BlazingTableView table_view;
+	frame::BlazingCudfTableView table_view;
 	std::shared_ptr<arrow::Table> arrow_table;
 	sql_datasource sql_handle;
 	data_handle(){}
@@ -78,7 +78,7 @@ struct data_handle {
 		std::shared_ptr<arrow::io::RandomAccessFile> file_handle,
 		std::map<std::string, std::string> column_values,
 		Uri uri,
-		frame::BlazingTableView table_view)
+		frame::BlazingCudfTableView table_view)
 	: file_handle(file_handle), column_values(column_values), uri(uri), table_view(table_view) { }
 
 	data_handle(

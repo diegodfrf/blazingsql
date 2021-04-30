@@ -39,9 +39,9 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(){
 		std::vector<std::string> names;
 		cudf::size_type num_rows;
 		if (column_indices_in_file.size() > 0){
-			std::unique_ptr<ral::frame::BlazingTable> current_blazing_table = parser->parse_batch(handle, file_schema, column_indices_in_file, row_group_ids);
-			names = current_blazing_table->names();
-			std::unique_ptr<CudfTable> current_table = current_blazing_table->releaseCudfTable();
+			std::unique_ptr<ral::frame::BlazingCudfTable> current_blazing_table = parser->parse_batch(handle, file_schema, column_indices_in_file, row_group_ids);
+			names = current_blazing_table->column_names();
+			std::unique_ptr<cudf::table> current_table = current_blazing_table->releaseCudfTable();
 			num_rows = current_table->num_rows();
 			file_columns = current_table->release();
 
@@ -66,8 +66,9 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(){
 				in_file_column_counter++;
 			}
 		}
+    // TODO percy arrow review this class with william
 		auto unique_table = std::make_unique<cudf::table>(std::move(all_columns));
-		return std::make_unique<ral::frame::BlazingTable>(std::move(unique_table), names);
+		return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), names);
 	}
 }
 

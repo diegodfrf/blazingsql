@@ -1,16 +1,16 @@
+#pragma once
+
+#include <cstdint>
+
 namespace ral{
-
 namespace execution {
-
 
 enum class backend_id : int32_t {
   NONE,
-  ARROW_CPU,
-  CUDA
-  NUM_BACKEND_IDS  ///< number of backends
+  ARROW,
+  CUDF,
+  NUM_TYPE_IDS  ///< number of backends
 };
-
-
 
 /**
  * @brief The backend type being used.
@@ -20,10 +20,10 @@ enum class backend_id : int32_t {
  */
 class execution_backend {
  public:
-  execution_backend()                 = default;
-  ~execution_backend()                = default;
+  execution_backend() = default;
+  ~execution_backend() = default;
   execution_backend(execution_backend const&) = default;
-  execution_backend(execution_backend&&)      = default;
+  execution_backend(execution_backend&&) = default;
   execution_backend& operator=(execution_backend const&) = default;
   execution_backend& operator=(execution_backend&&) = default;
 
@@ -37,12 +37,10 @@ class execution_backend {
   /**
    * @brief Returns the execution backend identifier
    */
-  constexpr execution_backend_id id() const noexcept { return _id; }
-
+  constexpr backend_id id() const noexcept { return _id; }
 
  private:
-  execution_backend_id _id{execution_backend_id::NONE};
-
+  backend_id _id{backend_id::NONE};
 };
 
 /**
@@ -67,44 +65,9 @@ constexpr bool operator==(execution_backend const& lhs, execution_backend const&
  * @return true `lhs` is not equal to `rhs`
  * @return false `lhs` is equal to `rhs`
  */
-inline bool operator!=(execution_backend const& lhs, execution_backend const& rhs) { return !(lhs == rhs); }
-
-
-/*
-template<>
-struct compute_aggregate_functor<BlazingArrowTable> {
-
-  operator() (vars){
-
-  }
-
-}
-
-template<>
-struct compute_aggregate_functor<BlazingCudfTable> {
-  operator() (vars){
-
-  }
-}
-*/
-
-
-
-template <template <cudf::type_id> typename IdTypeMap = id_to_type_impl,
-          typename Functor,
-          typename... Ts>
-CUDA_HOST_DEVICE_CALLABLE constexpr decltype(auto) backend_dispatcher(execution::backend backend,
-                                                                   Functor f,
-                                                                   Ts&&... args)
+inline bool operator!=(execution_backend const& lhs, execution_backend const& rhs)
 {
-  switch (backend.id()) {
-    case backend_id::ARROW:
-      return f.template operator()<BlazingArrowTable>(
-        std::forward<Ts>(args)...);
-    case backend_id::CUDF:
-      return f.template operator()<BlazingCudfTable>(
-        std::forward<Ts>(args)...);
-        
+    return !(lhs == rhs);
 }
 
 } //namespace execution

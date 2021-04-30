@@ -6,7 +6,7 @@ namespace ral {
 namespace communication {
 namespace messages {
 
-gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(ral::frame::BlazingTableView table_view){
+gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(ral::frame::BlazingCudfTableView table_view){
 	std::vector<std::size_t> buffer_sizes;
 	std::vector<const char *> raw_buffers;
 	std::vector<ColumnTransport> column_offset;
@@ -27,7 +27,7 @@ gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(ral::frame::Bla
 			.strings_data_size = 0,
 			.strings_offsets_size = 0,
 			.size_in_bytes = 0};
-		strcpy(col_transport.metadata.col_name, table_view.names().at(i).c_str());
+		strcpy(col_transport.metadata.col_name, table_view.column_names().at(i).c_str());
 
 		if (column.size() == 0) {
 			// do nothing
@@ -63,7 +63,7 @@ gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(ral::frame::Bla
 
 					std::pair<int32_t, int32_t> char_col_start_end = getCharsColumnStartAndEnd(str_col_view);
 
-					std::unique_ptr<CudfColumn> new_offsets = getRebasedStringOffsets(str_col_view, char_col_start_end.first);
+					std::unique_ptr<cudf::column> new_offsets = getRebasedStringOffsets(str_col_view, char_col_start_end.first);
 
 					col_transport.strings_data = raw_buffers.size();
 					col_transport.strings_data_size = char_col_start_end.second - char_col_start_end.first;
@@ -115,7 +115,7 @@ gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(ral::frame::Bla
 	return std::make_tuple(buffer_sizes, raw_buffers, column_offset, std::move(temp_scope_holder));
 }
 
-std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_table(ral::frame::BlazingTableView table_view, bool use_pinned) {
+std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_table(ral::frame::BlazingCudfTableView table_view, bool use_pinned) {
 	std::vector<std::size_t> buffer_sizes;
 	std::vector<const char *> raw_buffers;
 	std::vector<ColumnTransport> column_offset;

@@ -29,7 +29,7 @@ std::unique_ptr<CacheData> CacheData::downgradeCacheData(std::unique_ptr<CacheDa
 		std::shared_ptr<spdlog::logger> cache_events_logger = spdlog::get("cache_events_logger");
 
 		// lets first try to put it into CPU
-		if (blazing_host_memory_resource::getInstance().get_memory_used() + table->sizeInBytes() <
+		if (blazing_host_memory_resource::getInstance().get_memory_used() + table->size_in_bytes() <
 				blazing_host_memory_resource::getInstance().get_memory_limit()){
 
 			auto CPUCache = std::make_unique<CPUCacheData>(std::move(table));

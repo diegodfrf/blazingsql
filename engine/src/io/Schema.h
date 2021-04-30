@@ -68,7 +68,7 @@ public:
 		size_t file_index,
 		bool is_in_file = true);
 
-	std::unique_ptr<ral::frame::BlazingTable> makeEmptyBlazingTable(const std::vector<int> & column_indices) const;
+	std::unique_ptr<ral::frame::BlazingCudfTable> makeEmptyBlazingCudfTable(const std::vector<int> & column_indices) const;
 
 	inline bool operator==(const Schema & rhs) const {
 		return (this->names == rhs.names) && (this->types == rhs.types);

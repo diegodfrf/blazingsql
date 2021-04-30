@@ -19,7 +19,7 @@ BlazingHostTable::BlazingHostTable(const std::vector<ColumnTransport> &columns_o
 }
 
 BlazingHostTable::BlazingHostTable(std::shared_ptr<arrow::Table> arrow_table)
-  : arrow_table_(arrow_table) {
+  : arrow_table(arrow_table) {
 }
 
 BlazingHostTable::~BlazingHostTable() {
@@ -54,8 +54,8 @@ void BlazingHostTable::set_names(std::vector<std::string> names) {
 }
 
 cudf::size_type BlazingHostTable::num_rows() const {
-  if (this->arrow_table_ != nullptr) {
-    return this->arrow_table_->num_rows();
+  if (this->arrow_table != nullptr) {
+    return this->arrow_table->num_rows();
   }
 
     return columns_offsets.empty() ? 0 : columns_offsets.front().metadata.size;
@@ -63,7 +63,7 @@ cudf::size_type BlazingHostTable::num_rows() const {
 
 cudf::size_type BlazingHostTable::num_columns() const {
   if (this->is_arrow()) {
-    int a = this->arrow_table()->num_columns();
+    int a = this->arrow_table->num_columns();
     return a;
   }
 
@@ -90,11 +90,12 @@ const std::vector<ColumnTransport> &BlazingHostTable::get_columns_offsets() cons
     return columns_offsets;
 }
 
-std::unique_ptr<BlazingTable> BlazingHostTable::get_gpu_table() const {
-    if (this->is_arrow()) {
-      return std::make_unique<ral::frame::BlazingTable>(this->arrow_table_);
-    }
+std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
+  assert(this->is_arrow());
+  return std::make_unique<ral::frame::BlazingArrowTable>(this->arrow_table);
+}
 
+std::unique_ptr<BlazingCudfTable> BlazingHostTable::get_cudf_table() const {
     std::vector<rmm::device_buffer> gpu_raw_buffers(chunked_column_infos.size());
 
     try{

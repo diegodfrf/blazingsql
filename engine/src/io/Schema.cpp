@@ -112,7 +112,7 @@ Schema Schema::fileSchema(size_t current_file_index) const {
 	return schema;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> Schema::makeEmptyBlazingTable(const std::vector<int> & column_indices) const {
+std::unique_ptr<ral::frame::BlazingCudfTable> Schema::makeEmptyBlazingCudfTable(const std::vector<int> & column_indices) const {
 	std::vector<std::string> select_names(column_indices.size());
 	std::vector<cudf::type_id> select_types(column_indices.size());
 	if (column_indices.empty()) {
@@ -125,7 +125,7 @@ std::unique_ptr<ral::frame::BlazingTable> Schema::makeEmptyBlazingTable(const st
 		}
 	}
 
-	return ral::frame::createEmptyBlazingTable(select_types, select_names);
+	return ral::frame::createEmptyBlazingCudfTable(select_types, select_names);
 }
 
 std::vector<int> Schema::get_rowgroup_ids(size_t file_index) const {

@@ -42,7 +42,11 @@ public:
 	* @return A unique_ptr to a BlazingTable
 	*/
 	std::unique_ptr<ral::frame::BlazingTable> decache() override {
-		return std::move(host_table->get_gpu_table());
+    // percy arrow
+    if (host_table->is_arrow()) {
+      return std::move(host_table->get_arrow_table());
+    }
+		return std::move(host_table->get_cudf_table());
 	}
 
 	/**
