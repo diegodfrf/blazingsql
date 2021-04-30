@@ -53,10 +53,10 @@ void Schema::set_names(const std::vector<std::string> & col_names) {
 	this->names = col_names;
 }
 
-std::vector<cudf::data_type> Schema::get_data_types() const {
-	std::vector<cudf::data_type> data_types;
+std::vector<arrow::Type::type> Schema::get_data_types() const {
+	std::vector<arrow::Type::type> data_types;
 	for(auto type_id : this->types){
-		data_types.push_back(cudf::data_type(type_id));
+		data_types.push_back(arrow::Type::type(type_id));
 	}
 	return data_types;
 }

@@ -24,11 +24,11 @@ void GPUCacheData::set_names(const std::vector<std::string> & names) {
     data->setNames(names);
 }
 
-ral::frame::BlazingTableView GPUCacheData::getTableView() {
-    return this->data->toBlazingTableView();
+std::shared_ptr<ral::frame::BlazingCudfTableView> GPUCacheData::getTableView() {
+    return this->data->to_table_view();
 }
 
-void GPUCacheData::set_data(std::unique_ptr<ral::frame::BlazingTable> table ) {
+void GPUCacheData::set_data(std::unique_ptr<ral::frame::BlazingCudfTable> table ) {
     this->data = std::move(table);
 }
 

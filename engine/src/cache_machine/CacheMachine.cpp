@@ -319,11 +319,11 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 		}
 
 		num_rows_added += table->num_rows();
-		num_bytes_added += table->sizeInBytes();
+		num_bytes_added += table->size_in_bytes();
 		size_t cacheIndex = 0;
 		while(cacheIndex < memory_resources.size()) {
 
-			auto memory_to_use = (this->memory_resources[cacheIndex]->get_memory_used() + table->sizeInBytes());
+			auto memory_to_use = (this->memory_resources[cacheIndex]->get_memory_used() + table->size_in_bytes());
 
 			if( memory_to_use < this->memory_resources[cacheIndex]->get_memory_limit() || 
 			 	cache_level_override != -1) {
@@ -796,7 +796,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 
 			auto data = collected_messages[i]->release_data();
 			tables_holder.push_back(data->decache());
-			table_views.push_back(tables_holder[i]->toBlazingTableView());
+			table_views.push_back(tables_holder[i]->to_table_view());
 
 			// if we dont have to concatenate all, lets make sure we are not overflowing, and if we are, lets put one back
 			if (!concat_all && ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views)){

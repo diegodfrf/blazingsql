@@ -58,12 +58,12 @@ public:
 	* This allows you to read the data while it remains in cache.
 	* @return a view of the data in this instance.
 	*/
-	ral::frame::BlazingTableView getTableView();
+	std::shared_ptr<ral::frame::BlazingCudfTableView> getTableView();
 
-	void set_data(std::unique_ptr<ral::frame::BlazingTable> table);
+	void set_data(std::unique_ptr<ral::frame::BlazingCudfTable> table);
 
 protected:
-	std::unique_ptr<ral::frame::BlazingTable> data; /**< Stores the data to be returned in decache */
+	std::unique_ptr<ral::frame::BlazingCudfTable> data; /**< Stores the data to be returned in decache */
 };
 
 } // namespace cache

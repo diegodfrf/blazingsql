@@ -177,7 +177,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 			if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
 				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(*)");
 			} else {
-				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(" + table->ColumnNames().at(get_index(aggregation_input_expressions[i])) + ")");
+				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(" + table->column_names().at(get_index(aggregation_input_expressions[i])) + ")");
 			}
 		} else {
 			agg_output_column_names.push_back(aggregation_column_assigned_aliases[i]);

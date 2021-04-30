@@ -6,10 +6,14 @@ namespace cache {
 CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingTable> gpu_table, bool use_pinned)
 	: CacheData(CacheDataType::CPU, gpu_table->names(), gpu_table->get_schema(), gpu_table->num_rows())
 {
-  if (gpu_table->is_arrow()) {
-    this->host_table = std::make_unique<ral::frame::BlazingHostTable>(gpu_table->arrow_table());
+	ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable>(gpu_table);
+	bool is_arrow = (arrow_table_ptr != nullptr);
+
+  if (is_arrow) {
+    this->host_table = std::make_unique<ral::frame::BlazingHostTable>(arrow_table_ptr->view());
   } else {
-    this->host_table = ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table->toBlazingTableView(), use_pinned);
+		ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable>(gpu_table);
+    this->host_table = ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
   }
 }
 

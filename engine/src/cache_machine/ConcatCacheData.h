@@ -13,7 +13,7 @@ public:
 	* @param col_names The names of the columns in the dataframe.
 	* @param schema The types of the columns in the dataframe.
 	*/
-	ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_datas, const std::vector<std::string>& col_names, const std::vector<cudf::data_type>& schema);
+	ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_datas, const std::vector<std::string>& col_names, const std::vector<arrow::Type::type>& schema);
 
 	/**
 	* Decaches all caches datas and concatenates them into one BlazingTable

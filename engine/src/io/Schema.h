@@ -46,7 +46,7 @@ public:
 	std::vector<bool> get_in_file() const;
 	bool all_in_file() const;
 	std::vector<cudf::type_id> get_dtypes() const;
-	std::vector<cudf::data_type> get_data_types() const;
+	std::vector<arrow::Type::type> get_data_types() const;
 	cudf::type_id get_dtype(size_t schema_index) const;
 	std::string get_name(size_t schema_index) const;
 	std::vector<size_t> get_calcite_to_file_indices() const { return this->calcite_to_file_indices; }

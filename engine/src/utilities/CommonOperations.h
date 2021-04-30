@@ -33,9 +33,9 @@ std::unique_ptr<BlazingTable> getLimitedRows(const BlazingTableView& table, cudf
 std::unique_ptr<ral::frame::BlazingTable> create_empty_table(const std::vector<std::string> &column_names,
 	const std::vector<cudf::data_type> &dtypes, std::vector<size_t> column_indices = std::vector<size_t>());
 
-std::unique_ptr<cudf::table> create_empty_table(const std::vector<cudf::type_id> &dtypes);
+std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<arrow::Type::type> &dtypes);
 
-std::unique_ptr<ral::frame::BlazingTable> create_empty_table(const BlazingTableView & table);
+std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(std::shared_ptr<BlazingCudfTableView> table);
 
 cudf::data_type get_common_type(cudf::data_type type1, cudf::data_type type2, bool strict);
 

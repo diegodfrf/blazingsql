@@ -24,26 +24,27 @@ std::string randomString(std::size_t length) {
 }
 
 CacheDataLocalFile::CacheDataLocalFile(std::unique_ptr<ral::frame::BlazingTable> table, std::string orc_files_path, std::string ctx_token)
-	: CacheData(CacheDataType::LOCAL_FILE, table->names(), table->get_schema(), table->num_rows())
+	: CacheData(CacheDataType::LOCAL_FILE, table->column_names(), table->column_types(), table->num_rows())
 {
-	this->size_in_bytes = table->sizeInBytes();
+	this->size_in_bytes = table->size_in_bytes();
 	this->filePath_ = orc_files_path + "/.blazing-temp-" + ctx_token + "-" + randomString(64) + ".orc";
 
 	// filling this->col_names
-	for(auto name : table->names()) {
+	for(auto name : table->column_names()) {
 		this->col_names.push_back(name);
 	}
 
 	int attempts = 0;
 	int attempts_limit = 10;
+	ral::frame::BlazingCudfTable *table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
 	while(attempts <= attempts_limit){
 		try {
 			cudf::io::table_metadata metadata;
-			for(auto name : table->names()) {
+			for(auto name : table->column_names()) {
 				metadata.column_names.emplace_back(name);
 			}
 
-			cudf::io::orc_writer_options out_opts = cudf::io::orc_writer_options::builder(cudf::io::sink_info{this->filePath_}, table->view())
+			cudf::io::orc_writer_options out_opts = cudf::io::orc_writer_options::builder(cudf::io::sink_info{this->filePath_}, table_ptr->view())
 				.metadata(&metadata);
 
 			cudf::io::write_orc(out_opts);
@@ -84,7 +85,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataLocalFile::decache() {
 	// Remove temp orc files
 	const char *orc_path_file = this->filePath_.c_str();
 	remove(orc_path_file);
-	return std::make_unique<ral::frame::BlazingTable>(std::move(result.tbl), this->col_names );
+	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result.tbl), this->col_names);
 }
 
 } // namespace cache

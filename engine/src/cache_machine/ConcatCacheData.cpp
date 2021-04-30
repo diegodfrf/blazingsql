@@ -4,7 +4,7 @@
 namespace ral {
 namespace cache {
 
-ConcatCacheData::ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_datas, const std::vector<std::string>& col_names, const std::vector<cudf::data_type>& schema)
+ConcatCacheData::ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_datas, const std::vector<std::string>& col_names, const std::vector<arrow::Type::type>& schema)
 	: CacheData(CacheDataType::CONCATENATING, col_names, schema, 0), _cache_datas{std::move(cache_datas)} {
 	n_rows = 0;
 	for (auto && cache_data : _cache_datas) {

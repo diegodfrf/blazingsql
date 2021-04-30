@@ -270,7 +270,7 @@ std::unique_ptr<BlazingTable> getLimitedRows(const BlazingTableView& table, cudf
 	}
 }
 
-std::unique_ptr<ral::frame::BlazingTable> create_empty_table(const std::vector<std::string> &column_names,
+std::unique_ptr<ral::frame::BlazingTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
 	const std::vector<cudf::data_type> &dtypes, std::vector<size_t> column_indices) {
 
 	if (column_indices.size() == 0){
@@ -287,7 +287,7 @@ std::unique_ptr<ral::frame::BlazingTable> create_empty_table(const std::vector<s
 	return std::make_unique<ral::frame::BlazingTable>(std::move(table), column_names);
 }
 
-std::unique_ptr<cudf::table> create_empty_table(const std::vector<cudf::type_id> &dtypes) {
+std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<cudf::type_id> &dtypes) {
 	std::vector<std::unique_ptr<cudf::column>> columns(dtypes.size());
 	for (size_t idx =0; idx < dtypes.size(); idx++) {
 		columns[idx] = cudf::make_empty_column(cudf::data_type(dtypes[idx]));

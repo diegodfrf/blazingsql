@@ -39,12 +39,12 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(){
 		std::vector<std::string> names;
 		cudf::size_type num_rows;
 		if (column_indices_in_file.size() > 0){
-			std::unique_ptr<ral::frame::BlazingCudfTable> current_blazing_table = parser->parse_batch(handle, file_schema, column_indices_in_file, row_group_ids);
+			std::unique_ptr<ral::frame::BlazingTable> current_blazing_table = parser->parse_batch(handle, file_schema, column_indices_in_file, row_group_ids);
+      ral::frame::BlazingCudfTable* current_blazing_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(current_blazing_table.get());
 			names = current_blazing_table->column_names();
-			std::unique_ptr<cudf::table> current_table = current_blazing_table->releaseCudfTable();
+			std::unique_ptr<cudf::table> current_table = current_blazing_table_ptr->releaseCudfTable();
 			num_rows = current_table->num_rows();
 			file_columns = current_table->release();
-
 		} else { // all tables we are "loading" are from hive partitions, so we dont know how many rows we need unless we load something to get the number of rows
 			std::vector<int> temp_column_indices = {0};
 			std::unique_ptr<ral::frame::BlazingTable> loaded_table = parser->parse_batch(handle, file_schema, temp_column_indices, row_group_ids);

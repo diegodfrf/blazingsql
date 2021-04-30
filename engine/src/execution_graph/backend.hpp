@@ -70,6 +70,17 @@ inline bool operator!=(execution_backend const& lhs, execution_backend const& rh
     return !(lhs == rhs);
 }
 
-} //namespace execution
+class BlazingDispatchable {
+public:
+  BlazingDispatchable(execution::backend_id execution_backend_id) : execution_backend(execution_backend_id) {}
+  BlazingDispatchable(BlazingDispatchable &&) = default;
+  virtual ~BlazingDispatchable() {}
 
+  execution::execution_backend get_execution_backend() const { return this->execution_backend; }
+
+private:
+  execution::execution_backend execution_backend;
+};
+
+} //namespace execution
 } //namespace ral
