@@ -243,7 +243,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_groupby_without_aggregations(
 		group_column_indices,
 		cudf::duplicate_keep_option::KEEP_FIRST);
 
-	return std::make_unique<ral::frame::BlazingTable>( std::move(output), table.names() );
+	return std::make_unique<ral::frame::BlazingTable>( std::move(output), table.column_names() );
 }
 
 std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
@@ -291,7 +291,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 			if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
 				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(*)");
 			} else {
-				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(" + table.names().at(get_index(aggregation_input_expressions[i])) + ")");
+				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(" + table.column_names().at(get_index(aggregation_input_expressions[i])) + ")");
 			}
 		} else {
 			agg_output_column_names.push_back(aggregation_column_assigned_aliases[i]);
@@ -358,7 +358,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
 						if (column_index == -1){
 							agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(" + expression + ")");
 						} else {
-							agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(" + table.names().at(column_index) + ")");
+							agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(" + table.column_names().at(column_index) + ")");
 						}
 					}
 				} else {
@@ -398,7 +398,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
 	// lets put together the output names
 	std::vector<std::string> output_names;
 	for (size_t i = 0; i < group_column_indices.size(); i++){
-		output_names.push_back(table.names()[group_column_indices[i]]);
+		output_names.push_back(table.column_names()[group_column_indices[i]]);
 	}
 	output_names.resize(agg_out_indices.size() + group_column_indices.size());
 	for (size_t i = 0; i < agg_out_indices.size(); i++){

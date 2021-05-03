@@ -195,8 +195,8 @@ std::unique_ptr<BlazingTable> concatTables(const std::vector<shared_ptr<BlazingT
 	std::vector<cudf::table_view> table_views_to_concat;
   std::vector<std::shared_ptr<arrow::Table>> arrow_tables_to_concat;
 	for(size_t i = 0; i < tables.size(); i++) {
-		if (tables[i].names().size() > 0){ // lets make sure we get the names from a table that is not empty
-			names = tables[i].names();
+		if (tables[i].column_names().size() > 0){ // lets make sure we get the names from a table that is not empty
+			names = tables[i].column_names();
 		}
     if (tables[i].is_arrow()) {
       if(tables[i].num_columns() > 0) { // lets make sure we are trying to concatenate tables that are not empty
@@ -265,9 +265,9 @@ std::unique_ptr<BlazingTable> getLimitedRows(const BlazingTableView& table, cudf
 			std::vector<cudf::table_view> split_table = cudf::split(table.view(), splits);
 			cudf_table = std::make_unique<cudf::table>(split_table[1]);
 		}
-		return std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), table.names());
+		return std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), table.column_names());
 	} else {
-		return std::make_unique<ral::frame::BlazingTable>(table.view(), table.names());
+		return std::make_unique<ral::frame::BlazingTable>(table.view(), table.column_names());
 	}
 }
 
@@ -300,7 +300,7 @@ std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<cudf::typ
 std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const BlazingTableView & table) {
 
 	std::unique_ptr<cudf::table> empty = cudf::empty_like(table.view());
-	return std::make_unique<ral::frame::BlazingTable>(std::move(empty), table.names());
+	return std::make_unique<ral::frame::BlazingTable>(std::move(empty), table.column_names());
 }
 
 
@@ -369,7 +369,7 @@ void normalize_types(std::unique_ptr<ral::frame::BlazingTable> & table,  const s
 			columns[column_indices[i]] = std::make_unique<ral::frame::BlazingColumnOwner>(std::move(casted));
 		}
 	}
-	table = std::make_unique<ral::frame::BlazingTable>(std::move(columns), table->names());
+	table = std::make_unique<ral::frame::BlazingTable>(std::move(columns), table->column_names());
 }
 
 }  // namespace utilities

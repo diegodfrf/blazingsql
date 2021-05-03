@@ -10,8 +10,10 @@
 namespace ral {
 namespace frame {
 
-class BlazingTableView {
+class BlazingTableView : public execution::BlazingDispatchable {
 public:
+  BlazingTableView(execution::backend_id execution_backend_id);
+
   virtual size_t num_columns() const = 0;
   virtual size_t num_rows() const = 0;
   virtual std::vector<std::string> column_names() const = 0;
@@ -20,7 +22,7 @@ public:
   virtual unsigned long long size_in_bytes() const = 0;
 };
 
-class BlazingTable : public execution::BlazingDispatchable, public BlazingTableView {
+class BlazingTable: public BlazingTableView {
 public:
   BlazingTable(execution::backend_id execution_backend_id, const bool & valid);
   BlazingTable(BlazingTable &&) = default;

@@ -258,7 +258,7 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
 
 	assert( frames.size()>0 );
 
-	result->names = frames[0]->names();
+	result->names = frames[0]->column_names();
 
 	fix_column_names_duplicated(result->names);
 
@@ -301,7 +301,7 @@ std::unique_ptr<ResultSet> performPartition(int32_t masterIndex,
 
 		Context queryContext{ctxToken, contextNodes, contextNodes[masterIndex], "", std::map<std::string, std::string>()};
 
-		const std::vector<std::string> & table_col_names = table.names();
+		const std::vector<std::string> & table_col_names = table.column_names();
 
 		for(auto col_name:column_names){
 			auto it = std::find(table_col_names.begin(), table_col_names.end(), col_name);
@@ -313,7 +313,7 @@ std::unique_ptr<ResultSet> performPartition(int32_t masterIndex,
 		std::unique_ptr<ral::frame::BlazingTable> frame = ral::processor::process_distribution_table(
 			table, columnIndices, &queryContext);
 
-		result->names = frame->names();
+		result->names = frame->column_names();
 		result->cudfTable = frame->releaseCudfTable();
 		result->skipdata_analysis_fail = false;
 		return result;
@@ -345,7 +345,7 @@ std::unique_ptr<ResultSet> runSkipData(ral::frame::BlazingTableView metadata,
 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
 		result->skipdata_analysis_fail = result_pair.second;
 		if (!result_pair.second){ // if could process skip-data
-			result->names = result_pair.first->names();
+			result->names = result_pair.first->column_names();
 			result->table = std::make_unique<ResultTable>(result_pair.first->releaseCudfTable());
 		}
 		return result;

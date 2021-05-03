@@ -78,7 +78,7 @@ void distributing_kernel::send_message(std::unique_ptr<ral::frame::BlazingTable>
     bool added;
     std::string message_id = metadata.get_values()[ral::cache::MESSAGE_ID];
     if(table==nullptr) {
-        table = ral::utilities::create_empty_table({}, {});
+        table = ral::utilities::create_empty_cudf_table({}, {});
     } 
     
     added = output_cache->addToCache(std::move(table),"",always_add,metadata,true);
@@ -151,7 +151,7 @@ void distributing_kernel::broadcast(std::unique_ptr<ral::frame::BlazingTable> ta
     for (auto & node : nodes_to_send)	{
         target_ids.push_back(node.id());
     }
-    send_message(table->toBlazingTableView().clone(),
+    send_message(table->to_table_view().clone(),
         true, //specific_cache
         cache_id, //cache_id
         target_ids, //target_ids

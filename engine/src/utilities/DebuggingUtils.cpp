@@ -51,7 +51,7 @@ void print_blazing_cudf_table_view(std::shared_ptr<ral::frame::BlazingTableView>
 	std::cout<<"Table: "<<table_name<<std::endl;
 	std::cout<<"\t"<<"Num Rows: "<<table_view->num_rows()<<std::endl;
 	std::cout<<"\t"<<"Num Columns: "<<table_view->num_columns()<<std::endl;
-	assert(table_view.num_columns() == table_view->names().size());
+	assert(table_view.num_columns() == table_view->column_names().size());
 	for(int col_idx=0; col_idx<table_view->num_columns(); col_idx++){
 		std::string col_string;
 		if (table_view.num_rows() > 0){
@@ -59,7 +59,7 @@ void print_blazing_cudf_table_view(std::shared_ptr<ral::frame::BlazingTableView>
 			col_string = cudf::test::to_string(table_view.column(col_idx), "|");
 #endif // BSQLDBGUTILS
 		}
-		std::cout<<"\t"<<table_view->names().at(col_idx)<<" ("<<"type: "<<type_string(table_view->column_types(col_idx))<<"): "<<col_string<<std::endl;
+		std::cout<<"\t"<<table_view->column_names().at(col_idx)<<" ("<<"type: "<<type_string(table_view->column_types(col_idx))<<"): "<<col_string<<std::endl;
 	}
 }
 
@@ -72,16 +72,16 @@ std::string blazing_table_view_schema_to_string(std::shared_ptr<ral::frame::Blaz
 	ostream <<"Table: "<<table_name<<std::endl;
 	ostream<<"\t"<<"Num Rows: "<<table_view->num_rows()<<std::endl;
 	ostream<<"\t"<<"Num Columns: "<<table_view->num_columns()<<std::endl;
-	assert(table_view.num_columns() == table_view->names().size());
+	assert(table_view.num_columns() == table_view->column_names().size());
 	for(int col_idx=0; col_idx<table_view->num_columns(); col_idx++){
-		ostream<<"\t"<<table_view->names().at(col_idx)<<" ("<<"type: "<<type_string(table_view->column_types(col_idx))<<")"<<std::endl;
+		ostream<<"\t"<<table_view->column_names().at(col_idx)<<" ("<<"type: "<<type_string(table_view->column_types(col_idx))<<")"<<std::endl;
 	}
 	return ostream.str();
 }
 
 // std::string cache_data_schema_to_string(ral::cache::CacheData * cache_data){
 // 	std::ostringstream ostream;
-// 	std::vector<std::string> cache_data_names = cache_data->names();
+// 	std::vector<std::string> cache_data_names = cache_data->column_names();
 // 	std::vector<cudf::data_type> cache_data_types = cache_data->get_schema();
 // 	ostream<<"Num Rows: "<<cache_data->num_rows()<<std::endl;
 // 	ostream<<"\t"<<"Num Columns: "<<cache_data_names.size()<<std::endl;

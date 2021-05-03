@@ -284,7 +284,7 @@ std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_
         cudf::data_type{cudf::type_id::INT8}, rows,
         cudf::mask_state::UNINITIALIZED);
 
-    std::vector<std::string> metadata_names = metadata_view.names();
+    std::vector<std::string> metadata_names = metadata_view.column_names();
     std::vector<std::unique_ptr<ral::frame::BlazingColumn>> metadata_columns = metadata_view.toBlazingColumns();
     std::vector<std::unique_ptr<ral::frame::BlazingColumn>> projected_metadata_cols;
     std::vector<bool> valid_metadata_columns;
@@ -340,7 +340,7 @@ std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_
     RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression in skip_data processing did not evaluate to a boolean mask");
 
     cudf::table_view metadata_ids = metadata_view.view().select({metadata_view.num_columns()-2,metadata_view.num_columns()-1});
-    std::vector<std::string> metadata_id_names{metadata_view.names()[metadata_view.num_columns()-2], metadata_view.names()[metadata_view.num_columns()-1]};
+    std::vector<std::string> metadata_id_names{metadata_view.column_names()[metadata_view.num_columns()-2], metadata_view.column_names()[metadata_view.num_columns()-1]};
     ral::frame::BlazingTableView metadata_ids_view(metadata_ids, metadata_id_names);
 
     std::unique_ptr<ral::frame::BlazingTable> filtered_metadata_ids = ral::processor::applyBooleanFilter(metadata_ids_view, evaluated_table[0]->view());

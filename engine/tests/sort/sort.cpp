@@ -67,7 +67,7 @@ TYPED_TEST(LimitTest, withoutNull) {
 
     std::unique_ptr<ral::frame::BlazingTable> table_in = std::make_unique<ral::frame::BlazingTable>(cudf_table_in_view, col_names);
 
-    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::utilities::getLimitedRows(table_in->toBlazingTableView(), 5);
+    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::utilities::getLimitedRows(table_in->to_table_view(), 5);
 
     cudf::test::fixed_width_column_wrapper<T> expect_col1{{5, 4, 3, 5, 8}};
     cudf::test::fixed_width_column_wrapper<T> expect_col2{{10, 40, 70, 5, 2}};

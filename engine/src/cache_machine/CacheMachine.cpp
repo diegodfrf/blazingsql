@@ -914,7 +914,7 @@ std::unique_ptr<ral::cache::CacheData> ConcatenatingCacheMachine::pullCacheData(
 			cache_datas.push_back(collected_messages[i]->release_data());
 		}
 
-		output = std::make_unique<ConcatCacheData>(std::move(cache_datas), cache_datas[0]->names(), cache_datas[0]->get_schema());
+		output = std::make_unique<ConcatCacheData>(std::move(cache_datas), cache_datas[0]->column_names(), cache_datas[0]->get_schema());
 		num_rows = output->num_rows();
 	}
 

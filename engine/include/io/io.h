@@ -56,7 +56,7 @@ struct TableSchema {
 	int data_type;
 	bool has_header_csv = false;
 
-	ral::frame::BlazingTableView metadata;
+	std::shared_ptr<ral::frame::BlazingTableView> metadata;
 	std::vector<std::vector<int>> row_groups_ids;
 	std::shared_ptr<arrow::Table> arrow_table; //must be a vector?
 };

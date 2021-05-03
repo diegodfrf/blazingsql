@@ -51,7 +51,7 @@ kstatus UnionKernel::run() {
     std::unique_ptr<ral::cache::CacheData> cache_data_b = cache_machine_b->pullCacheData();
     RAL_EXPECTS(cache_data_a != nullptr || cache_data_b != nullptr, "In UnionKernel: The input cache data cannot be null");
 
-    common_names = cache_data_a->names();
+    common_names = cache_data_a->column_names();
 
     bool strict = false;
     common_types = ral::utilities::get_common_types(cache_data_a->get_schema(), cache_data_b->get_schema(), strict);
@@ -59,7 +59,7 @@ kstatus UnionKernel::run() {
     BlazingThread left_thread([this, &cache_machine_a, &cache_data_a](){
         while(cache_data_a != nullptr) {
             std::vector<cudf::data_type> data_types = cache_data_a->get_schema();
-            std::vector<std::string> names = cache_data_a->names();
+            std::vector<std::string> names = cache_data_a->column_names();
             if (!std::equal(common_types.cbegin(), common_types.cend(), data_types.cbegin(), data_types.cend())
                 || !std::equal(common_names.cbegin(), common_names.cend(), names.cbegin(), names.cend())){
                 std::vector<std::unique_ptr<ral::cache::CacheData>> inputs;
@@ -79,7 +79,7 @@ kstatus UnionKernel::run() {
     BlazingThread right_thread([this, &cache_machine_b, &cache_data_b](){
         while(cache_data_b != nullptr){
             std::vector<cudf::data_type> data_types = cache_data_b->get_schema();
-            std::vector<std::string> names = cache_data_b->names();
+            std::vector<std::string> names = cache_data_b->column_names();
             if (!std::equal(common_types.cbegin(), common_types.cend(), data_types.cbegin(), data_types.cend())
                 || !std::equal(common_names.cbegin(), common_names.cend(), names.cbegin(), names.cend())){
                 std::vector<std::unique_ptr<ral::cache::CacheData>> inputs;

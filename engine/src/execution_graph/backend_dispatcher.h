@@ -7,8 +7,7 @@ namespace execution {
 
 template <typename Functor, typename... Ts>
 CUDA_HOST_DEVICE_CALLABLE
-constexpr decltype(auto) backend_dispatcher(execution::execution_backend backend,
-                                            Functor f,
+constexpr decltype(auto) backend_dispatcher(execution_backend backend, Functor f,
                                             Ts&&... args)
 {
   switch (backend.id()) {

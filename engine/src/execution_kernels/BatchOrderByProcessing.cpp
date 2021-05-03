@@ -34,12 +34,12 @@ ral::execution::task_result PartitionSingleNodeKernel::do_process(std::vector< s
     try{
         auto & input = inputs[0];
 
-        auto partitions = ral::operators::partition_table(partitionPlan->toBlazingTableView(), input->toBlazingTableView(), this->sortOrderTypes, this->sortColIndices);
+        auto partitions = ral::operators::partition_table(partitionPlan->to_table_view(), input->to_table_view(), this->sortOrderTypes, this->sortColIndices);
 
         for (std::size_t i = 0; i < partitions.size(); i++) {
             std::string cache_id = "output_" + std::to_string(i);
             this->add_to_output_cache(
-                std::make_unique<ral::frame::BlazingTable>(std::make_unique<cudf::table>(partitions[i]), input->names()),
+                std::make_unique<ral::frame::BlazingTable>(std::make_unique<cudf::table>(partitions[i]), input->column_names()),
                 cache_id
                 );
         }
@@ -191,7 +191,7 @@ void SortAndSampleKernel::compute_partition_plan(
             // just to concat all the samples
             std::vector<ral::frame::BlazingTableView> sampledTableViews;
             for (std::size_t i = 0; i < inputSamples.size(); i++){
-                sampledTableViews.push_back(inputSamples[i]->toBlazingTableView());
+                sampledTableViews.push_back(inputSamples[i]->to_table_view());
             }
             auto concatSamples = ral::utilities::concatTables(sampledTableViews);
             concatSamples->ensureOwnership();
@@ -235,10 +235,10 @@ ral::execution::task_result SortAndSampleKernel::do_process(std::vector< std::un
 
         auto & input = inputs[0];
         if (operation_type == "ordering_and_get_samples") {
-            auto sortedTable = ral::operators::sort(input->toBlazingTableView(), this->expression);
+            auto sortedTable = ral::operators::sort(input->to_table_view(), this->expression);
 
             if (get_samples.load()) {
-                auto sampledTable = ral::operators::sample(input->toBlazingTableView(), this->expression);
+                auto sampledTable = ral::operators::sample(input->to_table_view(), this->expression);
 
                 std::lock_guard<std::mutex> samples_lock(samples_mutex);
                 if (get_samples.load()) {
@@ -376,7 +376,7 @@ ral::execution::task_result PartitionKernel::do_process(std::vector< std::unique
     try{
         auto & input = inputs[0];
 
-        std::vector<ral::distribution::NodeColumnView> partitions = ral::distribution::partitionData(this->context.get(), input->toBlazingTableView(), partitionPlan->toBlazingTableView(), sortColIndices, sortOrderTypes);
+        std::vector<ral::distribution::NodeColumnView> partitions = ral::distribution::partitionData(this->context.get(), input->to_table_view(), partitionPlan->to_table_view(), sortColIndices, sortOrderTypes);
         std::vector<int32_t> part_ids(partitions.size());
         std::generate(part_ids.begin(), part_ids.end(), [count=0, num_partitions_per_node = num_partitions_per_node] () mutable { return (count++) % (num_partitions_per_node); });
 
@@ -498,7 +498,7 @@ ral::execution::task_result MergeStreamKernel::do_process(std::vector< std::uniq
         } else {
             std::vector< ral::frame::BlazingTableView > tableViewsToConcat;
             for (std::size_t i = 0; i < inputs.size(); i++){
-                tableViewsToConcat.emplace_back(inputs[i]->toBlazingTableView());
+                tableViewsToConcat.emplace_back(inputs[i]->to_table_view());
             }
             auto output_merge = ral::operators::merge(tableViewsToConcat, this->expression);
             output->addToCache(std::move(output_merge));
@@ -613,7 +613,7 @@ ral::execution::task_result LimitKernel::do_process(std::vector< std::unique_ptr
             if (input->is_arrow()){
                 std::tie(limited_input, output_is_just_input, rows_limit) = ral::cpu::operators::limit_table(input->arrow_table(), rows_limit);
             } else {
-                std::tie(limited_input, output_is_just_input, rows_limit) = ral::operators::limit_table(input->toBlazingTableView(), rows_limit);
+                std::tie(limited_input, output_is_just_input, rows_limit) = ral::operators::limit_table(input->to_table_view(), rows_limit);
             }
             eventTimer.stop();
 

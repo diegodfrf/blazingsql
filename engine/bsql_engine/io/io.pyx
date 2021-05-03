@@ -308,8 +308,8 @@ cdef class PyBlazingCache:
 
 
         decoded_names = []
-        for i in range(deref(table).names().size()):
-            decoded_names.append(deref(table).names()[i].decode('utf-8'))
+        for i in range(deref(table).column_names().size()):
+            decoded_names.append(deref(table).column_names()[i].decode('utf-8'))
         df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(deref(table).releaseCudfTable()), decoded_names)._data)
         df._rename_columns(decoded_names)
         return df, metadata_py
