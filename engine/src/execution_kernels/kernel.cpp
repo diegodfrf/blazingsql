@@ -89,7 +89,7 @@ ral::execution::task_result kernel::process(std::vector<std::unique_ptr<ral::fra
     size_t bytes = 0;
     size_t rows = 0;
     for(auto & input : inputs){
-        bytes += input->sizeInBytes();
+        bytes += input->size_in_bytes();
         rows += input->num_rows();
     }
     auto result = do_process(std::move(inputs), output, stream, args);
@@ -132,7 +132,7 @@ std::size_t kernel::estimate_output_bytes(const std::vector<std::unique_ptr<ral:
 
     std::size_t input_bytes = 0;
     for (auto & input : inputs) {
-        input_bytes += input->sizeInBytes();
+        input_bytes += input->size_in_bytes();
     }
 
     // if we have already processed, then we can estimate based on previous inputs and outputs
@@ -148,7 +148,7 @@ std::size_t kernel::estimate_output_bytes(const std::vector<std::unique_ptr<ral:
 std::size_t kernel::estimate_operating_bytes(const std::vector<std::unique_ptr<ral::cache::CacheData > > & inputs){
     std::size_t bytes_esimate = 0;
     for (auto & input : inputs) {
-        bytes_esimate += input->sizeInBytes();
+        bytes_esimate += input->size_in_bytes();
     }
     return bytes_esimate;
 }

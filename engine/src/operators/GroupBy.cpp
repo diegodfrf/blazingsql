@@ -260,7 +260,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 			reductions.emplace_back(std::move(scalar));
 		} else {
 			std::vector<std::unique_ptr<ral::frame::BlazingColumn>> aggregation_input_scope_holder;
-			CudfColumnView aggregation_input;
+			cudf::column_view aggregation_input;
 			if(is_var_column(aggregation_input_expressions[i]) || is_number(aggregation_input_expressions[i])) {
 				aggregation_input = table.view().column(get_index(aggregation_input_expressions[i]));
 			} else {
@@ -303,7 +303,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 		std::unique_ptr<cudf::column> temp = cudf::make_column_from_scalar(*(reductions[i]), 1);
 		output_columns.emplace_back(std::move(temp));
 	}
-	return std::make_unique<ral::frame::BlazingTable>(std::move(std::make_unique<CudfTable>(std::move(output_columns))), agg_output_column_names);
+	return std::make_unique<ral::frame::BlazingTable>(std::move(std::make_unique<cudf::table>(std::move(output_columns))), agg_output_column_names);
 }
 
 std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
@@ -326,7 +326,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
 	for (size_t u = 0; u < unique_expressions.size(); u++){
 		std::string expression = unique_expressions[u];
 
-		CudfColumnView aggregation_input; // this is the input from which we will crete the aggregation request
+		cudf::column_view aggregation_input; // this is the input from which we will crete the aggregation request
 		bool got_aggregation_input = false;
 		std::vector<std::unique_ptr<cudf::aggregation>> agg_ops_for_request;
 		for (size_t i = 0; i < aggregation_input_expressions.size(); i++){
@@ -369,7 +369,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
 			requests.push_back(cudf::groupby::aggregation_request {.values = aggregation_input, .aggregations = std::move(agg_ops_for_request)});
 	}
 
-	CudfTableView keys = table.view().select(group_column_indices);
+	cudf::table_view keys = table.view().select(group_column_indices);
 	cudf::groupby::groupby group_by_obj(keys, cudf::null_policy::INCLUDE);
 	std::pair<std::unique_ptr<cudf::table>, std::vector<cudf::groupby::aggregation_result>> result = group_by_obj.aggregate( requests );
 
@@ -393,7 +393,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
 			output_columns[agg_out_indices[i] + group_column_indices.size()] = std::move(agg_cols_out[i]);
 		}
 	}
-	std::unique_ptr<CudfTable> output_table = std::make_unique<CudfTable>(std::move(output_columns));
+	std::unique_ptr<cudf::table> output_table = std::make_unique<cudf::table>(std::move(output_columns));
 
 	// lets put together the output names
 	std::vector<std::string> output_names;

@@ -67,7 +67,7 @@ public:
 	* of all the CacheData objects that are currently in Caches.
 	* @return The number of bytes the BlazingHostTable consumes.
 	*/
-	size_t sizeInBytes() const override { return host_table->sizeInBytes(); }
+	size_t size_in_bytes() const override { return host_table->size_in_bytes(); }
 
 	/**
 	* Set the names of the columns of a BlazingHostTable.

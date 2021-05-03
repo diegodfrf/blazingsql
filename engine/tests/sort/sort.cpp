@@ -29,7 +29,7 @@ TYPED_TEST(SortTest, withoutNull) {
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
 
     std::vector<std::string> names({"A", "B", "C"});
     ral::frame::BlazingTableView table(cudf_table_in_view, names);
@@ -42,7 +42,7 @@ TYPED_TEST(SortTest, withoutNull) {
     cudf::test::fixed_width_column_wrapper<T> expect_col1{{3, 4, 5, 5, 5, 6 ,8}, {1, 1, 1, 1, 1, 1, 1}};
     cudf::test::strings_column_wrapper expect_col2({"a", "b", "d", "d", "d", "k", "l"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> expect_col3{{70, 10, 40, 5, 10, 11, 2}, {1, 1, 1, 1, 1, 1, 1}};
-    CudfTableView expect_cudf_table_view {{expect_col1, expect_col2, expect_col3}};
+    cudf::table_view expect_cudf_table_view {{expect_col1, expect_col2, expect_col3}};
 
     cudf::test::expect_tables_equivalent(expect_cudf_table_view, table_out->view());
 }
@@ -61,7 +61,7 @@ TYPED_TEST(LimitTest, withoutNull) {
     cudf::test::fixed_width_column_wrapper<T> col1{{5, 4, 3, 5, 8, 5, 6}, {1, 1, 1, 1, 1, 1, 1}};
     cudf::test::fixed_width_column_wrapper<T> col2{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2}};
+    cudf::table_view cudf_table_in_view {{col1, col2}};
 
     std::vector<std::string> col_names = {"col1","col2"};
 
@@ -71,7 +71,7 @@ TYPED_TEST(LimitTest, withoutNull) {
 
     cudf::test::fixed_width_column_wrapper<T> expect_col1{{5, 4, 3, 5, 8}};
     cudf::test::fixed_width_column_wrapper<T> expect_col2{{10, 40, 70, 5, 2}};
-    CudfTableView expect_cudf_table_view {{expect_col1, expect_col2}};
+    cudf::table_view expect_cudf_table_view {{expect_col1, expect_col2}};
 
     cudf::test::expect_tables_equivalent(expect_cudf_table_view, table_out->view());
 }

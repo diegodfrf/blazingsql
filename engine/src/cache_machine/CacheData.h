@@ -161,7 +161,7 @@ public:
 	* @param schema The types of the columns in the dataframe.
 	* @param n_rows The number of rows in the dataframe.
 	*/
-	CacheData(CacheDataType cache_type, std::vector<std::string> col_names, std::vector<arrow::Type::type> schema, size_t n_rows)
+	CacheData(CacheDataType cache_type, std::vector<std::string> col_names, std::vector<cudf::data_type> schema, size_t n_rows)
 		: cache_type(cache_type), col_names(col_names), schema(schema), n_rows(n_rows)
 	{
 	}
@@ -184,7 +184,7 @@ public:
 	* almost always go out of scope and be destroyed.
 	* @return the number of bytes our dataframe occupies in whatever format it is being stored
 	*/
-	virtual size_t sizeInBytes() const = 0;
+	virtual size_t size_in_bytes() const = 0;
 
 	/**
 	* Set the names of the columns.
@@ -209,7 +209,7 @@ public:
 	* Get the cudf::data_type of each column.
 	* @return a vector of the cudf::data_type of each column.
 	*/
-	std::vector<arrow::Type::type> get_schema() const {
+	std::vector<cudf::data_type> get_schema() const {
 		return schema;
 	}
 
@@ -259,7 +259,7 @@ public:
 protected:
 	CacheDataType cache_type; /**< The CacheDataType that is used to store the dataframe representation. */
 	std::vector<std::string> col_names; /**< A vector storing the names of the columns in the dataframe representation. */
-	std::vector<arrow::Type::type> schema; /**< A vector storing the arrow::Type::type of the columns in the dataframe representation. */
+	std::vector<cudf::data_type> schema; /**< A vector storing the cudf::data_type of the columns in the dataframe representation. */
 	size_t n_rows; /**< Stores the number of rows in the dataframe representation. */
     MetadataDictionary metadata; /**< The metadata used for routing and planning. */
 };

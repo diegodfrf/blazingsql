@@ -21,8 +21,8 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types1)
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B", "C"});
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
@@ -36,7 +36,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types1)
         context);
 
     cudf::test::fixed_width_column_wrapper<T> expect_col1{{4, 5, 3, 5, 8, 5, 6}, {1, 1, 1, 1, 1, 1, 1}};
-    CudfTableView expect_cudf_table_view {{expect_col1}};
+    cudf::table_view expect_cudf_table_view {{expect_col1}};
 
     cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
 }
@@ -49,8 +49,8 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types2)
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B", "C"});
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
@@ -64,7 +64,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types2)
         context);
 
     cudf::test::fixed_width_column_wrapper<T> expect_col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
-    CudfTableView expect_cudf_table_view {{expect_col3}};
+    cudf::table_view expect_cudf_table_view {{expect_col3}};
 
     cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
 }
@@ -77,8 +77,8 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types3)
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B", "C"});
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
@@ -93,7 +93,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types3)
 
     cudf::test::fixed_width_column_wrapper<T> expect_col1{{4, 5, 3, 5, 8, 5, 6}, {1, 1, 1, 1, 1, 1, 1}};
     cudf::test::fixed_width_column_wrapper<T> expect_col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
-    CudfTableView expect_cudf_table_view {{expect_col1, expect_col3}};
+    cudf::table_view expect_cudf_table_view {{expect_col1, expect_col3}};
 
     cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
 }
@@ -106,8 +106,8 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types4)
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B", "C"});
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
@@ -121,7 +121,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types4)
         context);
 
     cudf::test::fixed_width_column_wrapper<int32_t> expect_col1{{1, 1, 1, 1, 1, 1, 1}};
-    CudfTableView expect_cudf_table_view {{expect_col1}};
+    cudf::table_view expect_cudf_table_view {{expect_col1}};
 
     cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
 }
@@ -134,8 +134,8 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types5)
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B", "C"});
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
@@ -150,12 +150,12 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types5)
 
     if (std::is_same<T, bool>::value) {
         cudf::test::fixed_width_column_wrapper<bool> expect_col1{{0, 0, 0, 0, 0, 0, 0}, {1, 1, 1, 1, 1, 1, 1}};
-        CudfTableView expect_cudf_table_view {{expect_col1}};
+        cudf::table_view expect_cudf_table_view {{expect_col1}};
 
         cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
     } else {
         cudf::test::fixed_width_column_wrapper<bool> expect_col1{{1, 1, 0, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1}};
-        CudfTableView expect_cudf_table_view {{expect_col1}};
+        cudf::table_view expect_cudf_table_view {{expect_col1}};
     
         cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
     }
@@ -169,8 +169,8 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types6)
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B", "C"});
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
@@ -186,13 +186,13 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types6)
     if (std::is_same<T, bool>::value) {
         cudf::test::fixed_width_column_wrapper<bool> expect_col1{{0, 0, 0, 0, 0, 0, 0}, {1, 1, 1, 1, 1, 1, 1}};
         cudf::test::fixed_width_column_wrapper<bool> expect_col3{{1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1}};
-        CudfTableView expect_cudf_table_view {{expect_col1, expect_col3}};
+        cudf::table_view expect_cudf_table_view {{expect_col1, expect_col3}};
 
         cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
     } else {
         cudf::test::fixed_width_column_wrapper<bool> expect_col1{{1, 1, 0, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1}};
         cudf::test::fixed_width_column_wrapper<bool> expect_col3{{0, 0, 0, 0, 1, 0, 0}, {1, 1, 1, 1, 1, 1, 1}};
-        CudfTableView expect_cudf_table_view {{expect_col1, expect_col3}};
+        cudf::table_view expect_cudf_table_view {{expect_col1, expect_col3}};
 
         cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
     }
@@ -206,8 +206,8 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types7)
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B", "C"});
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
@@ -227,13 +227,13 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types7)
     //if (std::is_same<T, bool>::value) {
     //    cudf::test::fixed_width_column_wrapper<bool> expect_col1{{0, 0, 0, 0, 0, 0, 0}, {1, 1, 1, 1, 1, 1, 1}};
     //    cudf::test::fixed_width_column_wrapper<bool> expect_col3{{1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1}};
-    //    CudfTableView expect_cudf_table_view {{expect_col1, expect_col3}};
+    //    cudf::table_view expect_cudf_table_view {{expect_col1, expect_col3}};
 
 //        cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
 //    } else {
 //        cudf::test::fixed_width_column_wrapper<bool> expect_col1{{1, 1, 0, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1}};
 //        cudf::test::fixed_width_column_wrapper<bool> expect_col3{{0, 0, 0, 0, 1, 0, 0}, {1, 1, 1, 1, 1, 1, 1}};
-//        CudfTableView expect_cudf_table_view {{expect_col1, expect_col3}};
+//        cudf::table_view expect_cudf_table_view {{expect_col1, expect_col3}};
 
 //        cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
 //   }
@@ -247,8 +247,8 @@ TYPED_TEST(ProjectTestNumeric, test_rand)
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B", "C"});
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
@@ -268,13 +268,13 @@ TYPED_TEST(ProjectTestNumeric, test_rand)
     //if (std::is_same<T, bool>::value) {
     //    cudf::test::fixed_width_column_wrapper<bool> expect_col1{{0, 0, 0, 0, 0, 0, 0}, {1, 1, 1, 1, 1, 1, 1}};
     //    cudf::test::fixed_width_column_wrapper<bool> expect_col3{{1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1}};
-    //    CudfTableView expect_cudf_table_view {{expect_col1, expect_col3}};
+    //    cudf::table_view expect_cudf_table_view {{expect_col1, expect_col3}};
 
 //        cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
 //    } else {
 //        cudf::test::fixed_width_column_wrapper<bool> expect_col1{{1, 1, 0, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1}};
 //        cudf::test::fixed_width_column_wrapper<bool> expect_col3{{0, 0, 0, 0, 1, 0, 0}, {1, 1, 1, 1, 1, 1, 1}};
-//        CudfTableView expect_cudf_table_view {{expect_col1, expect_col3}};
+//        cudf::table_view expect_cudf_table_view {{expect_col1, expect_col3}};
 
 //        cudf::test::expect_tables_equal(expect_cudf_table_view, table_out->view());
 //   }
@@ -288,7 +288,7 @@ TEST_F(ProjectTestString, test_string_like)
     cudf::test::strings_column_wrapper col1{{"foo", "d", "e", "a", "hello", "k", "d", "l", "bar", ""}};
   
     cudf::table_view in_table_view {{col1}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(in_table_view);
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(in_table_view);
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
@@ -308,7 +308,7 @@ TEST_F(ProjectTestString, test_string_substring)
     cudf::test::strings_column_wrapper col1{{"The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog"}};
   
     cudf::table_view in_table_view {{col1}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(in_table_view);
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(in_table_view);
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
@@ -329,7 +329,7 @@ TEST_F(ProjectTestString, test_string_substring_null)
     {1, 1, 0, 1}};
         
     cudf::table_view in_table_view {{col1}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(in_table_view);
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(in_table_view);
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
@@ -351,7 +351,7 @@ TEST_F(ProjectTestString, test_char_length)
     {1, 1, 0, 1}};
 
     cudf::table_view in_table_view {{col1}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(in_table_view);
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(in_table_view);
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
@@ -371,7 +371,7 @@ TEST_F(ProjectTestString, test_string_concat)
     cudf::test::strings_column_wrapper col2{{"The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog", ""}};
   
     cudf::table_view in_table_view {{col1, col2}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(in_table_view);
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(in_table_view);
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
@@ -394,7 +394,7 @@ TEST_F(ProjectTestString, test_cast_to_string)
     cudf::test::fixed_width_column_wrapper<cudf::timestamp_s, cudf::timestamp_s::rep> col4{{0, 10, 2600, 89260, 579500, 6834000, 86796400, 135768000, 715360000, 1230720000}};
   
     cudf::table_view in_table_view {{col1, col2, col3, col4}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(in_table_view);
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(in_table_view);
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
@@ -418,7 +418,7 @@ TEST_F(ProjectTestString, test_cast_from_string)
     cudf::test::strings_column_wrapper col3{{"1970-01-01 00:00:00","1970-01-01 00:00:10","1970-01-01 00:43:20","1970-01-02 00:47:40","1970-01-07 16:58:20","1970-03-21 02:20:00","1972-10-01 14:06:40","1974-04-21 09:20:00","1992-09-01 15:06:40","2008-12-31 10:40:00"}};
   
     cudf::table_view in_table_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(in_table_view);
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(in_table_view);
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
@@ -450,7 +450,7 @@ TEST_F(ProjectTestString, test_string_case)
     cudf::test::strings_column_wrapper col2{{"The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog"}};
   
     cudf::table_view in_table_view {{col1, col2}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(in_table_view);
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(in_table_view);
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
@@ -470,7 +470,7 @@ TEST_F(ProjectTestString, test_string_nested_case)
     cudf::test::strings_column_wrapper col2{{"The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog"}};
   
     cudf::table_view in_table_view {{col1, col2}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(in_table_view);
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(in_table_view);
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
@@ -495,8 +495,8 @@ TYPED_TEST(ProjectRoundTest, test_round)
 
     cudf::test::fixed_width_column_wrapper<T> col1{{4.0, 5.21, 87317.3, 0.1232387, 0.0000007, 342.9348, 698.3243}};
 
-    CudfTableView in_table_view{{col1}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(in_table_view);
+    cudf::table_view in_table_view{{col1}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(in_table_view);
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
@@ -507,7 +507,7 @@ TYPED_TEST(ProjectRoundTest, test_round)
     cudf::test::fixed_width_column_wrapper<T> expect_col1{{4.0, 5.0, 87317.0, 0.0, 0.0, 343.0, 698.0}, {1, 1, 1, 1, 1, 1, 1}};
     cudf::test::fixed_width_column_wrapper<T> expect_col2{{4.00, 5.21, 87317.30, 0.12, 0.00, 342.93, 698.32}, {1, 1, 1, 1, 1, 1, 1}};
     cudf::test::fixed_width_column_wrapper<T> expect_col3{{4.00000, 5.21000, 87317.30000, 0.12324, 0.00000, 342.93480, 698.32430}, {1, 1, 1, 1, 1, 1, 1}};
-    CudfTableView expect_cudf_table_view{{expect_col1, expect_col2, expect_col3}};
+    cudf::table_view expect_cudf_table_view{{expect_col1, expect_col2, expect_col3}};
 
     cudf::test::expect_tables_equal(expect_cudf_table_view, out_table->view());
 }

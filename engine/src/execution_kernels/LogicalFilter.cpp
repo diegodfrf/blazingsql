@@ -48,11 +48,9 @@ bool is_logical_filter(const std::string & query_part) {
 
 std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
   const ral::frame::BlazingTableView & table,
-  const CudfColumnView & boolValues){
-  auto filteredTable = cudf::apply_boolean_mask(
-    table.view(),boolValues);
-  return std::make_unique<ral::frame::BlazingTable>(std::move(
-    filteredTable),table.names());
+  const cudf::column_view & boolValues){
+  auto filteredTable = cudf::apply_boolean_mask(table.view(),boolValues);
+  return std::make_unique<ral::frame::BlazingTable>(std::move(filteredTable),table.names());
 }
 
 std::unique_ptr<ral::frame::BlazingTable> process_filter(
@@ -92,7 +90,7 @@ std::unique_ptr<ral::frame::BlazingTable> process_filter(
   }
 
   
-bool check_if_has_nulls(CudfTableView const& input, std::vector<cudf::size_type> const& keys){
+bool check_if_has_nulls(cudf::table_view const& input, std::vector<cudf::size_type> const& keys){
   auto keys_view = input.select(keys);
   if (keys_view.num_columns() != 0 && keys_view.num_rows() != 0 && cudf::has_nulls(keys_view)) {
       return true;

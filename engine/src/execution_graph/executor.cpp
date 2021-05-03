@@ -63,7 +63,7 @@ std::size_t task::task_memory_needed() {
 
     for (auto & input : inputs) {
         if (input->get_type() == ral::cache::CacheDataType::CPU || input->get_type() == ral::cache::CacheDataType::LOCAL_FILE){
-            bytes_to_decache += input->sizeInBytes();
+            bytes_to_decache += input->size_in_bytes();
         } else if (input->get_type() == ral::cache::CacheDataType::IO_FILE){
             // TODO! Need to figure out what we want to do to try to estimate consumption for this
         }
@@ -127,7 +127,7 @@ void task::run(cudaStream_t stream, executor * executor){
     std::size_t log_input_bytes = 0;
     for (std::size_t i = 0; i < input_gpu.size(); ++i) {
         log_input_rows += input_gpu.at(i)->num_rows();
-        log_input_bytes += input_gpu.at(i)->sizeInBytes();
+        log_input_bytes += input_gpu.at(i)->size_in_bytes();
     }
     
     CodeTimer executionEventTimer;

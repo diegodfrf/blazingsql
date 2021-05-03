@@ -47,34 +47,34 @@ std::string type_string(cudf::data_type dtype) {
 	}
 }
 
-void print_blazing_table_view(ral::frame::BlazingTableView table_view, const std::string table_name){
+void print_blazing_cudf_table_view(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string table_name){
 	std::cout<<"Table: "<<table_name<<std::endl;
-	std::cout<<"\t"<<"Num Rows: "<<table_view.num_rows()<<std::endl;
-	std::cout<<"\t"<<"Num Columns: "<<table_view.num_columns()<<std::endl;
-	assert(table_view.num_columns() == table_view.names().size());
-	for(int col_idx=0; col_idx<table_view.num_columns(); col_idx++){
+	std::cout<<"\t"<<"Num Rows: "<<table_view->num_rows()<<std::endl;
+	std::cout<<"\t"<<"Num Columns: "<<table_view->num_columns()<<std::endl;
+	assert(table_view.num_columns() == table_view->names().size());
+	for(int col_idx=0; col_idx<table_view->num_columns(); col_idx++){
 		std::string col_string;
 		if (table_view.num_rows() > 0){
 #ifdef BSQLDBGUTILS
 			col_string = cudf::test::to_string(table_view.column(col_idx), "|");
 #endif // BSQLDBGUTILS
 		}
-		std::cout<<"\t"<<table_view.names().at(col_idx)<<" ("<<"type: "<<type_string(table_view.column(col_idx).type())<<"): "<<col_string<<std::endl;
+		std::cout<<"\t"<<table_view->names().at(col_idx)<<" ("<<"type: "<<type_string(table_view->column_types(col_idx))<<"): "<<col_string<<std::endl;
 	}
 }
 
-void print_blazing_table_view_schema(ral::frame::BlazingTableView table_view, const std::string table_name){
+void print_blazing_table_view_schema(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string table_name){
 	std::cout<<blazing_table_view_schema_to_string(table_view, table_name);	
 }
 
-std::string blazing_table_view_schema_to_string(ral::frame::BlazingTableView table_view, const std::string table_name){
+std::string blazing_table_view_schema_to_string(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string table_name){
 	std::ostringstream ostream;
 	ostream <<"Table: "<<table_name<<std::endl;
-	ostream<<"\t"<<"Num Rows: "<<table_view.num_rows()<<std::endl;
-	ostream<<"\t"<<"Num Columns: "<<table_view.num_columns()<<std::endl;
-	assert(table_view.num_columns() == table_view.names().size());
-	for(int col_idx=0; col_idx<table_view.num_columns(); col_idx++){
-		ostream<<"\t"<<table_view.names().at(col_idx)<<" ("<<"type: "<<type_string(table_view.column(col_idx).type())<<")"<<std::endl;
+	ostream<<"\t"<<"Num Rows: "<<table_view->num_rows()<<std::endl;
+	ostream<<"\t"<<"Num Columns: "<<table_view->num_columns()<<std::endl;
+	assert(table_view.num_columns() == table_view->names().size());
+	for(int col_idx=0; col_idx<table_view->num_columns(); col_idx++){
+		ostream<<"\t"<<table_view->names().at(col_idx)<<" ("<<"type: "<<type_string(table_view->column_types(col_idx))<<")"<<std::endl;
 	}
 	return ostream.str();
 }

@@ -23,17 +23,17 @@ namespace utilities {
 
 using namespace ral::frame;
 
-bool checkIfConcatenatingStringsWillOverflow(const std::vector<BlazingTableView> & tables);
+bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<BlazingTableView>> & tables);
 bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::unique_ptr<BlazingTable>> & tables);
 
-std::unique_ptr<BlazingTable> concatTables(const std::vector<BlazingTableView> & tables);
+std::unique_ptr<BlazingTable> concatTables(const std::vector<std::shared_ptr<BlazingTableView>> & tables);
 
 std::unique_ptr<BlazingTable> getLimitedRows(const BlazingTableView& table, cudf::size_type num_rows, bool front=true);
 
-std::unique_ptr<ral::frame::BlazingTable> create_empty_table(const std::vector<std::string> &column_names,
+std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
 	const std::vector<cudf::data_type> &dtypes, std::vector<size_t> column_indices = std::vector<size_t>());
 
-std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<arrow::Type::type> &dtypes);
+std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<cudf::type_id> &dtypes);
 
 std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(std::shared_ptr<BlazingCudfTableView> table);
 

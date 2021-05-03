@@ -360,7 +360,7 @@ std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 	const ral::frame::BlazingTableView & table_left,
 	const ral::frame::BlazingTableView & table_right)
 {
-	std::unique_ptr<CudfTable> result_table;
+	std::unique_ptr<cudf::table> result_table;
 
 	if (this->join_type == CROSS_JOIN) {
 		result_table = cudf::cross_join(
@@ -379,7 +379,7 @@ std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 				equalityType);
 		} else if(this->join_type == LEFT_JOIN) {
 			//Removing nulls on right key columns before joining
-			std::unique_ptr<CudfTable> table_right_dropna;
+			std::unique_ptr<cudf::table> table_right_dropna;
 			bool has_nulls_right = ral::processor::check_if_has_nulls(table_right.view(), right_column_indices);
 			if(has_nulls_right){
 				table_right_dropna = cudf::drop_nulls(table_right.view(), right_column_indices);
@@ -423,19 +423,19 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 		}
 
 		auto log_input_num_rows = left_batch->num_rows() + right_batch->num_rows();
-		auto log_input_num_bytes = left_batch->sizeInBytes() + right_batch->sizeInBytes();
+		auto log_input_num_bytes = left_batch->size_in_bytes() + right_batch->size_in_bytes();
 
 		std::unique_ptr<ral::frame::BlazingTable> joined = join_set(left_batch->toBlazingTableView(), right_batch->toBlazingTableView());
 
 		auto log_output_num_rows = joined->num_rows();
-		auto log_output_num_bytes = joined->sizeInBytes();
+		auto log_output_num_bytes = joined->size_in_bytes();
 
 		if (filter_statement != "") {
 			auto filter_table = ral::processor::process_filter(joined->toBlazingTableView(), filter_statement, this->context.get());
 			eventTimer.stop();
 
 			log_output_num_rows = filter_table->num_rows();
-			log_output_num_bytes = filter_table->sizeInBytes();
+			log_output_num_bytes = filter_table->size_in_bytes();
 
 			this->add_to_output_cache(std::move(filter_table));
 		} else{
@@ -660,9 +660,9 @@ std::pair<bool, bool> JoinPartitionKernel::determine_if_we_are_scattering_a_smal
 	}
 
 	double left_batch_rows = (double)left_cache_data.num_rows();
-	double left_batch_bytes = (double)left_cache_data.sizeInBytes();
+	double left_batch_bytes = (double)left_cache_data.size_in_bytes();
 	double right_batch_rows = (double)right_cache_data.num_rows();
-	double right_batch_bytes = (double)right_cache_data.sizeInBytes();
+	double right_batch_bytes = (double)right_cache_data.size_in_bytes();
 	int64_t left_bytes_estimate;
 	if (!left_num_rows_estimate.first){
 		// if we cant get a good estimate of current bytes, then we will set to -1 to signify that

@@ -32,7 +32,7 @@ std::unique_ptr<ral::frame::BlazingTable> gdf_parser::parse_batch(
 	indices.reserve(column_indices.size());
 	std::transform(
 		column_indices.cbegin(), column_indices.cend(), std::back_inserter(indices), [](std::size_t x) { return x; });
-	CudfTableView tableView = data_handle.table_view.view().select(indices);
+	cudf::table_view tableView = data_handle.table_view.view().select(indices);
 
 	if(tableView.num_columns() <= 0) {
 		Library::Logging::Logger().logWarn("gdf_parser::parse_batch no columns were read");

@@ -48,7 +48,7 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 	// TODO this is just a default setting. Will want to be able to properly set null_order
 	std::unique_ptr<cudf::column> sort_indices = cudf::sorted_order( concatSamples->view(), sortOrderTypes, null_orders);
 
-	std::unique_ptr<CudfTable> sortedSamples = cudf::detail::gather( concatSamples->view(), sort_indices->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
+	std::unique_ptr<cudf::table> sortedSamples = cudf::detail::gather( concatSamples->view(), sort_indices->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
 
 	// lets get names from a non-empty table
 	std::vector<std::string> names;
@@ -90,7 +90,7 @@ std::vector<NodeColumnView> partitionData(Context * context,
 		sortOrderTypes.assign(searchColIndices.size(), cudf::order::ASCENDING);
 	}
 
-	std::vector<CudfTableView> partitioned_data = ral::operators::partition_table(pivots, table, sortOrderTypes, searchColIndices);
+	std::vector<cudf::table_view> partitioned_data = ral::operators::partition_table(pivots, table, sortOrderTypes, searchColIndices);
 
 	std::vector<Node> all_nodes = context->getAllNodes();
 
@@ -113,11 +113,11 @@ std::unique_ptr<BlazingTable> sortedMerger(std::vector<BlazingTableView> & table
 	// TODO this is just a default setting. Will want to be able to properly set null_order
 	std::vector<cudf::null_order> null_orders(sortOrderTypes.size(), cudf::null_order::AFTER);
 
-	std::vector<CudfTableView> cudf_table_views(tables.size());
+	std::vector<cudf::table_view> cudf_table_views(tables.size());
 	for(size_t i = 0; i < tables.size(); i++) {
 		cudf_table_views[i] = tables[i].view();
 	}
-	std::unique_ptr<CudfTable> merged_table = cudf::merge(cudf_table_views, sortColIndices, sortOrderTypes, null_orders);
+	std::unique_ptr<cudf::table> merged_table = cudf::merge(cudf_table_views, sortColIndices, sortOrderTypes, null_orders);
 
 	// lets get names from a non-empty table
 	std::vector<std::string> names;
@@ -143,7 +143,7 @@ std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partiti
 
 	auto gather_map = ral::utilities::vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
 
-	std::unique_ptr<CudfTable> pivots = cudf::detail::gather( sortedSamples.view(), gather_map->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
+	std::unique_ptr<cudf::table> pivots = cudf::detail::gather( sortedSamples.view(), gather_map->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
 
 	return std::make_unique<BlazingTable>(std::move(pivots), sortedSamples.names());
 }

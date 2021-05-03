@@ -37,14 +37,14 @@ public:
  	* @return The number of bytes needed for the BlazingTable decache would
 	* generate.
  	*/
-	size_t sizeInBytes() const override;
+	size_t size_in_bytes() const override;
 	/**
 	* Get the amount of disk space consumed by this CacheData
 	* Having this function allows us to have one api for seeing the consumption
 	* of all the CacheData objects that are currently in Caches.
 	* @return The number of bytes the ORC file consumes.
 	*/
-	size_t fileSizeInBytes() const;
+	size_t file_size_in_bytes() const;
 
 	/**
 	* Set the names of the columns to pass when decache if needed.
@@ -68,7 +68,7 @@ public:
 private:
 	std::vector<std::string> col_names; /**< The names of the columns, extracted from the ORC file. */
 	std::string filePath_; /**< The path to the ORC file. Is usually generated randomly. */
-	size_t size_in_bytes; /**< The size of the file being stored. */
+	size_t size_in_bytes_; /**< The size of the file being stored. */
 };
 
 } // namespace cache

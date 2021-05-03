@@ -89,7 +89,7 @@ TEST_F(CacheMachineTest, CacheMachineTest) {
 
 	for(int i = 0; i < 10; ++i) {
 		auto table = build_custom_table();
-		std::cout << ">> " << i << "|" << table->sizeInBytes() << std::endl;
+		std::cout << ">> " << i << "|" << table->size_in_bytes() << std::endl;
 		cacheMachine.addToCache(std::move(table));
 		if(i % 5 == 0) {
 			auto cacheTable = cacheMachine.pullFromCache();

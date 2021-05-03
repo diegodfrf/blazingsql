@@ -26,7 +26,7 @@ std::string randomString(std::size_t length) {
 CacheDataLocalFile::CacheDataLocalFile(std::unique_ptr<ral::frame::BlazingTable> table, std::string orc_files_path, std::string ctx_token)
 	: CacheData(CacheDataType::LOCAL_FILE, table->column_names(), table->column_types(), table->num_rows())
 {
-	this->size_in_bytes = table->size_in_bytes();
+	this->size_in_bytes_ = table->size_in_bytes();
 	this->filePath_ = orc_files_path + "/.blazing-temp-" + ctx_token + "-" + randomString(64) + ".orc";
 
 	// filling this->col_names
@@ -64,7 +64,7 @@ CacheDataLocalFile::CacheDataLocalFile(std::unique_ptr<ral::frame::BlazingTable>
 	}
 }
 
-size_t CacheDataLocalFile::fileSizeInBytes() const {
+size_t CacheDataLocalFile::file_size_in_bytes() const {
 	struct stat st;
 
 	if(stat(this->filePath_.c_str(), &st) == 0)
@@ -73,8 +73,8 @@ size_t CacheDataLocalFile::fileSizeInBytes() const {
 		throw;
 }
 
-size_t CacheDataLocalFile::sizeInBytes() const {
-	return size_in_bytes;
+size_t CacheDataLocalFile::size_in_bytes() const {
+	return size_in_bytes_;
 }
 
 std::unique_ptr<ral::frame::BlazingTable> CacheDataLocalFile::decache() {

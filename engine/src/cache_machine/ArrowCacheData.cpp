@@ -34,7 +34,7 @@ std::unique_ptr<ral::frame::BlazingTable> ArrowCacheData::decache() {
   return parser->parse_batch(handle, schema, projections, row_group_ids);
 }
 
-size_t ArrowCacheData::sizeInBytes() const {
+size_t ArrowCacheData::size_in_bytes() const {
   return 0;
   // TODO percy arrow
 //  size_t ret = 0;

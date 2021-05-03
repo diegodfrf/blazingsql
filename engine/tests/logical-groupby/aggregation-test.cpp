@@ -27,7 +27,7 @@ TYPED_TEST(AggregationTest, CheckBasicWithGroupby) {
 	cudf::test::fixed_width_column_wrapper<T> value{{10, 40, 70, 5, 2, 10, 11, 55}, {1, 1, 1, 1, 1, 1, 1, 0}};
 
 	std::vector<std::string> column_names{"A", "B"};
-	ral::frame::BlazingTableView table(CudfTableView{{key, value}}, column_names);
+	ral::frame::BlazingTableView table(cudf::table_view{{key, value}}, column_names);
 
 	std::vector<AggregateKind> aggregation_types{AggregateKind::SUM, AggregateKind::COUNT_VALID, 
 				AggregateKind::MIN, AggregateKind::MAX};
@@ -51,7 +51,7 @@ TYPED_TEST(AggregationTest, CheckBasicWithGroupby) {
 	cudf::test::fixed_width_column_wrapper<T> expect_agg2{{70, 40, 5, 11, 2, 0}, {1, 1, 1, 1, 1, 0}};
 	cudf::test::fixed_width_column_wrapper<T> expect_agg3{{70, 40, 10, 11, 2, 0}, {1, 1, 1, 1, 1, 0}};
 
-	CudfTableView expect_table{{expect_key, expect_agg0, expect_agg1, expect_agg2, expect_agg3}};
+	cudf::table_view expect_table{{expect_key, expect_agg0, expect_agg1, expect_agg2, expect_agg3}};
 
 	std::unique_ptr<cudf::table> sorted_result = cudf::sort_by_key(result->view(),result->view().select({0}));
 	std::unique_ptr<cudf::table> sorted_expected = cudf::sort_by_key(expect_table,expect_table.select({0}));
@@ -68,7 +68,7 @@ TYPED_TEST(AggregationTest, MoreComplexGroupby) {
 	cudf::test::fixed_width_column_wrapper<T> value{{10, 40, 70, 5, 2, 10, 11, 55}, {1, 1, 1, 1, 1, 1, 1, 0}};
 
 	std::vector<std::string> column_names{"A", "B"};
-	ral::frame::BlazingTableView table(CudfTableView{{key, value}}, column_names);
+	ral::frame::BlazingTableView table(cudf::table_view{{key, value}}, column_names);
 
 	std::vector<AggregateKind> aggregation_types{AggregateKind::SUM, AggregateKind::COUNT_VALID, 
 				AggregateKind::SUM, AggregateKind::COUNT_VALID};
@@ -92,7 +92,7 @@ TYPED_TEST(AggregationTest, MoreComplexGroupby) {
 	cudf::test::fixed_width_column_wrapper<int64_t> expect_agg2{{ 3,  4,  15,  6, 8, 0}, {1, 1, 1, 1, 1, 0}};
 	cudf::test::fixed_width_column_wrapper<int32_t> expect_agg3{{1, 1, 3, 1, 1, 0}, {1, 1, 1, 1, 1, 1}};
 
-	CudfTableView expect_table{{expect_key, expect_agg0, expect_agg1, expect_agg2, expect_agg3}};
+	cudf::table_view expect_table{{expect_key, expect_agg0, expect_agg1, expect_agg2, expect_agg3}};
 	
 	std::unique_ptr<cudf::table> sorted_result = cudf::sort_by_key(result->view(),result->view().select({0}));
 	std::unique_ptr<cudf::table> sorted_expected = cudf::sort_by_key(expect_table,expect_table.select({0}));
@@ -110,7 +110,7 @@ using T = TypeParam;
 	cudf::test::fixed_width_column_wrapper<T> col2{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
 	std::vector<std::string> column_names{"A", "B"};
-	ral::frame::BlazingTableView table(CudfTableView{{col1, col2}}, column_names);
+	ral::frame::BlazingTableView table(cudf::table_view{{col1, col2}}, column_names);
 
 	std::vector<int> group_column_indices{0, 1};
 
@@ -125,7 +125,7 @@ using T = TypeParam;
 	cudf::test::fixed_width_column_wrapper<T> expect_col1{{3,  4,  5,  5,  6, 8}, {1, 1, 1, 1, 1, 1}};
 	cudf::test::fixed_width_column_wrapper<T> expect_col2{{70, 40, 5, 10, 11, 2}, {1, 1, 1, 1, 1, 1}};
 
-	CudfTableView expect_table{{expect_col1, expect_col2}};
+	cudf::table_view expect_table{{expect_col1, expect_col2}};
 	
 	std::unique_ptr<cudf::table> sorted_result = cudf::sort_by_key(result->view(),result->view().select({0}));
 	std::unique_ptr<cudf::table> sorted_expected = cudf::sort_by_key(expect_table,expect_table.select({0}));
@@ -143,7 +143,7 @@ using T = TypeParam;
  	cudf::test::fixed_width_column_wrapper<T> col3{{3, 4, 2, 9, 1, 1, 1, 3}, {1, 1, 1, 0, 1, 1, 1, 1}};
 	
 	std::vector<std::string> column_names{"A", "B", "C"};
-	ral::frame::BlazingTableView table(CudfTableView{{col1, col2, col3}}, column_names);
+	ral::frame::BlazingTableView table(cudf::table_view{{col1, col2, col3}}, column_names);
 
 	std::vector<AggregateKind> aggregation_types{AggregateKind::SUM, AggregateKind::SUM, AggregateKind::COUNT_VALID,
 				AggregateKind::SUM, AggregateKind::COUNT_VALID, AggregateKind::COUNT_ALL, AggregateKind::MAX, AggregateKind::MAX};
@@ -169,7 +169,7 @@ using T = TypeParam;
 	cudf::test::fixed_width_column_wrapper<T> expect_agg7{{4}};
 	
 
-	CudfTableView expect_table{{expect_agg0, expect_agg1, expect_agg2, expect_agg3, expect_agg4, expect_agg5, expect_agg6, expect_agg7}};
+	cudf::table_view expect_table{{expect_agg0, expect_agg1, expect_agg2, expect_agg3, expect_agg4, expect_agg5, expect_agg6, expect_agg7}};
 
 	cudf::test::expect_tables_equivalent(result->view(), expect_table);										
 

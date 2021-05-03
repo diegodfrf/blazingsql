@@ -18,7 +18,7 @@ CacheDataIO::CacheDataIO(ral::io::data_handle handle,
 
 	}
 
-size_t CacheDataIO::sizeInBytes() const{
+size_t CacheDataIO::size_in_bytes() const{
 	return 0;
 }
 

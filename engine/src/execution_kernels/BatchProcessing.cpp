@@ -319,10 +319,10 @@ ral::execution::task_result BindableTableScan::do_process(std::vector< std::uniq
     try{
         if(this->filterable && !this->predicate_pushdown_done) {
             filtered_input = ral::processor::process_filter(input->toBlazingTableView(), expression, this->context.get());
-            filtered_input->setNames(fix_column_aliases(filtered_input->names(), expression));
+            filtered_input->set_column_names(fix_column_aliases(filtered_input->names(), expression));
             output->addToCache(std::move(filtered_input));
         } else {
-            input->setNames(fix_column_aliases(input->names(), expression));
+            input->set_column_names(fix_column_aliases(input->names(), expression));
             output->addToCache(std::move(input));
         }
     }catch(const rmm::bad_alloc& e){
@@ -343,7 +343,7 @@ kstatus BindableTableScan::run() {
     //if its empty we can just add it to the cache without scheduling
     if (!provider->has_next()) {
         auto empty = schema.makeEmptyBlazingTable(projections);
-        empty->setNames(fix_column_aliases(empty->names(), expression));
+        empty->set_column_names(fix_column_aliases(empty->names(), expression));
         this->add_to_output_cache(std::move(empty));
     } else {
 

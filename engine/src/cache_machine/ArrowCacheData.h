@@ -43,7 +43,7 @@ public:
 	* of all the CacheData objects that are currently in Caches.
 	* @return The number of bytes the BlazingTable consumes.
 	*/
-	size_t sizeInBytes() const override;
+	size_t size_in_bytes() const override;
 
 	/**
 	* Set the names of the columns of a BlazingTable.

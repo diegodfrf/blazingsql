@@ -40,7 +40,7 @@ public:
 	* of all the CacheData objects that are currently in Caches.
 	* @return The number of bytes the BlazingTable consumes.
 	*/
-	size_t sizeInBytes() const;
+	size_t size_in_bytes() const;
 
 	/**
 	* Set the names of the columns of a BlazingTable.
@@ -58,12 +58,12 @@ public:
 	* This allows you to read the data while it remains in cache.
 	* @return a view of the data in this instance.
 	*/
-	std::shared_ptr<ral::frame::BlazingCudfTableView> getTableView();
+	std::shared_ptr<ral::frame::BlazingTableView> getTableView();
 
 	void set_data(std::unique_ptr<ral::frame::BlazingCudfTable> table);
 
 protected:
-	std::unique_ptr<ral::frame::BlazingCudfTable> data; /**< Stores the data to be returned in decache */
+	std::unique_ptr<ral::frame::BlazingTable> data; /**< Stores the data to be returned in decache */
 };
 
 } // namespace cache

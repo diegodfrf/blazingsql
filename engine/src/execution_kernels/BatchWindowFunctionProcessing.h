@@ -25,7 +25,7 @@ public:
 		std::shared_ptr<Context> context,
 		std::shared_ptr<ral::cache::graph> query_graph);
 
-	std::unique_ptr<CudfColumn> compute_column_from_window_function(
+	std::unique_ptr<cudf::column> compute_column_from_window_function(
 		cudf::table_view input_cudf_view,
 		cudf::column_view input_col_view,
 		std::size_t pos, int & agg_param_count);

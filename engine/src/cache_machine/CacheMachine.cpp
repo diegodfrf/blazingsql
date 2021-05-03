@@ -105,7 +105,7 @@ bool CacheMachine::addHostFrameToCache(std::unique_ptr<ral::frame::BlazingHostTa
         cacheEventTimer.start();
 
 		num_rows_added += host_table->num_rows();
-		num_bytes_added += host_table->sizeInBytes();
+		num_bytes_added += host_table->size_in_bytes();
 
 		if (message_id == ""){
 			message_id = this->cache_machine_name;
@@ -218,7 +218,7 @@ bool CacheMachine::addCacheData(std::unique_ptr<ral::cache::CacheData> cache_dat
 	// we dont want to add empty tables to a cache, unless we have never added anything
 	if ((!this->something_added || cache_data->num_rows() > 0) || always_add){
 		num_rows_added += cache_data->num_rows();
-		num_bytes_added += cache_data->sizeInBytes();
+		num_bytes_added += cache_data->size_in_bytes();
 		int cacheIndex = 0;
 		ral::cache::CacheDataType type = cache_data->get_type();
 		if (type == ral::cache::CacheDataType::GPU){
@@ -306,9 +306,13 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
     // we dont want to add empty tables to a cache, unless we have never added anything
 	if (!this->something_added || table->num_rows() > 0 || always_add){
 		for (auto col_ind = 0; col_ind < table->num_columns(); col_ind++){
-      if (table->is_arrow()) continue;
-			if (table->view().column(col_ind).offset() > 0){
-				table->ensureOwnership();
+            // TODO percy arrow
+            ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
+	        bool is_arrow = (arrow_table_ptr != nullptr);
+            if (is_arrow) continue;
+            ral::frame::BlazingCudfTable *cudf_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+			if (cudf_table_ptr->view().column(col_ind).offset() > 0){
+				cudf_table_ptr->ensureOwnership();
 				break;
 			}
 
@@ -431,7 +435,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::get_or_wait(size_t index
 	}
     std::string message_id = message_data->get_message_id();
     size_t num_rows = message_data->get_data().num_rows();
-    size_t num_bytes = message_data->get_data().sizeInBytes();
+    size_t num_bytes = message_data->get_data().size_in_bytes();
     std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache();
 
     cacheEventTimer.stop();
@@ -462,7 +466,7 @@ std::unique_ptr<ral::cache::CacheData>  CacheMachine::get_or_wait_CacheData(size
 	}
     std::string message_id = message_data->get_message_id();
     size_t num_rows = message_data->get_data().num_rows();
-    size_t num_bytes = message_data->get_data().sizeInBytes();
+    size_t num_bytes = message_data->get_data().size_in_bytes();
 	std::unique_ptr<ral::cache::CacheData> output = message_data->release_data();
 
     cacheEventTimer.stop();
@@ -503,7 +507,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullFromCache() {
 	}
 
     size_t num_rows = message_data->get_data().num_rows();
-    size_t num_bytes = message_data->get_data().sizeInBytes();
+    size_t num_bytes = message_data->get_data().size_in_bytes();
     int dataType = static_cast<int>(message_data->get_data().get_type());
 	std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache();
 
@@ -535,7 +539,7 @@ std::unique_ptr<ral::cache::CacheData> CacheMachine::pullCacheData(std::string m
 		return nullptr;
 	}
     size_t num_rows = message_data->get_data().num_rows();
-    size_t num_bytes = message_data->get_data().sizeInBytes();
+    size_t num_bytes = message_data->get_data().size_in_bytes();
     int dataType = static_cast<int>(message_data->get_data().get_type());
 	std::unique_ptr<ral::cache::CacheData> output = message_data->release_data();
 
@@ -581,7 +585,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullUnorderedFromCache()
 	if (message_data){
         std::string message_id = message_data->get_message_id();
         size_t num_rows = message_data->get_data().num_rows();
-        size_t num_bytes = message_data->get_data().sizeInBytes();
+        size_t num_bytes = message_data->get_data().size_in_bytes();
         int dataType = static_cast<int>(message_data->get_data().get_type());
         std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache();
 
@@ -625,7 +629,7 @@ std::unique_ptr<ral::cache::CacheData> CacheMachine::pullCacheData() {
     }
 
     size_t num_rows = message_data->get_data().num_rows();
-    size_t num_bytes = message_data->get_data().sizeInBytes();
+    size_t num_bytes = message_data->get_data().size_in_bytes();
     int dataType = static_cast<int>(message_data->get_data().get_type());
     std::unique_ptr<ral::cache::CacheData> output = message_data->release_data();
 
@@ -659,7 +663,7 @@ size_t CacheMachine::downgradeCacheData() {
 
 			std::string message_id = all_messages[i]->get_message_id();
 			auto current_cache_data = all_messages[i]->release_data();
-			bytes_downgraded += current_cache_data->sizeInBytes();
+			bytes_downgraded += current_cache_data->size_in_bytes();
 			auto new_cache_data = CacheData::downgradeCacheData(std::move(current_cache_data), message_id, ctx);
 
 			auto new_message =	std::make_unique<message>(std::move(new_cache_data), message_id);
@@ -702,7 +706,7 @@ std::unique_ptr<ral::cache::CacheData> CacheMachine::pullAnyCacheData(const std:
 	std::string message_id = message_data->get_message_id();
     
     size_t num_rows = message_data->get_data().num_rows();
-    size_t num_bytes = message_data->get_data().sizeInBytes();
+    size_t num_bytes = message_data->get_data().size_in_bytes();
     int dataType = static_cast<int>(message_data->get_data().get_type());
     std::unique_ptr<ral::cache::CacheData> output = message_data->release_data();
 
@@ -773,7 +777,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 			break;
 		}
 		auto& cache_data = message_data->get_data();
-		total_bytes += cache_data.sizeInBytes();
+		total_bytes += cache_data.size_in_bytes();
 		message_id = message_data->get_message_id();
 		collected_messages.push_back(std::move(message_data));
 
@@ -789,7 +793,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 		num_rows = output->num_rows();
 	}	else {
 		std::vector<std::unique_ptr<ral::frame::BlazingTable>> tables_holder;
-		std::vector<ral::frame::BlazingTableView> table_views;
+		std::vector<std::shared_ptr<ral::frame::BlazingTableView>> table_views;
 		for (size_t i = 0; i < collected_messages.size(); i++){
             CodeTimer cacheEventTimer;
 		    cacheEventTimer.start();
@@ -892,7 +896,7 @@ std::unique_ptr<ral::cache::CacheData> ConcatenatingCacheMachine::pullCacheData(
 			break;
 		}
 		auto& cache_data = message_data->get_data();
-		total_bytes += cache_data.sizeInBytes();
+		total_bytes += cache_data.size_in_bytes();
 		message_id = message_data->get_message_id();
 		collected_messages.push_back(std::move(message_data));
 	} while (concat_all || (total_bytes + waitingCache->get_next_size_in_bytes() <= this->concat_cache_num_bytes));

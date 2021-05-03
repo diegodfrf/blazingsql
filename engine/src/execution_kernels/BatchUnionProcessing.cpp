@@ -20,7 +20,7 @@ ral::execution::task_result UnionKernel::do_process(std::vector< std::unique_ptr
 
     auto & input = inputs[0];
     try{
-        input->setNames(common_names);
+        input->set_column_names(common_names);
         ral::utilities::normalize_types(input, common_types);
     }catch(const rmm::bad_alloc& e){
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};

@@ -5,7 +5,7 @@
 #include <arrow/compute/api.h>
 
 // TODO percy arrow move code
-#include "utilities/CudfArrowUtils.h"
+#include "utilities/CommonOperations.h"
 #include "parser/expression_utils.hpp"
 #include "execution_kernels/LogicalProject.h"
 #include "operators/GroupBy.h"
@@ -189,7 +189,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 		std::unique_ptr<cudf::column> temp = cudf::make_column_from_scalar(*(reductions[i]), 1);
 		output_columns.emplace_back(std::move(temp));
 	}
-	return std::make_unique<ral::frame::BlazingTable>(std::make_unique<CudfTable>(std::move(output_columns)), agg_output_column_names);
+	return std::make_unique<ral::frame::BlazingTable>(std::make_unique<cudf::table>(std::move(output_columns)), agg_output_column_names);
 }
 
 } // namespace cpu
@@ -366,9 +366,9 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
     } else {
 
         try{
-            CudfTableView batch_view = input->view();
-            std::vector<CudfTableView> partitioned;
-            std::unique_ptr<CudfTable> hashed_data; // Keep table alive in this scope
+            cudf::table_view batch_view = input->view();
+            std::vector<cudf::table_view> partitioned;
+            std::unique_ptr<cudf::table> hashed_data; // Keep table alive in this scope
             if (batch_view.num_rows() > 0) {
                 std::vector<cudf::size_type> hashed_data_offsets;
                 std::tie(hashed_data, hashed_data_offsets) = cudf::hash_partition(input->view(), columns_to_hash, num_partitions);
@@ -499,7 +499,7 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
         auto concatenated = ral::utilities::concatTables(tableViewsToConcat);
 
         auto log_input_num_rows = concatenated ? concatenated->num_rows() : 0;
-        auto log_input_num_bytes = concatenated ? concatenated->sizeInBytes() : 0;
+        auto log_input_num_bytes = concatenated ? concatenated->size_in_bytes() : 0;
 
         std::vector<int> group_column_indices;
         std::vector<std::string> aggregation_input_expressions, aggregation_column_assigned_aliases;
@@ -541,7 +541,7 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
         eventTimer.stop();
 
         auto log_output_num_rows = columns->num_rows();
-        auto log_output_num_bytes = columns->sizeInBytes();
+        auto log_output_num_bytes = columns->size_in_bytes();
 
         output->addToCache(std::move(columns));
         columns = nullptr;

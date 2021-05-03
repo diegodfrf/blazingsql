@@ -13,7 +13,7 @@ BlazingHostTable::BlazingHostTable(const std::vector<ColumnTransport> &columns_o
             std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>> && allocations)
         : columns_offsets{columns_offsets}, chunked_column_infos{std::move(chunked_column_infos)}, allocations{std::move(allocations)} {
 
-    auto size = sizeInBytes();
+    auto size = size_in_bytes();
     blazing_host_memory_resource::getInstance().allocate(size); // this only increments the memory usage counter for the host memory. This does not actually allocate
 
 }
@@ -23,7 +23,7 @@ BlazingHostTable::BlazingHostTable(std::shared_ptr<arrow::Table> arrow_table)
 }
 
 BlazingHostTable::~BlazingHostTable() {
-    auto size = sizeInBytes();
+    auto size = size_in_bytes();
     blazing_host_memory_resource::getInstance().deallocate(size); // this only decrements the memory usage counter for the host memory. This does not actually allocate
     for(auto i = 0; i < allocations.size(); i++){
         auto pool = allocations[i]->allocation->pool;
@@ -40,7 +40,7 @@ std::vector<cudf::data_type> BlazingHostTable::get_schema() const {
     return data_types;
 }
 
-std::vector<std::string> BlazingHostTable::names() const {
+std::vector<std::string> BlazingHostTable::column_names() const {
     std::vector<std::string> col_names(this->num_columns());
     std::transform(columns_offsets.begin(), columns_offsets.end(), col_names.begin(),
                    [](auto &col) { return col.metadata.col_name; });
@@ -70,7 +70,7 @@ cudf::size_type BlazingHostTable::num_columns() const {
     return columns_offsets.size();
 }
 
-std::size_t BlazingHostTable::sizeInBytes() {
+std::size_t BlazingHostTable::size_in_bytes() {
     std::size_t total_size = 0L;
     for (auto &col : columns_offsets) {
         total_size += col.size_in_bytes;

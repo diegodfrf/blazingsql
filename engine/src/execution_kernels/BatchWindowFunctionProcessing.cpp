@@ -52,7 +52,7 @@ ComputeWindowKernel::ComputeWindowKernel(std::size_t kernel_id, const std::strin
 }
 
 // TODO: Support for RANK() and DENSE_RANK()
-std::unique_ptr<CudfColumn> ComputeWindowKernel::compute_column_from_window_function(
+std::unique_ptr<cudf::column> ComputeWindowKernel::compute_column_from_window_function(
     cudf::table_view input_table_cudf_view,
     cudf::column_view col_view_to_agg,
     std::size_t pos, int & agg_param_count ) {
@@ -77,7 +77,7 @@ std::unique_ptr<CudfColumn> ComputeWindowKernel::compute_column_from_window_func
 
     cudf::table_view partitioned_table_view(columns_to_partition);
 
-    std::unique_ptr<CudfColumn> windowed_col;
+    std::unique_ptr<cudf::column> windowed_col;
     if (window_expression_contains_partition_by(this->expression)) {
         if (is_first_value_window(this->type_aggs_as_str[pos]) || is_last_value_window(this->type_aggs_as_str[pos])) {
 
@@ -183,23 +183,23 @@ ral::execution::task_result ComputeWindowKernel::do_process(std::vector< std::un
             this->aggs_wind_func.push_back(aggr_kind_i);
         }
 
-        std::vector< std::unique_ptr<CudfColumn> > new_wf_cols;
+        std::vector< std::unique_ptr<cudf::column> > new_wf_cols;
         int agg_param_count = 0;
         for (std::size_t col_i = 0; col_i < this->type_aggs_as_str.size(); ++col_i) {
             cudf::column_view col_view_to_agg = input_table_cudf_view.column(column_indices_to_agg[col_i]);
 
             // calling main window function
-            std::unique_ptr<CudfColumn> windowed_col = compute_column_from_window_function(input_table_cudf_view, col_view_to_agg, col_i, agg_param_count);
+            std::unique_ptr<cudf::column> windowed_col = compute_column_from_window_function(input_table_cudf_view, col_view_to_agg, col_i, agg_param_count);
             new_wf_cols.push_back(std::move(windowed_col));
         }
 
         std::unique_ptr<cudf::table> cudf_table_input = input->releaseCudfTable();
-        std::vector< std::unique_ptr<CudfColumn> > input_cudf_columns = cudf_table_input->release();
+        std::vector< std::unique_ptr<cudf::column> > input_cudf_columns = cudf_table_input->release();
 
         size_t total_output_columns = input_cudf_columns.size() + new_wf_cols.size();
         size_t num_input_cols = input_cudf_columns.size();
         std::vector<std::string> output_names;
-        std::vector< std::unique_ptr<CudfColumn> > output_columns;
+        std::vector< std::unique_ptr<cudf::column> > output_columns;
 
         for (size_t col_i = 0; col_i < total_output_columns; ++col_i) {
             // appending wf columns
@@ -241,7 +241,7 @@ ral::execution::task_result ComputeWindowKernel::do_process(std::vector< std::un
 
         if (windowed_table) {
             cudf::size_type num_rows = windowed_table->num_rows();
-            std::size_t num_bytes = windowed_table->sizeInBytes();
+            std::size_t num_bytes = windowed_table->size_in_bytes();
         }
 
         output->addToCache(std::move(windowed_table));

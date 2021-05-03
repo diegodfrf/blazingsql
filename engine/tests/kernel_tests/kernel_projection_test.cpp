@@ -134,8 +134,8 @@ TYPED_TEST(ProjectionTest, OneBatchFullWithoutDelay) {
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B", "C"});
     std::unique_ptr<BlazingTable> batch = std::make_unique<BlazingTable>(std::move(cudf_table), names);
@@ -182,8 +182,8 @@ TYPED_TEST(ProjectionTest, OneBatchOneRowWithoutDelay) {
     cudf::test::fixed_width_column_wrapper<T> col1{{4}, {1}};
     cudf::test::strings_column_wrapper col2({"b"}, {1});
 
-    CudfTableView cudf_table_in_view {{col1, col2}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B"});
     std::unique_ptr<BlazingTable> batch = std::make_unique<BlazingTable>(std::move(cudf_table), names);
@@ -275,16 +275,16 @@ TYPED_TEST(ProjectionTest, TwoBatchsFullsWithoutDelay) {
     cudf::test::fixed_width_column_wrapper<T> col1_a{{14, 25, 3, 5}, {1, 1, 1, 1}};
     cudf::test::strings_column_wrapper col2_a({"b", "d", "a", "d"}, {1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3_a{{10, 40, 70, 5}, {1, 1, 1, 1}};
-    CudfTableView cudf_table_in_view_a {{col1_a, col2_a, col3_a}};
-    std::unique_ptr<CudfTable> cudf_table_a = std::make_unique<CudfTable>(cudf_table_in_view_a);
+    cudf::table_view cudf_table_in_view_a {{col1_a, col2_a, col3_a}};
+    std::unique_ptr<cudf::table> cudf_table_a = std::make_unique<cudf::table>(cudf_table_in_view_a);
     std::unique_ptr<BlazingTable> batch_1 = std::make_unique<BlazingTable>(std::move(cudf_table_a), names);
 
 	// Batch 2
     cudf::test::fixed_width_column_wrapper<T> col1_b{{28, 5, 6}, {1, 1, 1}};
     cudf::test::strings_column_wrapper col2_b({"l", "d", "k"}, {1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3_b{{2, 10, 11}, {1, 1, 1}};
-    CudfTableView cudf_table_in_view_b {{col1_b, col2_b, col3_b}};
-    std::unique_ptr<CudfTable> cudf_table_b = std::make_unique<CudfTable>(cudf_table_in_view_b);
+    cudf::table_view cudf_table_in_view_b {{col1_b, col2_b, col3_b}};
+    std::unique_ptr<cudf::table> cudf_table_b = std::make_unique<cudf::table>(cudf_table_in_view_b);
     std::unique_ptr<BlazingTable> batch_2 = std::make_unique<BlazingTable>(std::move(cudf_table_b), names);
 
 	// Context
@@ -334,8 +334,8 @@ TYPED_TEST(ProjectionTest, TwoBatchsFirstFullSecondEmptyWithoutDelays) {
 	// Batch 1
     cudf::test::fixed_width_column_wrapper<T> col1_a{{14, 25, 3, 5}, {1, 1, 1, 1}};
     cudf::test::strings_column_wrapper col2_a({"b", "d", "a", "d"}, {1, 1, 1, 1});
-    CudfTableView cudf_table_in_view_1 {{col1_a, col2_a}};
-    std::unique_ptr<CudfTable> cudf_table_1 = std::make_unique<CudfTable>(cudf_table_in_view_1);
+    cudf::table_view cudf_table_in_view_1 {{col1_a, col2_a}};
+    std::unique_ptr<cudf::table> cudf_table_1 = std::make_unique<cudf::table>(cudf_table_in_view_1);
     std::unique_ptr<BlazingTable> batch_full = std::make_unique<BlazingTable>(std::move(cudf_table_1), names);
 
 	// Batch 2
@@ -386,8 +386,8 @@ TYPED_TEST(ProjectionTest, OneBatchFullWithDelay) {
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"B", "C"});
     std::unique_ptr<BlazingTable> batch = std::make_unique<BlazingTable>(std::move(cudf_table), names);
@@ -480,8 +480,8 @@ TYPED_TEST(ProjectionTest, TwoBatchsFullWithDelays) {
     cudf::test::strings_column_wrapper col2_a({"b", "d", "a", "d"}, {1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3_a{{10, 40, 70, 5}, {1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view_a {{col1_a, col2_a, col3_a}};
-    std::unique_ptr<CudfTable> cudf_table_1 = std::make_unique<CudfTable>(cudf_table_in_view_a);
+    cudf::table_view cudf_table_in_view_a {{col1_a, col2_a, col3_a}};
+    std::unique_ptr<cudf::table> cudf_table_1 = std::make_unique<cudf::table>(cudf_table_in_view_a);
     std::unique_ptr<BlazingTable> batch_1 = std::make_unique<BlazingTable>(std::move(cudf_table_1), names);
 
 	// Batch 2
@@ -489,8 +489,8 @@ TYPED_TEST(ProjectionTest, TwoBatchsFullWithDelays) {
     cudf::test::strings_column_wrapper col2_b({"l", "d", "k"}, {1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3_b{{2, 10, 11}, {1, 1, 1}};
 
-    CudfTableView cudf_table_in_view_b {{col1_b, col2_b, col3_b}};
-    std::unique_ptr<CudfTable> cudf_table_2 = std::make_unique<CudfTable>(cudf_table_in_view_b);
+    cudf::table_view cudf_table_in_view_b {{col1_b, col2_b, col3_b}};
+    std::unique_ptr<cudf::table> cudf_table_2 = std::make_unique<cudf::table>(cudf_table_in_view_b);
     std::unique_ptr<BlazingTable> batch_2 = std::make_unique<BlazingTable>(std::move(cudf_table_2), names);
 
 	// Context
@@ -592,8 +592,8 @@ TYPED_TEST(ProjectionTest, TwoBatchsFirstEmptySecondFullWithDelays) {
 	// Batch2
     cudf::test::fixed_width_column_wrapper<T> col1{{14, 25, 3, 5}, {1, 1, 1, 1}};
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d"}, {1, 1, 1, 1});
-    CudfTableView cudf_table_in_view_1 {{col1, col2}};
-    std::unique_ptr<CudfTable> cudf_table_1 = std::make_unique<CudfTable>(cudf_table_in_view_1);
+    cudf::table_view cudf_table_in_view_1 {{col1, col2}};
+    std::unique_ptr<cudf::table> cudf_table_1 = std::make_unique<cudf::table>(cudf_table_in_view_1);
     std::unique_ptr<BlazingTable> batch_full = std::make_unique<BlazingTable>(std::move(cudf_table_1), names);
 
 	// Context
@@ -657,8 +657,8 @@ TEST_F(ProjectionTest2, LARGE_LITERAL) {
     cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<int64_t> col3{{1000, 4000, 7000, 500, 200, 100, 1100}, {1, 1, 1, 1, 1, 1, 1}};
 
-    CudfTableView cudf_table_in_view {{col1, col2, col3}};
-    std::unique_ptr<CudfTable> cudf_table = std::make_unique<CudfTable>(cudf_table_in_view);
+    cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+    std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
 
     std::vector<std::string> names({"A", "B", "C"});
     std::unique_ptr<BlazingTable> batch = std::make_unique<BlazingTable>(std::move(cudf_table), names);

@@ -13,6 +13,8 @@
 #include <cudf/strings/strings_column_view.hpp>
 #include <numeric>
 #include "blazing_table/BlazingColumnOwner.h"
+#include <cudf/detail/interop.hpp>
+#include <arrow/type.h>
 
 namespace ral {
 
@@ -34,7 +36,6 @@ std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<arrow::
 		return std::make_unique<ral::frame::BlazingTable>(arrow::Table::Make(table->schema(), table->columns()));
 	}
 }
-
 
 template<typename CPPType, typename ArrowScalarType>
 std::unique_ptr<cudf::scalar> to_cudf_numeric_scalar(cudf::data_type cudf_dtype, std::shared_ptr<arrow::Scalar> arrow_scalar) {
@@ -126,15 +127,15 @@ std::unique_ptr<cudf::scalar> to_cudf_scalar(std::shared_ptr<arrow::Scalar> arro
 namespace utilities {
 
 bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::unique_ptr<BlazingTable>> & tables) {
-	std::vector<ral::frame::BlazingTableView> tables_to_concat(tables.size());
+	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> tables_to_concat(tables.size());
 	for (std::size_t i = 0; i < tables.size(); i++){
-		tables_to_concat[i] = tables[i]->toBlazingTableView();
+		tables_to_concat[i] = tables[i]->to_table_view();
 	}
 
 	return checkIfConcatenatingStringsWillOverflow(tables_to_concat);
 }
 
-bool checkIfConcatenatingStringsWillOverflow(const std::vector<BlazingTableView> & tables) {
+bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<BlazingTableView>> & tables) {
 	if( tables.size() == 0 ) {
 		return false;
 	}
@@ -151,8 +152,8 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<BlazingTableView>
 	}
 
 
-	for(size_t col_idx = 0; col_idx < tables[non_empty_index[0]].get_schema().size(); col_idx++) {
-		if(tables[non_empty_index[0]].get_schema()[col_idx].id() == cudf::type_id::STRING) {
+	for(size_t col_idx = 0; col_idx < tables[non_empty_index[0]].column_types().size(); col_idx++) {
+		if(to_cudf_type(tables[non_empty_index[0]].column_types()[col_idx]).id() == cudf::type_id::STRING) {
 			std::size_t total_bytes_size = 0;
 			std::size_t total_offset_count = 0;
 
@@ -160,7 +161,7 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<BlazingTableView>
 				size_t table_idx = non_empty_index[i];
 
 				// Column i-th from the next tables are expected to have the same string data type
-				assert( tables[table_idx].get_schema()[col_idx].id() == cudf::type_id::STRING );
+				assert( cudf::detail::arrow_to_cudf_type(tables[table_idx].column_types()[col_idx]) == cudf::type_id::STRING );
 
 				auto & column = tables[table_idx].column(col_idx);
 				auto num_children = column.num_children();
@@ -187,11 +188,11 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<BlazingTableView>
 
 // TODO percy arrow here we need to think about how we want to manage hybrid tables
 // for now we will concat either cudf tables or arrow tables
-std::unique_ptr<BlazingTable> concatTables(const std::vector<BlazingTableView> & tables) {
+std::unique_ptr<BlazingTable> concatTables(const std::vector<shared_ptr<BlazingTableView>> & tables) {
 	assert(tables.size() >= 0);
 
 	std::vector<std::string> names;
-	std::vector<CudfTableView> table_views_to_concat;
+	std::vector<cudf::table_view> table_views_to_concat;
   std::vector<std::shared_ptr<arrow::Table>> arrow_tables_to_concat;
 	for(size_t i = 0; i < tables.size(); i++) {
 		if (tables[i].names().size() > 0){ // lets make sure we get the names from a table that is not empty
@@ -243,7 +244,7 @@ std::unique_ptr<BlazingTable> concatTables(const std::vector<BlazingTableView> &
     if (empty_count == table_views_to_concat.size()) {
       return std::make_unique<ral::frame::BlazingTable>(table_views_to_concat[0], names);
     }
-    std::unique_ptr<CudfTable> concatenated_tables = cudf::concatenate(table_views_to_concat);
+    std::unique_ptr<cudf::table> concatenated_tables = cudf::concatenate(table_views_to_concat);
     return std::make_unique<BlazingTable>(std::move(concatenated_tables), names);
   }
   
@@ -270,7 +271,7 @@ std::unique_ptr<BlazingTable> getLimitedRows(const BlazingTableView& table, cudf
 	}
 }
 
-std::unique_ptr<ral::frame::BlazingTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
+std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
 	const std::vector<cudf::data_type> &dtypes, std::vector<size_t> column_indices) {
 
 	if (column_indices.size() == 0){
@@ -290,14 +291,15 @@ std::unique_ptr<ral::frame::BlazingTable> create_empty_cudf_table(const std::vec
 std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<cudf::type_id> &dtypes) {
 	std::vector<std::unique_ptr<cudf::column>> columns(dtypes.size());
 	for (size_t idx =0; idx < dtypes.size(); idx++) {
-		columns[idx] = cudf::make_empty_column(cudf::data_type(dtypes[idx]));
+    auto dt = cudf::detail::arrow_to_cudf_type(arrow::DataType(dtypes[idx]));
+		columns[idx] = cudf::make_empty_column(cudf::data_type(dt));
 	}
 	return std::make_unique<cudf::table>(std::move(columns));
 }
 
-std::unique_ptr<ral::frame::BlazingTable> create_empty_table(const BlazingTableView & table) {
+std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const BlazingTableView & table) {
 
-	std::unique_ptr<CudfTable> empty = cudf::empty_like(table.view());
+	std::unique_ptr<cudf::table> empty = cudf::empty_like(table.view());
 	return std::make_unique<ral::frame::BlazingTable>(std::move(empty), table.names());
 }
 
@@ -363,7 +365,7 @@ void normalize_types(std::unique_ptr<ral::frame::BlazingTable> & table,  const s
 	std::vector<std::unique_ptr<ral::frame::BlazingColumn>> columns = table->releaseBlazingColumns();
 	for (size_t i = 0; i < column_indices.size(); i++){
 		if (!(columns[column_indices[i]]->view().type() == types[i])){
-			std::unique_ptr<CudfColumn> casted = cudf::cast(columns[column_indices[i]]->view(), types[i]);
+			std::unique_ptr<cudf::column> casted = cudf::cast(columns[column_indices[i]]->view(), types[i]);
 			columns[column_indices[i]] = std::make_unique<ral::frame::BlazingColumnOwner>(std::move(casted));
 		}
 	}

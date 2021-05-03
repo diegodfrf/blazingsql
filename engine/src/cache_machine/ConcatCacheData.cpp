@@ -4,7 +4,7 @@
 namespace ral {
 namespace cache {
 
-ConcatCacheData::ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_datas, const std::vector<std::string>& col_names, const std::vector<arrow::Type::type>& schema)
+ConcatCacheData::ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_datas, const std::vector<std::string>& col_names, const std::vector<cudf::data_type>& schema)
 	: CacheData(CacheDataType::CONCATENATING, col_names, schema, 0), _cache_datas{std::move(cache_datas)} {
 	n_rows = 0;
 	for (auto && cache_data : _cache_datas) {
@@ -16,7 +16,7 @@ ConcatCacheData::ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_d
 
 std::unique_ptr<ral::frame::BlazingTable> ConcatCacheData::decache() {
 	if(_cache_datas.empty()) {
-		return ral::utilities::create_empty_table(col_names, schema);
+		return ral::utilities::create_empty_cudf_table(col_names, schema);
 	}
 
 	if (_cache_datas.size() == 1)	{
@@ -24,10 +24,10 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatCacheData::decache() {
 	}
 
 	std::vector<std::unique_ptr<ral::frame::BlazingTable>> tables_holder;
-	std::vector<ral::frame::BlazingTableView> table_views;
+	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> table_views;
 	for (auto && cache_data : _cache_datas){
 		tables_holder.push_back(cache_data->decache());
-		table_views.push_back(tables_holder.back()->toBlazingTableView());
+		table_views.push_back(tables_holder.back()->to_table_view());
 
 		RAL_EXPECTS(!ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views), "Concatenating tables will overflow");
 	}
@@ -35,10 +35,10 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatCacheData::decache() {
 	return ral::utilities::concatTables(table_views);
 }
 
-size_t ConcatCacheData::sizeInBytes() const {
+size_t ConcatCacheData::size_in_bytes() const {
 	size_t total_size = 0;
 	for (auto && cache_data : _cache_datas) {
-		total_size += cache_data->sizeInBytes();
+		total_size += cache_data->size_in_bytes();
 	}
 	return total_size;
 };

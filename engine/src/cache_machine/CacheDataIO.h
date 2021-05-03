@@ -42,7 +42,7 @@ public:
 	* @return The number of bytes needed for the BlazingTable decache would
 	* generate.
 	*/
-	size_t sizeInBytes() const override;
+	size_t size_in_bytes() const override;
 
 	/**
 	* Set the names of the columns from the schema.

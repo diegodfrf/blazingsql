@@ -6,13 +6,13 @@ namespace ral {
 namespace communication {
 namespace messages {
 
-gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(ral::frame::BlazingCudfTableView table_view){
+gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(std::shared_ptr<ral::frame::BlazingCudfTableView> table_view){
 	std::vector<std::size_t> buffer_sizes;
 	std::vector<const char *> raw_buffers;
 	std::vector<ColumnTransport> column_offset;
 	std::vector<std::unique_ptr<rmm::device_buffer>> temp_scope_holder;
-	for(int i = 0; i < table_view.num_columns(); ++i) {
-		const cudf::column_view&column = table_view.column(i);
+	for(int i = 0; i < table_view->num_columns(); ++i) {
+		const cudf::column_view&column = table_view->column(i);
 		ColumnTransport col_transport = ColumnTransport{ColumnTransport::MetaData{
 															.dtype = (int32_t)column.type().id(),
 															.size = column.size(),
@@ -27,7 +27,7 @@ gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(ral::frame::Bla
 			.strings_data_size = 0,
 			.strings_offsets_size = 0,
 			.size_in_bytes = 0};
-		strcpy(col_transport.metadata.col_name, table_view.column_names().at(i).c_str());
+		strcpy(col_transport.metadata.col_name, table_view->column_names().at(i).c_str());
 
 		if (column.size() == 0) {
 			// do nothing
@@ -115,7 +115,7 @@ gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(ral::frame::Bla
 	return std::make_tuple(buffer_sizes, raw_buffers, column_offset, std::move(temp_scope_holder));
 }
 
-std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_table(ral::frame::BlazingCudfTableView table_view, bool use_pinned) {
+std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_table(std::shared_ptr<ral::frame::BlazingCudfTableView> table_view, bool use_pinned) {
 	std::vector<std::size_t> buffer_sizes;
 	std::vector<const char *> raw_buffers;
 	std::vector<ColumnTransport> column_offset;

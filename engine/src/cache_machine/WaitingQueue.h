@@ -258,7 +258,7 @@ public:
 				size_t total_bytes = 0;
 				if (!done_waiting) {					
 					for (auto & message : message_queue_){
-						total_bytes += message->get_data().sizeInBytes();
+						total_bytes += message->get_data().size_in_bytes();
 					}
 					done_waiting = total_bytes > num_bytes;
 				}
@@ -287,7 +287,7 @@ public:
 	size_t get_next_size_in_bytes(){
 		std::unique_lock<std::mutex> lock(mutex_);
 		if (message_queue_.size() > 0){
-			return message_queue_[0]->get_data().sizeInBytes();
+			return message_queue_[0]->get_data().size_in_bytes();
 		} else {
 			return 0;
 		}

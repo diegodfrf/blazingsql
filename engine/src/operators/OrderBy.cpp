@@ -60,7 +60,7 @@ std::unique_ptr<ral::frame::BlazingTable> logicalSort(
 	const std::vector<int> & sortColIndices,
 	const std::vector<cudf::order> & sortOrderTypes) {
 
-	CudfTableView sortColumns = table.view().select(sortColIndices);
+	cudf::table_view sortColumns = table.view().select(sortColIndices);
 
 	/*ToDo: Edit this according the Calcite output*/
 	std::vector<cudf::null_order> null_orders(sortColIndices.size(), cudf::null_order::AFTER);

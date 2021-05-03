@@ -88,7 +88,7 @@ std::unique_ptr<ral::frame::BlazingTable> csv_parser::parse_batch(
 			column_names_out[idx[i]] = csv_table.metadata.column_names[i];
 		}
 
-		std::unique_ptr<CudfTable> cudf_tb = std::make_unique<CudfTable>(std::move(columns_out));
+		std::unique_ptr<cudf::table> cudf_tb = std::make_unique<cudf::table>(std::move(columns_out));
 		return std::make_unique<ral::frame::BlazingTable>(std::move(cudf_tb), column_names_out);
 	}
 	return nullptr;

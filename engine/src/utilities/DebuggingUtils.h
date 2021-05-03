@@ -18,11 +18,11 @@ namespace utilities {
 
 std::string type_string(cudf::data_type dtype);
 
-void print_blazing_table_view(ral::frame::BlazingTableView table_view, const std::string table_name="");
+void print_blazing_cudf_table_view(std::shared_ptr<ral::frame::BlazingCudfTableView> table_view, const std::string table_name="");
 
-void print_blazing_table_view_schema(ral::frame::BlazingTableView table_view, const std::string table_name="");
+void print_blazing_table_view_schema(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string table_name="");
 
-std::string blazing_table_view_schema_to_string(ral::frame::BlazingTableView table_view, const std::string table_name);
+std::string blazing_table_view_schema_to_string(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string table_name);
 
 // std::string cache_data_schema_to_string(ral::cache::CacheData * cache_data);
 

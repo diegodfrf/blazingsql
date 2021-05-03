@@ -244,7 +244,7 @@ ral::execution::task_result SortAndSampleKernel::do_process(std::vector< std::un
                 if (get_samples.load()) {
                     population_sampled += sampledTable->num_rows(); 
                     total_num_rows_for_sampling += input->view().num_rows();
-                    total_bytes_for_sampling += input->sizeInBytes();
+                    total_bytes_for_sampling += input->size_in_bytes();
                     samplesTables.push_back(std::move(sampledTable));
                     if (population_sampled > max_order_by_samples) {
                         get_samples = false;  // we got enough samples, at least as max_order_by_samples
@@ -264,7 +264,7 @@ ral::execution::task_result SortAndSampleKernel::do_process(std::vector< std::un
 
             if(sortedTable){
                 auto num_rows = sortedTable->num_rows();
-                auto num_bytes = sortedTable->sizeInBytes();
+                auto num_bytes = sortedTable->size_in_bytes();
             }
 
             output->addToCache(std::move(sortedTable), "output_a");
@@ -604,7 +604,7 @@ ral::execution::task_result LimitKernel::do_process(std::vector< std::unique_ptr
             output->addToCache(std::move(input));
         } else {
             auto log_input_num_rows = input->num_rows();
-            auto log_input_num_bytes = input->sizeInBytes();
+            auto log_input_num_bytes = input->size_in_bytes();
 
             std::unique_ptr<ral::frame::BlazingTable> limited_input;
             bool output_is_just_input;
@@ -618,7 +618,7 @@ ral::execution::task_result LimitKernel::do_process(std::vector< std::unique_ptr
             eventTimer.stop();
 
             auto log_output_num_rows = output_is_just_input ? input->num_rows() : limited_input->num_rows();
-            auto log_output_num_bytes = output_is_just_input ? input->sizeInBytes() : limited_input->sizeInBytes();
+            auto log_output_num_bytes = output_is_just_input ? input->size_in_bytes() : limited_input->size_in_bytes();
 
             if (output_is_just_input)
                 output->addToCache(std::move(input));

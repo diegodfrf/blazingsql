@@ -51,9 +51,9 @@ TYPED_TEST(ApplyFilter, withNull)
     cudf::test::fixed_width_column_wrapper<T> col1({5, 4, 3, 5, 8, 5, 6}, {1, 1, 0, 1, 1, 1, 1});
     cudf::test::strings_column_wrapper col2({"d", "e", "a", "d", "k", "d", "l"}, {1, 0, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3({10, 40, 70, 5, 2, 10, 11}, {0, 1, 1, 1, 1, 1, 0});
-    // Then we create a CudfTableView from the column wrappers we created
-    CudfTableView cudf_table_in_view ({col1, col2, col3});
-    // Then using a vector of names and the CudfTableView we are able to create a BlazingTableView
+    // Then we create a cudf::table_view from the column wrappers we created
+    cudf::table_view cudf_table_in_view ({col1, col2, col3});
+    // Then using a vector of names and the cudf::table_view we are able to create a BlazingTableView
     std::vector<std::string> names({"A", "B", "C"});
     BlazingTableView table_in(cudf_table_in_view, names);    
 
@@ -69,7 +69,7 @@ TYPED_TEST(ApplyFilter, withNull)
     cudf::test::fixed_width_column_wrapper<T> expect_col1({5, 4, 8}, {1, 1,1});
     cudf::test::strings_column_wrapper expect_col2({"d", "e", "k"}, {1, 0, 1});
     cudf::test::fixed_width_column_wrapper<T> expect_col3({10, 40, 2}, {0, 1, 1});
-    CudfTableView expect_cudf_table_view ({expect_col1, expect_col2, expect_col3});
+    cudf::table_view expect_cudf_table_view ({expect_col1, expect_col2, expect_col3});
 
     // Here we are printing out the output we got (this is optional and only necessary for debugging)
     std::string col0_string = cudf::test::to_string(table_out->view().column(0), "|");
@@ -89,7 +89,7 @@ TYPED_TEST(ApplyFilter, withOutNull)
     cudf::test::fixed_width_column_wrapper<T> col1({5, 4, 3, 5, 8, 5, 6});
     cudf::test::strings_column_wrapper col2({"d", "e", "a", "d", "k", "d", "l"});
     cudf::test::fixed_width_column_wrapper<T> col3({10, 40, 70, 5, 2, 10, 11});
-    CudfTableView cudf_table_in_view ({col1, col2, col3});
+    cudf::table_view cudf_table_in_view ({col1, col2, col3});
     std::vector<std::string> names({"A", "B", "C"});
     BlazingTableView table_in(cudf_table_in_view, names);
     
@@ -103,7 +103,7 @@ TYPED_TEST(ApplyFilter, withOutNull)
     cudf::test::fixed_width_column_wrapper<T> expect_col1({5, 4, 8});
     cudf::test::strings_column_wrapper expect_col2({"d", "e", "k"});
     cudf::test::fixed_width_column_wrapper<T> expect_col3({10, 40, 2});
-    CudfTableView expect_cudf_table_view ({expect_col1, expect_col2, expect_col3});
+    cudf::table_view expect_cudf_table_view ({expect_col1, expect_col2, expect_col3});
 
     // std::string col0_string = cudf::test::to_string(table_out->view().column(0), "|");
     // std::cout<<"col0_string: "<<col0_string<<std::endl;
@@ -121,7 +121,7 @@ TYPED_TEST(ApplyFilter, withAndWithOutNull)
     cudf::test::fixed_width_column_wrapper<T> col1({5, 4, 3, 5, 8, 5, 6}, {1, 1, 0, 1, 1, 1, 1});
     cudf::test::strings_column_wrapper col2({"d", "e", "a", "d", "k", "d", "l"}, {1, 0, 1, 1, 1, 1, 1});
     cudf::test::fixed_width_column_wrapper<T> col3({10, 40, 70, 5, 2, 10, 11}, {0, 1, 1, 1, 1, 1, 0});
-    CudfTableView cudf_table_in_view ({col1, col2, col3});
+    cudf::table_view cudf_table_in_view ({col1, col2, col3});
     std::vector<std::string> names({"A", "B", "C"});
     BlazingTableView table_in(cudf_table_in_view, names);
     
@@ -135,7 +135,7 @@ TYPED_TEST(ApplyFilter, withAndWithOutNull)
     cudf::test::fixed_width_column_wrapper<T> expect_col1({5, 4, 8}, {1, 1,1});
     cudf::test::strings_column_wrapper expect_col2({"d", "e", "k"}, {1, 0, 1});
     cudf::test::fixed_width_column_wrapper<T> expect_col3({10, 40, 2}, {0, 1, 1});
-    CudfTableView expect_cudf_table_view ({expect_col1, expect_col2, expect_col3});
+    cudf::table_view expect_cudf_table_view ({expect_col1, expect_col2, expect_col3});
 
     std::string col0_string = cudf::test::to_string(table_out->view().column(0), "|");
     std::cout<<"col0_string: "<<col0_string<<std::endl;
@@ -196,7 +196,7 @@ TYPED_TEST(ApplyFilterDates, interatorWithNull)
     auto int32_iter = cudf::detail::make_counting_transform_iterator(100, [](auto i) { return int32_t(i * 2);});
     // this now is my column of int32 but generated using iterators
     cudf::test::fixed_width_column_wrapper<int32_t> int32_col(int32_iter, int32_iter + size, valids_iter);
-    CudfTableView cudf_table_in_view ({timestamp_col, int32_col});
+    cudf::table_view cudf_table_in_view ({timestamp_col, int32_col});
     std::vector<std::string> names({"A", "B"});
     BlazingTableView table_in(cudf_table_in_view, names);
     
@@ -222,7 +222,7 @@ TYPED_TEST(ApplyFilterDates, interatorWithNull)
     // this other column i can just create from vectors
     cudf::test::fixed_width_column_wrapper<int32_t> expect_col2({200, 202, 204, 208, 214}, {1, 0, 1, 1, 0});
     // those two columns become my expect_cudf_table_view
-    CudfTableView expect_cudf_table_view ({expect_col1, expect_col2});
+    cudf::table_view expect_cudf_table_view ({expect_col1, expect_col2});
 
     std::string col0_string = cudf::test::to_string(table_out->view().column(0), "|");
     std::cout<<"col0_string: "<<col0_string<<std::endl;

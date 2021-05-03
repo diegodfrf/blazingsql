@@ -34,7 +34,7 @@ public:
 
     std::vector<cudf::data_type> get_schema() const;
 
-    std::vector<std::string> names() const;
+    std::vector<std::string> column_names() const;
 
     void set_names(std::vector<std::string> names);
 
@@ -42,7 +42,7 @@ public:
 
     cudf::size_type num_columns() const ;
 
-    std::size_t sizeInBytes() ;
+    std::size_t size_in_bytes() ;
 
     void setPartitionId(const size_t &part_id) ;
 
