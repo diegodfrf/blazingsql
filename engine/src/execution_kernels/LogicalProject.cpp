@@ -959,6 +959,46 @@ std::string get_current_date_or_timestamp(std::string expression, blazingdb::man
 	return StringUtil::replace(expression, str_to_replace, timestamp_str);
 }
 
+
+struct process_project_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_view,
+      const std::vector<std::string> & expressions,
+      const std::vector<std::string> & out_column_names) const {
+    // TODO percy arrow thrown error
+    return nullptr;
+  }
+};
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingArrowTableView>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    const std::vector<std::string> & expressions,
+    const std::vector<std::string> & out_column_names) const
+{
+  return nullptr;
+}
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingCudfTableView>(
+  std::shared_ptr<ral::frame::BlazingTableView> table_view,
+  const std::vector<std::string> & expressions,
+  const std::vector<std::string> & out_column_names) const
+{
+  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
+  
+  std::unique_ptr<ral::frame::BlazingTable> evaluated_table = ral::execution::backend_dispatcher(
+    table_view->get_execution_backend(),
+    evaluate_expressions_functor(),
+    table_view, expressions);
+  
+  auto evaluated_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(evaluated_table.get());
+  
+  return std::make_unique<ral::frame::BlazingCudfTable>(evaluated_table_ptr->view(), out_column_names);
+}
+
+
 std::unique_ptr<ral::frame::BlazingTable> process_project(
   std::unique_ptr<ral::frame::BlazingTable> blazing_table_in,
   const std::string & query_part,
@@ -982,7 +1022,10 @@ std::unique_ptr<ral::frame::BlazingTable> process_project(
         out_column_names[i] = name;
     }
 
-    return std::make_unique<ral::frame::BlazingTable>(evaluate_expressions(blazing_table_in->view(), expressions), out_column_names);
+    return ral::execution::backend_dispatcher(
+      blazing_table_in->get_execution_backend(),
+      process_project_functor(),
+      blazing_table_in->to_table_view(), expressions, out_column_names);
 }
 
 } // namespace processor
