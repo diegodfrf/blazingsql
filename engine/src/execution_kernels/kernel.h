@@ -1,6 +1,7 @@
 #pragma once
 
 #include "kernel_type.h"
+#include "execution_graph/backend.hpp"
 #include "execution_graph/port.h"
 #include "execution_graph/graph.h"
 
@@ -216,7 +217,18 @@ public:
 	*/
 	std::size_t estimate_operating_bytes(const std::vector<std::unique_ptr<ral::cache::CacheData > > & inputs);
 
+	/**
+	 * @brief Returns the name of the kernel
+	 * @returns a string with the name of the kernel
+	 */
 	virtual std::string kernel_name() { return "base_kernel"; }
+
+	/**
+	 * @brief given an execution backend, it returns true or false if the do_process function has been implemented for that execution backend
+	 * @param backend the execition backend
+	 * @returns returns true if the do_process function has been implemented for that execution backend or false otherwise
+	 */
+	virtual bool has_execution_backend(execution::execution_backend backend);
 
 	/**
 	* @brief notify the kernel that a task it dispatched was completed successfully.
