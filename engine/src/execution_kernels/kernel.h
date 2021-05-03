@@ -225,7 +225,7 @@ public:
 
 	/**
 	 * @brief given an execution backend, it returns true or false if the do_process function has been implemented for that execution backend
-	 * @param backend the execition backend
+	 * @param backend the execution backend
 	 * @returns returns true if the do_process function has been implemented for that execution backend or false otherwise
 	 */
 	virtual bool has_execution_backend(execution::execution_backend backend);

@@ -171,12 +171,13 @@ public:
 	}
 
 	/**
-	* Remove the payload from this CacheData. A pure virtual function.
+	* @brief Remove the payload from this CacheData. A pure virtual function.
 	* This removes the payload for the CacheData. After this the CacheData will
 	* almost always go out of scope and be destroyed.
-	* @return a BlazingTable generated from the source of data for this CacheData
+	* @param backend the execution backend
+	* @return a BlazingTable generated from the source of data for this CacheData. The type of BlazingTable returned will depend on the backend
 	*/
-	virtual std::unique_ptr<ral::frame::BlazingTable> decache() = 0;
+	virtual std::unique_ptr<ral::frame::BlazingTable> decache(execution::execution_backend backend) = 0;
 
 	/**
 	* . A pure virtual function.
