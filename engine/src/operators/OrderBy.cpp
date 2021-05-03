@@ -69,7 +69,7 @@ std::unique_ptr<ral::frame::BlazingTable> logicalSort(
 
 	std::unique_ptr<cudf::table> gathered = cudf::gather( table.view(), output->view() );
 
-	return std::make_unique<ral::frame::BlazingTable>( std::move(gathered), table.names() );
+	return std::make_unique<ral::frame::BlazingTable>( std::move(gathered), table.column_names() );
 }
 
 
@@ -219,9 +219,9 @@ limit_table(const ral::frame::BlazingTableView & table, int64_t num_rows_limit) 
 
 	cudf::size_type table_rows = table.num_rows();
 	if (num_rows_limit <= 0) {
-		return std::make_tuple(std::make_unique<ral::frame::BlazingTable>(cudf::empty_like(table.view()), table.names()), false, 0);
+		return std::make_tuple(std::make_unique<ral::frame::BlazingTable>(cudf::empty_like(table.view()), table.column_names()), false, 0);
 	} else if (num_rows_limit >= table_rows) {
-		return std::make_tuple(std::make_unique<ral::frame::BlazingTable>(table.view(), table.names()), true, num_rows_limit - table_rows);
+		return std::make_tuple(std::make_unique<ral::frame::BlazingTable>(table.view(), table.column_names()), true, num_rows_limit - table_rows);
 	} else {
 		return std::make_tuple(ral::utilities::getLimitedRows(table, num_rows_limit), false, 0);
 	}
@@ -262,7 +262,7 @@ std::unique_ptr<ral::frame::BlazingTable> sample(const ral::frame::BlazingTableV
 		std::tie(sortColIndices, sortOrderTypes, std::ignore) = get_sort_vars(query_part);
 	}
 	
-	auto tableNames = table.names();
+	auto tableNames = table.column_names();
 	std::vector<std::string> sortColNames(sortColIndices.size());
 	std::transform(sortColIndices.begin(), sortColIndices.end(), sortColNames.begin(), [&](auto index) { return tableNames[index]; });
 

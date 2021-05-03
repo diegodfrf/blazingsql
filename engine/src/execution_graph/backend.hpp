@@ -78,7 +78,7 @@ public:
 
   execution::execution_backend get_execution_backend() const { return this->execution_backend; }
 
-private:
+protected:
   execution::execution_backend execution_backend;
 };
 

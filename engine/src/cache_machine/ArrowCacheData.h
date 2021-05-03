@@ -25,7 +25,7 @@ public:
 // 	* @param metadata The metadata that will be used in transport and planning.
 // 	*/
 // 	ArrowCacheData(std::unique_ptr<ral::frame::BlazingTable> table, const MetadataDictionary & metadata)
-// 		: CacheData(CacheDataType::GPU,table->names(), table->get_schema(), table->num_rows()),  data{std::move(table)} {
+// 		: CacheData(CacheDataType::GPU,table->column_names(), table->get_schema(), table->num_rows()),  data{std::move(table)} {
 // 			this->metadata = metadata;
 // 		}
 
@@ -62,7 +62,7 @@ public:
 // 	* @return a view of the data in this instance.
 // 	*/
 // 	ral::frame::BlazingTableView getTableView(){
-// 		return this->data->toBlazingTableView();
+// 		return this->data->to_table_view();
 // 	}
 
 // 	void set_data(std::unique_ptr<ral::frame::BlazingTable> table ){

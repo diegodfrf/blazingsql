@@ -44,7 +44,7 @@ std::unique_ptr<ral::frame::BlazingTable> gdf_parser::parse_batch(
 	// we need to output the same column names of tableView
 	for (size_t i = 0; i < column_indices.size(); ++i) {
 		size_t idx = column_indices[i];
-		column_names_out[i] = data_handle.table_view.names()[idx];
+		column_names_out[i] = data_handle.table_view.column_names()[idx];
 	}
 
 	return std::make_unique<ral::frame::BlazingTable>(tableView, column_names_out);

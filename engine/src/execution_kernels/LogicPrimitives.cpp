@@ -11,18 +11,22 @@ namespace ral {
 
 namespace frame{
 
+BlazingTableView::BlazingTableView(execution::backend_id execution_backend_id)
+  : BlazingDispatchable(execution_backend_id) {
+}
+
 BlazingTable::BlazingTable(execution::backend_id execution_backend_id, const bool & valid)
-  : BlazingDispatchable(execution_backend_id), valid(valid) {
+  : BlazingTableView(execution_backend_id), valid(valid) {
 }
 
 // BEGIN BlazingArrowTableView
 
 BlazingArrowTableView::BlazingArrowTableView(std::shared_ptr<arrow::Table> arrow_table)
-  : arrow_table(arrow_table) {
+  : BlazingTableView(ral::execution::backend_id::ARROW), arrow_table(arrow_table) {
 }
 
 BlazingArrowTableView::BlazingArrowTableView(BlazingArrowTableView &&other)
-  : arrow_table(std::move(other.arrow_table)) {
+  : BlazingTableView(ral::execution::backend_id::ARROW), arrow_table(std::move(other.arrow_table)) {
 }
 
 size_t BlazingArrowTableView::num_columns() const {  
@@ -92,37 +96,43 @@ std::shared_ptr<BlazingArrowTableView> BlazingArrowTable::to_table_view() {
 // BEGIN BlazingCudfTableView
 
 
-BlazingCudfTableView::BlazingCudfTableView(){
+BlazingCudfTableView::BlazingCudfTableView()
+  : BlazingTableView(ral::execution::backend_id::CUDF) {
 }
 
 BlazingCudfTableView::BlazingCudfTableView(
 	cudf::table_view table,
 	std::vector<std::string> columnNames)
-	: columnNames(std::move(columnNames)), table(std::move(table)){
+	: BlazingTableView(execution::backend_id::CUDF),
+	columnNames(std::move(columnNames)), table(std::move(table)){
 
 }
 
 BlazingCudfTableView::BlazingCudfTableView(BlazingCudfTableView const &other)
-  : columnNames(other.columnNames)
-  , table(other.table)
+  : BlazingTableView(ral::execution::backend_id::CUDF),
+  columnNames(other.columnNames),
+  table(other.table)
 {
 }
 
 BlazingCudfTableView::BlazingCudfTableView(BlazingCudfTableView &&other)
-  : columnNames(std::move(other.columnNames))
-  , table(std::move(other.table))
+  : BlazingTableView(ral::execution::backend_id::CUDF),
+  columnNames(std::move(other.columnNames)),
+  table(std::move(other.table))
 {
 }
 
 BlazingCudfTableView & BlazingCudfTableView::operator=(BlazingCudfTableView const &other) {
   this->columnNames = other.columnNames;
   this->table = other.table;
+	this->execution_backend = other.execution_backend;
   return *this;
 }
 
 BlazingCudfTableView & BlazingCudfTableView::operator=(BlazingCudfTableView &&other) {
   this->columnNames = std::move(other.columnNames);
   this->table = std::move(other.table);
+	this->execution_backend = std::move(other.execution_backend);
   return *this;
 }
 
@@ -130,11 +140,9 @@ std::vector<std::unique_ptr<BlazingColumn>> BlazingCudfTableView::toBlazingColum
 	return cudfTableViewToBlazingColumns(this->table);
 }
 
-
 size_t BlazingCudfTableView::num_columns() const {
   return table.num_columns();
 }
-
 
 size_t BlazingCudfTableView::num_rows() const {
   return table.num_rows();

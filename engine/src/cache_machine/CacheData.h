@@ -202,7 +202,7 @@ public:
 	* Get the names of the columns.
 	* @return a vector of the column names
 	*/
-	std::vector<std::string> names() const {
+	std::vector<std::string> column_names() const {
 		return col_names;
 	}
 

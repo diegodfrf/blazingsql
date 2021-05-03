@@ -87,7 +87,7 @@ void print_batch(const ral::io::data_handle & handle,
       parser.parse_batch(handle, schema, column_indices, row_groups);
   static int i = 0;
   ral::utilities::print_blazing_table_view(
-      bztbl->toBlazingTableView(), "holis" + std::to_string(++i));
+      bztbl->to_table_view(), "holis" + std::to_string(++i));
   std::cout << "TREMINO DE IMPRIMER CUDF TABLE!!! \n";
 }
 
@@ -242,7 +242,7 @@ TEST_F(SQLProviderTest, DISABLED_sqlite_select_all) {
             << " ncolumns =  " << table->num_columns() << std::endl
             << " nrows =  " << table->num_rows() << std::endl;
 
-  auto tv = table->toBlazingTableView();
+  auto tv = table->to_table_view();
 
   for(cudf::size_type i = 0; i < static_cast<cudf::size_type>(num_cols); i++) {
     cudf::test::print(tv.column(i));

@@ -175,7 +175,7 @@ ral::execution::task_result ComputeWindowKernel::do_process(std::vector< std::un
     try{
         cudf::table_view input_table_cudf_view = input->view();
 
-        std::vector<std::string> input_names = input->names();
+        std::vector<std::string> input_names = input->column_names();
         
         // fill all the Kind aggregations
         for (std::size_t col_i = 0; col_i < this->type_aggs_as_str.size(); ++col_i) {
@@ -354,12 +354,12 @@ ral::execution::task_result OverlapGeneratorKernel::do_process(std::vector< std:
         // first lets do the preceding overlap
         if (overlap_type == PRECEDING_OVERLAP_TYPE || overlap_type == BOTH_OVERLAP_TYPE){
             if (input->num_rows() > this->preceding_value){
-                auto limited = ral::utilities::getLimitedRows(input->toBlazingTableView(), this->preceding_value, false);
+                auto limited = ral::utilities::getLimitedRows(input->to_table_view(), this->preceding_value, false);
                 ral::cache::MetadataDictionary extra_metadata;
                 extra_metadata.add_value(ral::cache::OVERLAP_STATUS, DONE_OVERLAP_STATUS);
                 this->output_preceding_overlap_cache->addToCache(std::move(limited), "", true, extra_metadata);
             } else {
-                auto clone = input->toBlazingTableView().clone();
+                auto clone = input->to_table_view().clone();
                 ral::cache::MetadataDictionary extra_metadata;
                 extra_metadata.add_value(ral::cache::OVERLAP_STATUS, INCOMPLETE_OVERLAP_STATUS);
                 this->output_preceding_overlap_cache->addToCache(std::move(clone), "", true, extra_metadata);                
@@ -369,12 +369,12 @@ ral::execution::task_result OverlapGeneratorKernel::do_process(std::vector< std:
         // now lets do the following overlap
         if (overlap_type == FOLLOWING_OVERLAP_TYPE || overlap_type == BOTH_OVERLAP_TYPE){
             if (input->num_rows() > this->following_value){
-                auto limited = ral::utilities::getLimitedRows(input->toBlazingTableView(), this->following_value, true);
+                auto limited = ral::utilities::getLimitedRows(input->to_table_view(), this->following_value, true);
                 ral::cache::MetadataDictionary extra_metadata;
                 extra_metadata.add_value(ral::cache::OVERLAP_STATUS, DONE_OVERLAP_STATUS);
                 this->output_following_overlap_cache->addToCache(std::move(limited), "", true, extra_metadata);
             } else {
-                auto clone = input->toBlazingTableView().clone();
+                auto clone = input->to_table_view().clone();
                 ral::cache::MetadataDictionary extra_metadata;
                 extra_metadata.add_value(ral::cache::OVERLAP_STATUS, INCOMPLETE_OVERLAP_STATUS);
                 this->output_following_overlap_cache->addToCache(std::move(clone), "", true, extra_metadata);                
@@ -576,7 +576,7 @@ ral::execution::task_result OverlapAccumulatorKernel::do_process(std::vector< st
         bool preceding = overlap_type == PRECEDING_OVERLAP_TYPE;
 
         std::vector< std::unique_ptr<ral::frame::BlazingTable> > scope_holder;
-        std::vector<ral::frame::BlazingTableView> tables_to_concat;
+        std::vector< std::shared_ptr<ral::frame::BlazingTableView> > tables_to_concat;
         size_t rows_remaining = overlap_size;
 
         if (preceding) {
@@ -585,14 +585,14 @@ ral::execution::task_result OverlapAccumulatorKernel::do_process(std::vector< st
                 size_t cur_table_size = inputs[i]->num_rows();
                 if (cur_table_size > rows_remaining){
                     bool front = false;
-                    auto limited = ral::utilities::getLimitedRows(inputs[i]->toBlazingTableView(), rows_remaining, front);
-                    tables_to_concat.insert(tables_to_concat.begin(), 1, limited->toBlazingTableView());
+                    auto limited = ral::utilities::getLimitedRows(inputs[i]->to_table_view(), rows_remaining, front);
+                    tables_to_concat.insert(tables_to_concat.begin(), 1, limited->to_table_view());
                     scope_holder.push_back(std::move(limited));
                     rows_remaining = 0;
                     break;
                 } else {
                     rows_remaining -= cur_table_size;
-                    tables_to_concat.insert(tables_to_concat.begin(), 1, inputs[i]->toBlazingTableView());
+                    tables_to_concat.insert(tables_to_concat.begin(), 1, inputs[i]->to_table_view());
                 }
             }
 
@@ -602,14 +602,14 @@ ral::execution::task_result OverlapAccumulatorKernel::do_process(std::vector< st
                 size_t cur_table_size = inputs[i]->num_rows();
                 if (cur_table_size > rows_remaining){
                     bool front = true;
-                    auto limited = ral::utilities::getLimitedRows(inputs[i]->toBlazingTableView(), rows_remaining, front);
-                    tables_to_concat.push_back(limited->toBlazingTableView());
+                    auto limited = ral::utilities::getLimitedRows(inputs[i]->to_table_view(), rows_remaining, front);
+                    tables_to_concat.push_back(limited->to_table_view());
                     scope_holder.push_back(std::move(limited));
                     rows_remaining = 0;
                     break;
                 } else {
                     rows_remaining -= cur_table_size;
-                    tables_to_concat.push_back(inputs[i]->toBlazingTableView());
+                    tables_to_concat.push_back(inputs[i]->to_table_view());
                 }
             }
         }
@@ -849,7 +849,7 @@ kstatus OverlapAccumulatorKernel::run() {
         if (batch != nullptr) {
             if (col_names.size() == 0){
                 // we want to have this in case we need to make an empty table
-                this->col_names = batch->names();
+                this->col_names = batch->column_names();
                 this->schema = batch->get_schema();
             }
             batches_cache->put(cur_batch_ind, std::move(batch));
@@ -872,11 +872,11 @@ kstatus OverlapAccumulatorKernel::run() {
 
     // lets fill the empty overlaps that go at the very end of the cluster
     if (self_node_index == 0){ // first overlap of first node, so make it empty
-        std::unique_ptr<ral::frame::BlazingTable> empty_table = ral::utilities::create_empty_table(this->col_names, this->schema);
+        std::unique_ptr<ral::frame::BlazingTable> empty_table = ral::utilities::create_empty_cudf_table(this->col_names, this->schema);
         preceding_overlap_cache->put(0, std::move(empty_table));
     }
     if (self_node_index == total_nodes - 1){ // last overlap of last node, so make it empty
-        std::unique_ptr<ral::frame::BlazingTable> empty_table = ral::utilities::create_empty_table(this->col_names, this->schema);
+        std::unique_ptr<ral::frame::BlazingTable> empty_table = ral::utilities::create_empty_cudf_table(this->col_names, this->schema);
         following_overlap_cache->put(num_batches - 1, std::move(empty_table));
     } 
 

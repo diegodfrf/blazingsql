@@ -220,7 +220,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types7)
         query_part,
         context);
 
-  //  for (auto &&c : table_out->toBlazingTableView().view()) {
+  //  for (auto &&c : table_out->to_table_view().view()) {
   //     cudf::test::print(c);
   //     std::cout << std::endl;
   // }
@@ -261,7 +261,7 @@ TYPED_TEST(ProjectTestNumeric, test_rand)
         query_part,
         context);
 
-    for (auto &&c : table_out->toBlazingTableView().view()) {
+    for (auto &&c : table_out->to_table_view().view()) {
        cudf::test::print(c);
        std::cout << std::endl;
    }

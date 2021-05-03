@@ -39,7 +39,7 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 	// just to call concatTables
 	std::vector<BlazingTableView> samplesView;
 	for (std::size_t i = 0; i < samples.size(); i++){
-		samplesView.push_back(samples[i]->toBlazingTableView());
+		samplesView.push_back(samples[i]->to_table_view());
 	}
 
 	std::unique_ptr<BlazingTable> concatSamples = ral::utilities::concatTables(samplesView);
@@ -53,8 +53,8 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 	// lets get names from a non-empty table
 	std::vector<std::string> names;
 	for(size_t i = 0; i < samples.size(); i++) {
-		if (samples[i]->names().size() > 0){
-			names = samples[i]->names();
+		if (samples[i]->column_names().size() > 0){
+			names = samples[i]->column_names();
 			break;
 		}
 	}
@@ -81,7 +81,7 @@ std::vector<NodeColumnView> partitionData(Context * context,
 		std::vector<NodeColumnView> array_node_columns;
 		auto nodes = context->getAllNodes();
 		for(std::size_t i = 0; i < nodes.size(); ++i) {
-			array_node_columns.emplace_back(nodes[i], BlazingTableView(table.view(), table.names()));
+			array_node_columns.emplace_back(nodes[i], BlazingTableView(table.view(), table.column_names()));
 		}
 		return array_node_columns;
 	}
@@ -100,7 +100,7 @@ std::vector<NodeColumnView> partitionData(Context * context,
 	std::vector<NodeColumnView> partitioned_node_column_views;
 	for (int i = 0; static_cast<size_t>(i) < partitioned_data.size(); i++){
 		int node_idx = std::min(i / step, static_cast<int>(all_nodes.size() - 1));
-		partitioned_node_column_views.emplace_back(all_nodes[node_idx], BlazingTableView(partitioned_data[i], table.names()));
+		partitioned_node_column_views.emplace_back(all_nodes[node_idx], BlazingTableView(partitioned_data[i], table.column_names()));
 	}
 
 	return partitioned_node_column_views;
@@ -122,8 +122,8 @@ std::unique_ptr<BlazingTable> sortedMerger(std::vector<BlazingTableView> & table
 	// lets get names from a non-empty table
 	std::vector<std::string> names;
 	for(size_t i = 0; i < tables.size(); i++) {
-		if (tables[i].names().size() > 0){
-			names = tables[i].names();
+		if (tables[i].column_names().size() > 0){
+			names = tables[i].column_names();
 			break;
 		}
 	}
@@ -145,7 +145,7 @@ std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partiti
 
 	std::unique_ptr<cudf::table> pivots = cudf::detail::gather( sortedSamples.view(), gather_map->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
 
-	return std::make_unique<BlazingTable>(std::move(pivots), sortedSamples.names());
+	return std::make_unique<BlazingTable>(std::move(pivots), sortedSamples.column_names());
 }
 
 

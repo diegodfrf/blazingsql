@@ -220,7 +220,7 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 		names[2*index + 1] = "row_group_index";
 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
 		result->names = names;
-		auto table = ral::utilities::create_empty_table(dtypes);
+		auto table = ral::utilities::create_empty_cudf_table(dtypes);
 		result->table = std::make_unique<ResultTable>(std::move(table));
 		result->skipdata_analysis_fail = false;
 		return result;
@@ -247,9 +247,9 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	auto loader = std::make_shared<ral::io::data_loader>(parser, provider);
 	try{
 		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(offset.first);
-		// ral::utilities::print_blazing_table_view(metadata->toBlazingTableView());
+		// ral::utilities::print_blazing_table_view(metadata->to_table_view());
 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
-		result->names = metadata->names();
+		result->names = metadata->column_names();
 		result->table = std::make_unique<ResultTable>(metadata->releaseCudfTable());
 		result->skipdata_analysis_fail = false;
 		return result;

@@ -23,6 +23,7 @@
 #include "execution_kernels/LogicalFilter.h"
 #include "execution_kernels/LogicalProject.h"
 #include "io/data_provider/sql/AbstractSQLDataProvider.h"
+#include "execution_graph/backend_dispatcher.h"
 
 namespace ral {
 namespace batch {
@@ -310,19 +311,40 @@ BindableTableScan::BindableTableScan(std::size_t kernel_id, const std::string & 
     }
 }
 
+
+template <typename T>
+struct filter_op{
+  std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> in) const {
+    return nullptr;
+  }
+};
+
+template<>
+struct filter_op{
+  filter_op(): backend(ral::execution::execution_backend(ral::execution::backend_id::CUDF)) {} 
+  
+  std::unique_ptr<ral::frame::BlazingCudfTable> operator()(std::shared_ptr<ral::frame::BlazingCudfTableView> in) const {
+    return nullptr;
+  }
+  execution::execution_backend backend;
+};
+
 ral::execution::task_result BindableTableScan::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
     auto & input = inputs[0];
     std::unique_ptr<ral::frame::BlazingTable> filtered_input;
 
+      
     try{
         if(this->filterable && !this->predicate_pushdown_done) {
-            filtered_input = ral::processor::process_filter(input->toBlazingTableView(), expression, this->context.get());
-            filtered_input->set_column_names(fix_column_aliases(filtered_input->names(), expression));
+            filter_op f;
+            filtered_input = ral::execution::backend_dispatcher(f, input->to_table_view(), expression, this->context.get());
+            //filtered_input = ral::processor::process_filter(input->to_table_view(), expression, this->context.get());
+            filtered_input->set_column_names(fix_column_aliases(filtered_input->column_names(), expression));
             output->addToCache(std::move(filtered_input));
         } else {
-            input->set_column_names(fix_column_aliases(input->names(), expression));
+            input->set_column_names(fix_column_aliases(input->column_names(), expression));
             output->addToCache(std::move(input));
         }
     }catch(const rmm::bad_alloc& e){
@@ -343,7 +365,7 @@ kstatus BindableTableScan::run() {
     //if its empty we can just add it to the cache without scheduling
     if (!provider->has_next()) {
         auto empty = schema.makeEmptyBlazingTable(projections);
-        empty->set_column_names(fix_column_aliases(empty->names(), expression));
+        empty->set_column_names(fix_column_aliases(empty->column_names(), expression));
         this->add_to_output_cache(std::move(empty));
     } else {
 
@@ -456,7 +478,7 @@ kstatus Projection::run() {
     // we want to avoid caching and decahing for this kernel
     bool bypassing_project, bypassing_project_with_aliases;
     std::vector<std::string> aliases;
-    std::vector<std::string> column_names = cache_data->names();
+    std::vector<std::string> column_names = cache_data->column_names();
     std::tie(bypassing_project, bypassing_project_with_aliases, aliases) = bypassingProject(this->expression, column_names);
 
     while(cache_data != nullptr){
@@ -525,7 +547,7 @@ ral::execution::task_result Filter::do_process(std::vector< std::unique_ptr<ral:
     std::unique_ptr<ral::frame::BlazingTable> columns;
     try{
         auto & input = inputs[0];
-        columns = ral::processor::process_filter(input->toBlazingTableView(), expression, this->context.get());
+        columns = ral::processor::process_filter(input->to_table_view(), expression, this->context.get());
         output->addToCache(std::move(columns));
     }catch(const rmm::bad_alloc& e){
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
@@ -608,7 +630,7 @@ kstatus Print::run() {
     BatchSequence input(this->input_cache(), this);
     while (input.wait_for_next() ) {
         auto batch = input.next();
-        ral::utilities::print_blazing_table_view(batch->toBlazingTableView());
+        ral::utilities::print_blazing_table_view(batch->to_table_view());
     }
     return kstatus::stop;
 }

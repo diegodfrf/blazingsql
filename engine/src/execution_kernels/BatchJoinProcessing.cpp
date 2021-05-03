@@ -425,13 +425,13 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 		auto log_input_num_rows = left_batch->num_rows() + right_batch->num_rows();
 		auto log_input_num_bytes = left_batch->size_in_bytes() + right_batch->size_in_bytes();
 
-		std::unique_ptr<ral::frame::BlazingTable> joined = join_set(left_batch->toBlazingTableView(), right_batch->toBlazingTableView());
+		std::unique_ptr<ral::frame::BlazingTable> joined = join_set(left_batch->to_table_view(), right_batch->to_table_view());
 
 		auto log_output_num_rows = joined->num_rows();
 		auto log_output_num_bytes = joined->size_in_bytes();
 
 		if (filter_statement != "") {
-			auto filter_table = ral::processor::process_filter(joined->toBlazingTableView(), filter_statement, this->context.get());
+			auto filter_table = ral::processor::process_filter(joined->to_table_view(), filter_statement, this->context.get());
 			eventTimer.stop();
 
 			log_output_num_rows = filter_table->num_rows();
@@ -495,8 +495,8 @@ kstatus PartwiseJoin::run() {
 				}
 			}
 
-			std::vector<std::string> left_names = left_cache_data->names();
-			std::vector<std::string> right_names = right_cache_data->names();
+			std::vector<std::string> left_names = left_cache_data->column_names();
+			std::vector<std::string> right_names = right_cache_data->column_names();
 			this->result_names.reserve(left_names.size() + right_names.size());
 			this->result_names.insert(this->result_names.end(), left_names.begin(), left_names.end());
 			this->result_names.insert(this->result_names.end(), right_names.begin(), right_names.end());
@@ -1066,7 +1066,7 @@ ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::uni
 
 			std::vector<ral::frame::BlazingTableView> partitions;
 			for(auto partition : partitioned) {
-				partitions.push_back(ral::frame::BlazingTableView(partition, input->names()));
+				partitions.push_back(ral::frame::BlazingTableView(partition, input->column_names()));
 			}
 
 			scatter(partitions,

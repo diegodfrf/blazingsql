@@ -41,7 +41,7 @@ TYPED_TEST(AggregationTest, CheckBasicWithGroupby) {
 
 	// for (int i = 0; i < result->view().num_columns(); i++){
 	// 	std::string col_string = cudf::test::to_string(result->view().column(i), "|");
-    // 	std::cout<<result->names()[i]<<": "<<col_string<<std::endl;
+    // 	std::cout<<result->column_names()[i]<<": "<<col_string<<std::endl;
 	// }
 	
 
@@ -82,7 +82,7 @@ TYPED_TEST(AggregationTest, MoreComplexGroupby) {
 
 	// for (int i = 0; i < result->view().num_columns(); i++){
 	// 	std::string col_string = cudf::test::to_string(result->view().column(i), "|");
-    // 	std::cout<<result->names()[i]<<" : "<<col_string<<std::endl;
+    // 	std::cout<<result->column_names()[i]<<" : "<<col_string<<std::endl;
 	// }
 	
 
@@ -119,7 +119,7 @@ using T = TypeParam;
 
 	// for (int i = 0; i < result->view().num_columns(); i++){
 	// 	std::string col_string = cudf::test::to_string(result->view().column(i), "|");
-    // 	std::cout<<result->names()[i]<<" : "<<col_string<<std::endl;
+    // 	std::cout<<result->column_names()[i]<<" : "<<col_string<<std::endl;
 	// }
 	
 	cudf::test::fixed_width_column_wrapper<T> expect_col1{{3,  4,  5,  5,  6, 8}, {1, 1, 1, 1, 1, 1}};
@@ -156,7 +156,7 @@ using T = TypeParam;
 
 	// for (int i = 0; i < result->view().num_columns(); i++){
 	// 	std::string col_string = cudf::test::to_string(result->view().column(i), "|");
-    // 	std::cout<<result->names()[i]<<" : "<<col_string<<std::endl;
+    // 	std::cout<<result->column_names()[i]<<" : "<<col_string<<std::endl;
 	// }
 	
 	cudf::test::fixed_width_column_wrapper<int64_t> expect_agg0{{15}};

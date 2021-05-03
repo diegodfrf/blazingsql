@@ -75,7 +75,7 @@ std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(int offset) 
 			files.push_back(handle.file_handle);
 		}
 		metadata_batches.emplace_back(this->parser->get_metadata(handles, offset));
-		metadata_batches_views.emplace_back(metadata_batches.back()->toBlazingTableView());
+		metadata_batches_views.emplace_back(metadata_batches.back()->to_table_view());
 		offset += files.size();
 		this->provider->close_file_handles();
 	}

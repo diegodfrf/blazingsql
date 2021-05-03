@@ -5,29 +5,11 @@
 #include "LogicalProject.h"
 #include "parser/expression_utils.hpp"
 #include "utilities/error.hpp"
+#include "execution_graph/backend_dispatcher.h"
+#include "blazing_table/BlazingColumn.h"
+#include "blazing_table/BlazingColumnView.h"
 
-// TODO percy arrow move code
 
-namespace ral {
-namespace cpu {
-
-std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
-  std::shared_ptr<arrow::Table> table,
-  std::shared_ptr<arrow::ChunkedArray> boolValues){
-  //auto filteredTable = cudf::apply_boolean_mask(
-  //  table.view(),boolValues);
-  //return std::make_unique<ral::frame::BlazingTable>(std::move(
-  //  filteredTable),table.names());
-}
-
-std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluate_expressions(
-    std::shared_ptr<arrow::Table> table,
-    const std::vector<std::string> & expressions) {
-  std::cout << "FILTERRRRRRRRRRRRRRRRRR ARROWWWWWWWWWWWWWWWWWWWWWWWWWWWWW!!!!!!!\n";
-}
-
-} // namespace cpu
-} // namespace ral
 
 namespace ral {
 namespace processor {
@@ -46,41 +28,29 @@ bool is_logical_filter(const std::string & query_part) {
   return query_part.find(LOGICAL_FILTER) != std::string::npos;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
-  const ral::frame::BlazingTableView & table,
-  const cudf::column_view & boolValues){
-  auto filteredTable = cudf::apply_boolean_mask(table.view(),boolValues);
-  return std::make_unique<ral::frame::BlazingTable>(std::move(filteredTable),table.names());
-}
-
 std::unique_ptr<ral::frame::BlazingTable> process_filter(
-  const ral::frame::BlazingTableView & table_view,
+  std::shared_ptr<ral::frame::BlazingTableView> table_view,
   const std::string & query_part,
   blazingdb::manager::Context * /*context*/) {
 
-	if(table_view.num_rows() == 0) {
-		return std::make_unique<ral::frame::BlazingTable>(cudf::empty_like(table_view.view()), table_view.names());
+	if(table_view->num_rows() == 0) {
+		return ral::execution::backend_dispatcher(table_view->get_execution_backend(), build_only_schema(), table_view);
 	}
 
   std::string conditional_expression = get_named_expression(query_part, "condition");
 	if(conditional_expression.empty()) {
 		conditional_expression = get_named_expression(query_part, "filters");
 	}
+  
+  std::vector<std::string> conditional_expressions;
+  conditional_expressions.push_back(conditional_expression);
 
-  if (table_view.is_arrow()) {
-    std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluated_table = ral::cpu::evaluate_expressions(table_view.arrow_table(), {conditional_expression});
+  std::unique_ptr<ral::frame::BlazingTable> evaluated_table = ral::execution::backend_dispatcher(
+    table_view->get_execution_backend(),
+    evaluate_expressions_functor(),
+    table_view, conditional_expressions);
 
-    // TODO percy arrow
-    //RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression does not evaluate to a boolean mask");
-
-    return ral::cpu::applyBooleanFilter(table_view.arrow_table(), evaluated_table[0]);
-  } else {
-    std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluated_table = evaluate_expressions(table_view.view(), {conditional_expression});
-
-    RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression does not evaluate to a boolean mask");
-
-    return applyBooleanFilter(table_view, evaluated_table[0]->view());
-  }
+  return evaluated_table;
 }
 
 
