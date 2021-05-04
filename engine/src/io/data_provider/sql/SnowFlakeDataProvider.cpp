@@ -177,7 +177,7 @@ snowflake_data_provider::snowflake_data_provider(
     : abstractsql_data_provider{sql, total_number_of_nodes, self_node_idx},
       sqlHEnv{nullptr}, sqlHdbc{nullptr}, row_count{0},
       batch_position{0}, completed{false} {
-  if (!sql.dsn.empty()) {
+  if (sql.dsn.empty()) {
     const char * condaPrefixc_str = std::getenv("CONDA_PREFIX");
     if (condaPrefixc_str == nullptr) {
       throw std::runtime_error{"Conda environment not activated"};
