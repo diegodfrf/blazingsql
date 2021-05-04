@@ -43,6 +43,11 @@
 #include <libpq-fe.h>
 #endif
 
+#ifdef SNOWFLAKE_SUPPORT
+#include <sqltypes.h>
+#undef BOOL  // trick to avoid compilation errores from arrow data type bool
+#endif
+
 namespace ral {
 namespace io {
 
@@ -60,6 +65,9 @@ struct sql_datasource {
 #endif
 #ifdef POSTGRESQL_SUPPORT
   std::shared_ptr<PGresult> postgresql_result = nullptr;
+#endif
+#ifdef SNOWFLAKE_SUPPORT
+  std::shared_ptr<SQLHSTMT> snowflake_sqlhdbc = nullptr;
 #endif
   // TODO percy c.gonzales add other backends here
 };

@@ -204,6 +204,32 @@ NOTES:
 - By disabling the storage plugins you don't need to install mysql-connector-cpp=8.0.23 libpq=13 sqlite=3 (neither any of its dependencies).
 - Currenlty we support only MySQL. but PostgreSQL and SQLite will be ready for the next version!
 
+##### SnowFlake
+SnowFlake works with [unixODBC](http://www.unixodbc.com/). To use your DSN you need to create the ini files for driver and dsn:
+
+```ini
+# /etc/odbcinst.ini
+[SnowflakeDSIIDriver]
+APILevel=1
+ConnectFunctions=YYY
+Description=Snowflake DSII
+Driver=/path/to/snowflake_odbc/lib/libSnowflake.so
+DriverODBCVer=03.52
+SQLLevel=1
+
+# /etc/odbc.ini
+[MyDSN]
+Description=SnowflakeDB
+Driver=SnowflakeDSIIDriver
+Locale=en-US
+SERVER=myaccount.snowflakecomputing.com
+PORT=443
+SSL=on
+ACCOUNT=myaccount
+```
+
+Finally, we are working with the [snowflake driver for odbc 2.23.2](https://sfc-repo.snowflakecomputing.com/odbc/linux/2.23.2/index.html).
+
 # Documentation
 User guides and public APIs documentation can be found at [here](https://docs.blazingdb.com/docs)
 
@@ -239,4 +265,4 @@ The RAPIDS suite of open source software libraries aim to enable execution of en
 
 ## Apache Arrow on GPU
 
-The GPU version of [Apache Arrow](https://arrow.apache.org/) is a common API that enables efficient interchange of tabular data between processes running on the GPU. End-to-end computation on the GPU avoids unnecessary copying and converting of data off the GPU, reducing compute time and cost for high-performance analytics common in artificial intelligence workloads. As the name implies, cuDF uses the Apache Arrow columnar data format on the GPU. Currently, a subset of the features in Apache Arrow are supported. 
+The GPU version of [Apache Arrow](https://arrow.apache.org/) is a common API that enables efficient interchange of tabular data between processes running on the GPU. End-to-end computation on the GPU avoids unnecessary copying and converting of data off the GPU, reducing compute time and cost for high-performance analytics common in artificial intelligence workloads. As the name implies, cuDF uses the Apache Arrow columnar data format on the GPU. Currently, a subset of the features in Apache Arrow are supported.
