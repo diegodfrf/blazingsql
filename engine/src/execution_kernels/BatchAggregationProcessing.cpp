@@ -192,7 +192,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		std::unique_ptr<cudf::column> temp = cudf::make_column_from_scalar(*(reductions[i]), 1);
  		output_columns.emplace_back(std::move(temp));
  	}
- 	return std::make_unique<ral::frame::BlazingTable>(std::make_unique<cudf::table>(std::move(output_columns)), agg_output_column_names);
+ 	return std::make_unique<ral::frame::BlazingCudfTable>(std::make_unique<cudf::table>(std::move(output_columns)), agg_output_column_names);
 }
 
 } // namespace cpu
@@ -428,6 +428,60 @@ std::pair<bool, uint64_t> ComputeAggregateKernel::get_estimated_output_num_rows(
 
 // END ComputeAggregateKernel
 
+struct create_empty_table_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_view) const
+  {
+    // TODO percy arrow thrown error
+    return nullptr;
+  }
+};
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view) const
+{
+  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
+}
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view) const
+{
+  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
+  std::unique_ptr<cudf::table> empty = cudf::empty_like(cudf_table_view->view());
+  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(empty), cudf_table_view->column_names());
+}
+
+std::vector<std::shared_ptr<ral::frame::BlazingTableView>> DistributeAggregateKernel::prepare_partitions(std::shared_ptr<ral::frame::BlazingCudfTable> input,
+                                                                                                        int num_partitions){
+    cudf::table_view batch_view = input->to_table_view();
+    std::vector<cudf::table_view> partitioned;
+    std::unique_ptr<cudf::table> hashed_data; // Keep table alive in this scope
+    if (batch_view.num_rows() > 0) {
+        std::vector<cudf::size_type> hashed_data_offsets;
+        std::tie(hashed_data, hashed_data_offsets) = cudf::hash_partition(input->view(), this->columns_to_hash, num_partitions);
+        // the offsets returned by hash_partition will always start at 0, which is a value we want to ignore for cudf::split
+        std::vector<cudf::size_type> split_indexes(hashed_data_offsets.begin() + 1, hashed_data_offsets.end());
+        partitioned = cudf::split(hashed_data->view(), split_indexes);
+    } else {
+        //  copy empty view
+        for (auto i = 0; i < num_partitions; i++) {
+            partitioned.push_back(batch_view);
+        }
+    }
+
+    std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitions;
+    for(auto partition : partitioned) {
+        partitions.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(partition, input->column_names()));
+    }
+    return partitions;
+}
+
+/// compute_aggregations_without_groupby
+
 // BEGIN DistributeAggregateKernel
 
 DistributeAggregateKernel::DistributeAggregateKernel(std::size_t kernel_id, const std::string & queryString, std::shared_ptr<Context> context, std::shared_ptr<ral::cache::graph> query_graph)
@@ -456,8 +510,12 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
                 }
             } else {
                 if (!set_empty_part_for_non_master_node){ // we want to keep in the non-master nodes something, so that the cache is not empty
-                    std::unique_ptr<ral::frame::BlazingTable> empty =
-                        ral::utilities::create_empty_cudf_table(input->to_table_view());
+
+                    std::unique_ptr<ral::frame::BlazingTable> empty = ral::execution::backend_dispatcher(
+                                                                        input->get_execution_backend(),
+                                                                        create_empty_table_functor(),
+                                                                        input->to_table_view());
+
                     bool added = this->add_to_output_cache(std::move(empty), "", true);
                     set_empty_part_for_non_master_node = true;
                     if (added) {
@@ -479,26 +537,7 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
     } else {
 
         try{
-            cudf::table_view batch_view = input->view();
-            std::vector<cudf::table_view> partitioned;
-            std::unique_ptr<cudf::table> hashed_data; // Keep table alive in this scope
-            if (batch_view.num_rows() > 0) {
-                std::vector<cudf::size_type> hashed_data_offsets;
-                std::tie(hashed_data, hashed_data_offsets) = cudf::hash_partition(input->view(), columns_to_hash, num_partitions);
-                // the offsets returned by hash_partition will always start at 0, which is a value we want to ignore for cudf::split
-                std::vector<cudf::size_type> split_indexes(hashed_data_offsets.begin() + 1, hashed_data_offsets.end());
-                partitioned = cudf::split(hashed_data->view(), split_indexes);
-            } else {
-                //  copy empty view
-                for (auto i = 0; i < num_partitions; i++) {
-                    partitioned.push_back(batch_view);
-                }
-            }
-
-            std::vector<ral::frame::BlazingTableView> partitions;
-            for(auto partition : partitioned) {
-                partitions.push_back(ral::frame::BlazingTableView(partition, input->column_names()));
-            }
+            auto partitions = prepare_partitions(input->to_table_view(), num_partitions);
 
             scatter(partitions,
                 output.get(),

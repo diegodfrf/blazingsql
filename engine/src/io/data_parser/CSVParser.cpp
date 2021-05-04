@@ -35,7 +35,7 @@ std::unique_ptr<ral::frame::BlazingTable> csv_parser::parse_batch(
 	std::shared_ptr<arrow::io::RandomAccessFile> file = handle.file_handle;
 
 	if(file == nullptr) {
-		return schema.makeEmptyBlazingTable(column_indices);
+		return schema.makeEmptyBlazingCudfTable(column_indices);
 	}
 
 	if(column_indices.size() > 0) {
@@ -89,7 +89,7 @@ std::unique_ptr<ral::frame::BlazingTable> csv_parser::parse_batch(
 		}
 
 		std::unique_ptr<cudf::table> cudf_tb = std::make_unique<cudf::table>(std::move(columns_out));
-		return std::make_unique<ral::frame::BlazingTable>(std::move(cudf_tb), column_names_out);
+		return std::make_unique<ral::frame::BlazingCudfTable>(std::move(cudf_tb), column_names_out);
 	}
 	return nullptr;
 }

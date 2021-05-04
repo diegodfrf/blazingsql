@@ -35,7 +35,7 @@ public:
   operator bool() const { return this->is_valid(); }
 
   virtual void ensureOwnership() {}
-  virtual std::shared_ptr<BlazingTableView> to_table_view() const = 0;
+  virtual std::shared_ptr<ral::frame::BlazingTableView> to_table_view() const = 0;
 
 protected:
   bool valid = true;
@@ -122,7 +122,7 @@ public:
   unsigned long long size_in_bytes() const override;
   std::unique_ptr<BlazingTable> clone() const override;
 	cudf::table_view view() const;
-	std::shared_ptr<BlazingTableView> to_table_view() const override;
+	std::shared_ptr<ral::frame::BlazingTableView> to_table_view() const override;
   std::shared_ptr<BlazingCudfTableView> to_table_view();
 	std::unique_ptr<cudf::table> releaseCudfTable();
 	std::vector<std::unique_ptr<BlazingColumn>> releaseBlazingColumns();

@@ -492,7 +492,7 @@ std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_raw_batch(
   // DEBUG
   //std::cout << "PARSING BATCH: " << handle.sql_handle.row_count << "\n";
 
-  if (src == nullptr) { return schema.makeEmptyBlazingTable(column_indices); }
+  if (src == nullptr) { return schema.makeEmptyBlazingCudfTable(column_indices); }
 
 	if(column_indices.size() > 0) {
 		std::vector<std::string> col_names(column_indices.size());
@@ -512,7 +512,7 @@ std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_raw_batch(
 			result_table = std::make_unique<cudf::table>(std::move(columns));
 		}
 
-		return std::make_unique<ral::frame::BlazingTable>(std::move(result_table), result.metadata.column_names);
+		return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result_table), result.metadata.column_names);
 	}
 
 	return nullptr;
