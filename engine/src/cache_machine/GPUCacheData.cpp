@@ -29,7 +29,7 @@ std::shared_ptr<ral::frame::BlazingTableView> GPUCacheData::getTableView() {
   return gpu_table_ptr->to_table_view();
 }
 
-void GPUCacheData::set_data(std::unique_ptr<ral::frame::BlazingCudfTable> table ) {
+void GPUCacheData::set_data(std::unique_ptr<ral::frame::BlazingTable> table ) {
     this->data = std::move(table);
 }
 

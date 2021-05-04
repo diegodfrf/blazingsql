@@ -26,7 +26,7 @@ std::unique_ptr<ral::frame::BlazingTable> orc_parser::parse_batch(
 
 	std::shared_ptr<arrow::io::RandomAccessFile> file = handle.file_handle;
 	if(file == nullptr) {
-		return schema.makeEmptyBlazingTable(column_indices);
+		return schema.makeEmptyBlazingCudfTable(column_indices);
 	}
 	if(column_indices.size() > 0) {
 		// Fill data to orc_opts
@@ -45,7 +45,7 @@ std::unique_ptr<ral::frame::BlazingTable> orc_parser::parse_batch(
 
 		auto result = cudf::io::read_orc(orc_opts);
 
-		return std::make_unique<ral::frame::BlazingTable>(std::move(result.tbl), result.metadata.column_names);
+		return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result.tbl), result.metadata.column_names);
 	}
 	return nullptr;
 }

@@ -14,7 +14,7 @@ namespace distribution {
 	}  // namespace
 
 	typedef std::pair<blazingdb::transport::Node, std::unique_ptr<ral::frame::BlazingTable> > NodeColumn;
-	typedef std::pair<blazingdb::transport::Node, ral::frame::BlazingTableView > NodeColumnView;
+	typedef std::pair<blazingdb::transport::Node, std::shared_ptr<ral::frame::BlazingTableView> > NodeColumnView;
 	using namespace ral::frame;
 
 	std::unique_ptr<BlazingTable> generatePartitionPlans(

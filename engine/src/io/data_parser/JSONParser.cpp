@@ -20,7 +20,7 @@ std::unique_ptr<ral::frame::BlazingTable> json_parser::parse_batch(ral::io::data
 	std::vector<cudf::size_type> /*row_groups*/) {
 	std::shared_ptr<arrow::io::RandomAccessFile> file = handle.file_handle;
 	if(file == nullptr) {
-		return schema.makeEmptyBlazingTable(column_indices);
+		return schema.makeEmptyBlazingCudfTable(column_indices);
 	}
 
 	if(column_indices.size() > 0) {
@@ -42,7 +42,7 @@ std::unique_ptr<ral::frame::BlazingTable> json_parser::parse_batch(ral::io::data
 			selected_column_names.push_back(std::move(column_names[i]));
 		}
 
-		return std::make_unique<ral::frame::BlazingTable>(
+		return std::make_unique<ral::frame::BlazingCudfTable>(
 			std::make_unique<cudf::table>(std::move(selected_columns)), selected_column_names);
 	}
 

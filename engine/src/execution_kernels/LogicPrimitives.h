@@ -10,6 +10,8 @@
 namespace ral {
 namespace frame {
 
+class BlazingTable;
+
 class BlazingTableView : public execution::BlazingDispatchable {
 public:
   BlazingTableView(execution::backend_id execution_backend_id);
@@ -20,6 +22,7 @@ public:
   virtual std::vector<cudf::data_type> column_types() const = 0; // TODO percy rommel arrow use srd_ptr arrow::Type
   virtual void set_column_names(const std::vector<std::string> & column_names) = 0;
   virtual unsigned long long size_in_bytes() const = 0;
+  virtual std::unique_ptr<BlazingTable> clone() const = 0;
 };
 
 class BlazingTable: public BlazingTableView {
@@ -32,7 +35,7 @@ public:
   operator bool() const { return this->is_valid(); }
 
   virtual void ensureOwnership() {}
-  virtual std::shared_ptr<BlazingTableView> to_table_view() const = 0;
+  virtual std::shared_ptr<ral::frame::BlazingTableView> to_table_view() const = 0;
 
 protected:
   bool valid = true;
@@ -49,6 +52,7 @@ public:
   std::vector<cudf::data_type> column_types() const override;
   void set_column_names(const std::vector<std::string> & column_names) override;
   unsigned long long size_in_bytes() const override;
+  std::unique_ptr<BlazingTable> clone() const override;
   std::shared_ptr<arrow::Table> view() const { return this->arrow_table; };
 
 private:
@@ -66,7 +70,7 @@ public:
   std::vector<cudf::data_type> column_types() const override { return BlazingArrowTableView::column_types(); }
   void set_column_names(const std::vector<std::string> & column_names) { return BlazingArrowTableView::set_column_names(column_names); }
   unsigned long long size_in_bytes() const override { return BlazingArrowTableView::size_in_bytes(); }
-
+  std::unique_ptr<BlazingTable> clone() const override;
   std::shared_ptr<BlazingTableView> to_table_view() const override;
   std::shared_ptr<BlazingArrowTableView> to_table_view();
 };
@@ -92,9 +96,8 @@ public:
   std::vector<cudf::data_type> column_types() const override;
   void set_column_names(const std::vector<std::string> & column_names) override;
   unsigned long long size_in_bytes() const override;
+  std::unique_ptr<BlazingTable> clone() const override;
   cudf::table_view view() const;
-
-	std::unique_ptr<BlazingCudfTable> clone() const;
 
 private:
 	std::vector<std::string> columnNames;
@@ -117,9 +120,9 @@ public:
   std::vector<cudf::data_type> column_types() const override;
   void set_column_names(const std::vector<std::string> & column_names) override;
   unsigned long long size_in_bytes() const override;
-
+  std::unique_ptr<BlazingTable> clone() const override;
 	cudf::table_view view() const;
-	std::shared_ptr<BlazingTableView> to_table_view() const override;
+	std::shared_ptr<ral::frame::BlazingTableView> to_table_view() const override;
   std::shared_ptr<BlazingCudfTableView> to_table_view();
 	std::unique_ptr<cudf::table> releaseCudfTable();
 	std::vector<std::unique_ptr<BlazingColumn>> releaseBlazingColumns();
@@ -142,20 +145,28 @@ public:
 
 class BlazingArrowScalar: public BlazingScalar {
 public:
-  BlazingArrowScalar(execution::backend_id execution_backend_id);
+  BlazingArrowScalar(std::shared_ptr<arrow::Scalar> scalar);
   BlazingArrowScalar(BlazingArrowScalar &&) = default;
   virtual ~BlazingArrowScalar() = default;
 
-  virtual cudf::data_type type() const override;
+  cudf::data_type type() const override;
+  std::shared_ptr<arrow::Scalar> value() const;
+
+private:
+  std::shared_ptr<arrow::Scalar> scalar;
 };
 
 class BlazingCudfScalar: public BlazingScalar {
 public:
-  BlazingCudfScalar(execution::backend_id execution_backend_id);
+  BlazingCudfScalar(std::unique_ptr<cudf::scalar> scalar);
   BlazingCudfScalar(BlazingCudfScalar &&) = default;
   virtual ~BlazingCudfScalar() = default;
 
-  virtual cudf::data_type type() const override;
+  cudf::data_type type() const override;
+  //std::unique_ptr<cudf::scalar> value() const;
+
+private:
+  //std::unique_ptr<cudf::scalar> scalar;
 };
 
 std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<cudf::data_type> column_types,

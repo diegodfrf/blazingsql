@@ -308,6 +308,6 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 	}
 
 	auto table = std::make_unique<cudf::table>(std::move(minmax_metadata_gdf_table));
-	return std::make_unique<ral::frame::BlazingTable>(std::move(table), metadata_names);
+	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(table), metadata_names);
 }
 #endif	// BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_PARQUET_METADATA_CPP_H_

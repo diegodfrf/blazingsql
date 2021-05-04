@@ -74,6 +74,11 @@ unsigned long long BlazingArrowTableView::size_in_bytes() const {
 //	return size;
 }
 
+std::unique_ptr<BlazingTable> BlazingArrowTableView::clone() const {
+  // TODO percy arrow depth copy
+  return nullptr;
+}
+
 // END BlazingArrowTableView
 
 // BEGIN BlazingArrowTable
@@ -83,7 +88,11 @@ BlazingArrowTable::BlazingArrowTable(std::shared_ptr<arrow::Table> arrow_table)
 	, BlazingArrowTableView(arrow_table) {
 }
 
-std::shared_ptr<BlazingTableView> BlazingArrowTable::to_table_view() const {
+std::unique_ptr<BlazingTable> BlazingArrowTable::clone() const {
+  return this->to_table_view()->clone();
+}
+
+std::shared_ptr<ral::frame::BlazingTableView> BlazingArrowTable::to_table_view() const {
 	return std::make_shared<BlazingArrowTableView>(BlazingArrowTableView::view());
 }
 
@@ -192,15 +201,14 @@ unsigned long long BlazingCudfTableView::size_in_bytes() const {
 	return total_size;
 }
 
-cudf::table_view BlazingCudfTableView::view() const{
-	return this->table;
-}
-
-std::unique_ptr<BlazingCudfTable> BlazingCudfTableView::clone() const {
+std::unique_ptr<BlazingTable> BlazingCudfTableView::clone() const {
 	std::unique_ptr<cudf::table> cudfTable = std::make_unique<cudf::table>(this->table);
 	return std::make_unique<BlazingCudfTable>(std::move(cudfTable), this->columnNames);
 }
 
+cudf::table_view BlazingCudfTableView::view() const{
+	return this->table;
+}
 
 // END BlazingCudfTableView
 
@@ -318,6 +326,10 @@ unsigned long long BlazingCudfTable::size_in_bytes() const {
 	return total_size;
 }
 
+std::unique_ptr<BlazingTable> BlazingCudfTable::clone() const {
+	return this->to_table_view()->clone();
+}
+
 // END BlazingCudfTableView
 
 std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<cudf::type_id> column_types,
@@ -356,6 +368,36 @@ std::vector<std::unique_ptr<BlazingColumn>> cudfTableViewToBlazingColumns(const 
 	}
 	return columns_out;
 }
+
+// BEGIN BlazingScalar
+
+BlazingScalar::BlazingScalar(execution::backend_id execution_backend_id)
+  : ral::execution::BlazingDispatchable(execution_backend_id) {
+}
+
+// END BlazingScalar
+
+// BEGIN BlazingArrowScalar
+BlazingArrowScalar::BlazingArrowScalar(std::shared_ptr<arrow::Scalar> scalar)
+  : BlazingScalar(ral::execution::backend_id::ARROW), scalar(scalar) {
+}
+
+std::shared_ptr<arrow::Scalar> BlazingArrowScalar::value() const {
+  return this->scalar;
+}
+
+// END BlazingArrowScalar
+
+// BEGIN BlazingArrowScalar
+BlazingCudfScalar::BlazingCudfScalar(std::unique_ptr<cudf::scalar> scalar)
+  : BlazingScalar(ral::execution::backend_id::CUDF) {
+}
+
+//std::unique_ptr<cudf::scalar> BlazingCudfScalar::value() const {
+  //return this->scalar;
+//}
+
+// END BlazingArrowScalar
 
 } // end namespace frame
 }  // namespace ral
