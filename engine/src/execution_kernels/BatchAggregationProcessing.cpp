@@ -274,9 +274,45 @@ std::unique_ptr<ral::frame::BlazingTable> aggregations_without_groupby_functor::
 {
   auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
   return ral::operators::compute_aggregations_without_groupby(cudf_table_view, aggregation_input_expressions, aggregation_types, aggregation_column_assigned_aliases);
-
 }
 
+struct aggregations_with_groupby_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_view,
+      std::vector<std::string> aggregation_input_expressions,
+      std::vector<AggregateKind> aggregation_types,
+      std::vector<std::string> aggregation_column_assigned_aliases,
+      std::vector<int> group_column_indices) const
+  {
+    // TODO percy arrow thrown error
+    return nullptr;
+  }
+};
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> aggregations_with_groupby_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::vector<std::string> aggregation_input_expressions,
+    std::vector<AggregateKind> aggregation_types,
+    std::vector<std::string> aggregation_column_assigned_aliases,
+    std::vector<int> group_column_indices) const
+{
+  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  return ral::cpu::compute_aggregations_without_groupby(arrow_table_view, aggregation_input_expressions, aggregation_types, aggregation_column_assigned_aliases);
+}
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> aggregations_with_groupby_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::vector<std::string> aggregation_input_expressions,
+    std::vector<AggregateKind> aggregation_types,
+    std::vector<std::string> aggregation_column_assigned_aliases,
+    std::vector<int> group_column_indices) const
+{
+  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
+  return ral::operators::compute_aggregations_with_groupby(cudf_table_view, aggregation_input_expressions, aggregation_types, aggregation_column_assigned_aliases, group_column_indices);
+}
 
 ral::execution::task_result ComputeAggregateKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
@@ -286,20 +322,28 @@ ral::execution::task_result ComputeAggregateKernel::do_process(std::vector< std:
         auto & input = inputs[0];
         std::unique_ptr<ral::frame::BlazingTable> columns;
         if(this->aggregation_types.size() == 0) {
-          columns = ral::execution::backend_dispatcher(
+            columns = ral::execution::backend_dispatcher(
                       input->get_execution_backend(),
                       groupby_without_aggregations_functor(),
+                      input->to_table_view(),
                       this->group_column_indices);
         } else if (this->group_column_indices.size() == 0) {
             columns = ral::execution::backend_dispatcher(
                         input->get_execution_backend(),
                         aggregations_without_groupby_functor(),
+                        input->to_table_view(),
                         aggregation_input_expressions,
                         this->aggregation_types,
                         aggregation_column_assigned_aliases);
         } else {
-            columns = ral::operators::compute_aggregations_with_groupby(
-                input->to_table_view(), aggregation_input_expressions, this->aggregation_types, aggregation_column_assigned_aliases, group_column_indices);
+            columns = ral::execution::backend_dispatcher(
+                        input->get_execution_backend(),
+                        aggregations_with_groupby_functor(),
+                        input->to_table_view(),
+                        aggregation_input_expressions,
+                        this->aggregation_types,
+                        aggregation_column_assigned_aliases,
+                        group_column_indices);
         }
         output->addToCache(std::move(columns));
     }catch(const rmm::bad_alloc& e){
