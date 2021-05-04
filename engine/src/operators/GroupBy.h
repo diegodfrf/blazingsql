@@ -50,12 +50,12 @@ namespace operators {
 		std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::vector<int> & group_column_indices);
 
 	std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
-		std::shared_ptr<ral::frame::BlazingCudfTableView> table_view, const std::vector<std::string> & aggregation_input_expressions, 
+		std::shared_ptr<ral::frame::BlazingCudfTableView> table_view, const std::vector<std::string> & aggregation_input_expressions,
 		const std::vector<AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases);
 
 	std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
-		const ral::frame::BlazingTableView & table, const std::vector<std::string> & aggregation_input_expressions, const std::vector<AggregateKind> & aggregation_types,
-		const std::vector<std::string> & aggregation_column_assigned_aliases, const std::vector<int> & group_column_indices);
+		std::shared_ptr<ral::frame::BlazingCudfTableView> table_view, const std::vector<std::string> & aggregation_input_expressions,
+		const std::vector<AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases, const std::vector<int> & group_column_indices);
 
 }  // namespace operators
 }  // namespace ral
