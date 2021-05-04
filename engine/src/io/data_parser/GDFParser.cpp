@@ -47,7 +47,7 @@ std::unique_ptr<ral::frame::BlazingTable> gdf_parser::parse_batch(
 		column_names_out[i] = data_handle.table_view.column_names()[idx];
 	}
 
-	return std::make_unique<ral::frame::BlazingTable>(tableView, column_names_out);
+	return std::make_unique<ral::frame::BlazingCudfTable>(tableView, column_names_out);
 }
 
 size_t gdf_parser::get_num_partitions() {return 0;}

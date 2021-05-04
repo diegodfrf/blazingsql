@@ -26,7 +26,7 @@ namespace io {
 class gdf_data_provider : public data_provider {
 public:
 
-	gdf_data_provider(std::vector<ral::frame::BlazingTableCudfView> table_views, std::vector<std::map<std::string,std::string> > column_values);
+	gdf_data_provider(std::vector<ral::frame::BlazingCudfTableView> table_views, std::vector<std::map<std::string,std::string> > column_values);
 
 	std::shared_ptr<data_provider> clone() override; 
 

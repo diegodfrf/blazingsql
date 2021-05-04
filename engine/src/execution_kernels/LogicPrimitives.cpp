@@ -92,7 +92,7 @@ std::unique_ptr<BlazingTable> BlazingArrowTable::clone() const {
   return this->to_table_view()->clone();
 }
 
-std::shared_ptr<BlazingTableView> BlazingArrowTable::to_table_view() const {
+std::shared_ptr<ral::frame::BlazingTableView> BlazingArrowTable::to_table_view() const {
 	return std::make_shared<BlazingArrowTableView>(BlazingArrowTableView::view());
 }
 

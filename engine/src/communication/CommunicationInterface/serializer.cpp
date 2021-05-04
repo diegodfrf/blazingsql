@@ -66,7 +66,7 @@ std::unique_ptr<ral::frame::BlazingTable> deserialize_from_gpu_raw_buffers(
 
 	auto unique_table = std::make_unique<cudf::table>(std::move(received_samples));
 
-	return std::make_unique<ral::frame::BlazingTable>(std::move(unique_table), column_names);
+	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), column_names);
 }
 
 }  // namespace comm

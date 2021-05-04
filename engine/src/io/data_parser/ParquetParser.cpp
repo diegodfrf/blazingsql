@@ -35,7 +35,7 @@ std::unique_ptr<ral::frame::BlazingTable> parquet_parser::parse_batch(
 {
 	std::shared_ptr<arrow::io::RandomAccessFile> file = handle.file_handle;
 	if(file == nullptr) {
-		return schema.makeEmptyBlazingTable(column_indices);
+		return schema.makeEmptyBlazingCudfTable(column_indices);
 	}
 	if(column_indices.size() > 0) {
 		// Fill data to pq_args
@@ -71,7 +71,7 @@ std::unique_ptr<ral::frame::BlazingTable> parquet_parser::parse_batch(
 			result_table = std::make_unique<cudf::table>(std::move(columns));
 		}
 
-		return std::make_unique<ral::frame::BlazingTable>(std::move(result_table), result.metadata.column_names);
+		return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result_table), result.metadata.column_names);
 	}
 	return nullptr;
 }

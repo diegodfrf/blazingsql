@@ -23,7 +23,7 @@ namespace utilities {
 
 std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<arrow::Table> table, cudf::size_type num_rows, bool front){
 	if (num_rows == 0) {
-		return std::make_unique<ral::frame::BlazingTable>(arrow::Table::Make(table->schema(), table->columns(), 0));
+		return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns(), 0));
 	} else if (num_rows < table->num_rows()) {
 		std::shared_ptr<arrow::Table> arrow_table;
 		if (front){
@@ -31,9 +31,9 @@ std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<arrow::
 		} else { // back
 			arrow_table = table->Slice(table->num_rows() - num_rows);
 		}
-		return std::make_unique<ral::frame::BlazingTable>(arrow::Table::Make(arrow_table->schema(), arrow_table->columns()));
+		return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(arrow_table->schema(), arrow_table->columns()));
 	} else {
-		return std::make_unique<ral::frame::BlazingTable>(arrow::Table::Make(table->schema(), table->columns()));
+		return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns()));
 	}
 }
 
@@ -126,7 +126,7 @@ std::unique_ptr<cudf::scalar> to_cudf_scalar(std::shared_ptr<arrow::Scalar> arro
 }  // namespace cpu
 namespace utilities {
 
-bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::unique_ptr<BlazingTable>> & tables) {
+bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::unique_ptr<ral::frame::BlazingTable>> & tables) {
 	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> tables_to_concat(tables.size());
 	for (std::size_t i = 0; i < tables.size(); i++){
 		tables_to_concat[i] = tables[i]->to_table_view();
@@ -135,7 +135,7 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::unique_ptr<B
 	return checkIfConcatenatingStringsWillOverflow(tables_to_concat);
 }
 
-bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<BlazingTableView>> & tables) {
+bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<ral::frame::BlazingTableView>> & tables) {
 	if( tables.size() == 0 ) {
 		return false;
 	}
@@ -143,7 +143,7 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<B
 	// Lets only look at tables that not empty
 	std::vector<size_t> non_empty_index;
 	for(size_t table_idx = 0; table_idx < tables.size(); table_idx++) {
-		if (tables[table_idx].num_columns() > 0){
+		if (tables[table_idx]->num_columns() > 0){
 			non_empty_index.push_back(table_idx);
 		}
 	}
@@ -152,8 +152,8 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<B
 	}
 
 
-	for(size_t col_idx = 0; col_idx < tables[non_empty_index[0]].column_types().size(); col_idx++) {
-		if(to_cudf_type(tables[non_empty_index[0]].column_types()[col_idx]).id() == cudf::type_id::STRING) {
+	for(size_t col_idx = 0; col_idx < tables[non_empty_index[0]]->column_types().size(); col_idx++) {
+		if(to_cudf_type(tables[non_empty_index[0]]->column_types()[col_idx]).id() == cudf::type_id::STRING) {
 			std::size_t total_bytes_size = 0;
 			std::size_t total_offset_count = 0;
 
@@ -188,7 +188,7 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<B
 
 // TODO percy arrow here we need to think about how we want to manage hybrid tables
 // for now we will concat either cudf tables or arrow tables
-std::unique_ptr<BlazingTable> concatTables(const std::vector<shared_ptr<BlazingTableView>> & tables) {
+std::unique_ptr<ral::frame::BlazingTable> concatTables(const std::vector<std::shared_ptr<BlazingTableView>> & tables) {
 	assert(tables.size() >= 0);
 
 	std::vector<std::string> names;
@@ -245,7 +245,7 @@ std::unique_ptr<BlazingTable> concatTables(const std::vector<shared_ptr<BlazingT
       return std::make_unique<ral::frame::BlazingTable>(table_views_to_concat[0], names);
     }
     std::unique_ptr<cudf::table> concatenated_tables = cudf::concatenate(table_views_to_concat);
-    return std::make_unique<BlazingTable>(std::move(concatenated_tables), names);
+    return std::make_unique<ral::frame::BlazingCudfTable>(std::move(concatenated_tables), names);
   }
   
   return nullptr;
@@ -265,9 +265,9 @@ std::unique_ptr<BlazingTable> getLimitedRows(const BlazingTableView& table, cudf
 			std::vector<cudf::table_view> split_table = cudf::split(table.view(), splits);
 			cudf_table = std::make_unique<cudf::table>(split_table[1]);
 		}
-		return std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), table.column_names());
+		return std::make_unique<ral::frame::BlazingCudfTable>(std::move(cudf_table), table.column_names());
 	} else {
-		return std::make_unique<ral::frame::BlazingTable>(table.view(), table.column_names());
+		return std::make_unique<ral::frame::BlazingCudfTable>(table.view(), table.column_names());
 	}
 }
 
@@ -285,7 +285,7 @@ std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std:
 		columns[idx] = cudf::make_empty_column(dtypes[idx]);
 	}
 	auto table = std::make_unique<cudf::table>(std::move(columns));
-	return std::make_unique<ral::frame::BlazingTable>(std::move(table), column_names);
+	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(table), column_names);
 }
 
 std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<cudf::type_id> &dtypes) {
@@ -300,7 +300,7 @@ std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<cudf::typ
 std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const BlazingTableView & table) {
 
 	std::unique_ptr<cudf::table> empty = cudf::empty_like(table.view());
-	return std::make_unique<ral::frame::BlazingTable>(std::move(empty), table.column_names());
+	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(empty), table.column_names());
 }
 
 
@@ -369,7 +369,7 @@ void normalize_types(std::unique_ptr<ral::frame::BlazingTable> & table,  const s
 			columns[column_indices[i]] = std::make_unique<ral::frame::BlazingColumnOwner>(std::move(casted));
 		}
 	}
-	table = std::make_unique<ral::frame::BlazingTable>(std::move(columns), table->column_names());
+	table = std::make_unique<ral::frame::BlazingCudfTable>(std::move(columns), table->column_names());
 }
 
 }  // namespace utilities

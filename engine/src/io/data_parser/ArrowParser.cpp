@@ -43,7 +43,7 @@ std::unique_ptr<ral::frame::BlazingTable> arrow_parser::parse_batch(
   std::cout << "SAMEEEEEEEEEEEEEEEEEEEE????\n" << is_the_same << "\n";
 
   if (is_the_same) {
-    return std::make_unique<ral::frame::BlazingTable>(data_handle.arrow_table);
+    return std::make_unique<ral::frame::BlazingArrowTable>(data_handle.arrow_table);
   }
 
   std::cout << "NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n";
@@ -56,10 +56,10 @@ std::unique_ptr<ral::frame::BlazingTable> arrow_parser::parse_batch(
   }
 
   auto new_schema = std::make_shared<arrow::Schema>(fields, data_handle.arrow_table->schema()->metadata());
-	auto aa = std::make_unique<ral::frame::BlazingTable>(arrow::Table::Make(new_schema, cols, data_handle.arrow_table->num_rows()));
+	auto aa = std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(new_schema, cols, data_handle.arrow_table->num_rows()));
 
-  std::cout << "QQQQQQQQQQQQQQQQQQ????????????\n";
-  std::cout << "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n\n" << aa->arrow_table()->ToString() << "\n\n\n FFGGGGGGG" << std::flush;
+  // std::cout << "QQQQQQQQQQQQQQQQQQ????????????\n";
+  // std::cout << "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n\n" << aa->arrow_table()->ToString() << "\n\n\n FFGGGGGGG" << std::flush;
 
   return aa;
 }

@@ -178,7 +178,7 @@ kstatus TableScan::run() {
 
     //if its empty we can just add it to the cache without scheduling
     if (!provider->has_next()) {
-        this->add_to_output_cache(schema.makeEmptyBlazingTable(projections));
+        this->add_to_output_cache(schema.makeEmptyBlazingCudfTable(projections));
     } else {
 
         while(provider->has_next()) {
@@ -364,7 +364,7 @@ kstatus BindableTableScan::run() {
 
     //if its empty we can just add it to the cache without scheduling
     if (!provider->has_next()) {
-        auto empty = schema.makeEmptyBlazingTable(projections);
+        auto empty = schema.makeEmptyBlazingCudfTable(projections);
         empty->set_column_names(fix_column_aliases(empty->column_names(), expression));
         this->add_to_output_cache(std::move(empty));
     } else {

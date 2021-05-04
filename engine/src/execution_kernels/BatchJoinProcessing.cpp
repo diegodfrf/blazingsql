@@ -402,7 +402,7 @@ std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 		}
 	}
 
-	return std::make_unique<ral::frame::BlazingTable>(std::move(result_table), this->result_names);
+	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result_table), this->result_names);
 }
 
 ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,

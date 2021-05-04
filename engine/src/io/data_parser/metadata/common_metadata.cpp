@@ -32,7 +32,7 @@ std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_nam
 	}
 
 	auto cudf_metadata_table = std::make_unique<cudf::table>(std::move(minmax_metadata_gdf_table));
-	auto metadata_table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_metadata_table), metadata_col_names);
+	auto metadata_table = std::make_unique<ral::frame::BlazingCudfTable>(std::move(cudf_metadata_table), metadata_col_names);
 
 	return metadata_table;
 }
