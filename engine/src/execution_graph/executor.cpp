@@ -94,6 +94,7 @@ void task::run(cudaStream_t stream, executor * executor){
         for(auto & input : inputs){
             if (i < last_input_decached && input->get_type() == ral::cache::CacheDataType::GPU ){
                 //this was a gpu cachedata so now its not valid
+                
                 static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(input_gpu[i]));
             }
             i++;

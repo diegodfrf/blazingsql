@@ -60,7 +60,7 @@ public:
 	*/
 	std::shared_ptr<ral::frame::BlazingTableView> getTableView();
 
-	void set_data(std::unique_ptr<ral::frame::BlazingCudfTable> table);
+	void set_data(std::unique_ptr<ral::frame::BlazingTable> table);
 
 protected:
 	std::unique_ptr<ral::frame::BlazingTable> data; /**< Stores the data to be returned in decache */

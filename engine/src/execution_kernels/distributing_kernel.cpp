@@ -151,7 +151,7 @@ void distributing_kernel::broadcast(std::unique_ptr<ral::frame::BlazingTable> ta
     for (auto & node : nodes_to_send)	{
         target_ids.push_back(node.id());
     }
-    send_message(table->to_table_view().clone(),
+    send_message(table->to_table_view()->clone(),
         true, //specific_cache
         cache_id, //cache_id
         target_ids, //target_ids
@@ -208,13 +208,13 @@ void distributing_kernel::scatterParts(std::vector<ral::distribution::NodeColumn
 
     for (std::size_t i = 0; i < partitions.size(); i++) {
         blazingdb::transport::Node dest_node;
-        ral::frame::BlazingTableView table_view;
+        std::shared_ptr<ral::frame::BlazingTableView> table_view;
         std::tie(dest_node, table_view) = partitions[i];
-        if(dest_node == node || table_view.num_rows() == 0) {
+        if(dest_node == node || table_view->num_rows() == 0) {
             continue;
         }
 
-        send_message(std::move(table_view.clone()),
+        send_message(std::move(table_view->clone()),
             true, //specific_cache
             "output_" + std::to_string(part_ids[i]), //cache_id
             {dest_node.id()}, //target_id
@@ -229,7 +229,7 @@ void distributing_kernel::scatterParts(std::vector<ral::distribution::NodeColumn
         auto & partition = partitions[i];
         if(partition.first == node) {
             std::string cache_id = "output_" + std::to_string(part_ids[i]);
-            bool added = this->add_to_output_cache(std::move(partition.second.clone()), cache_id);
+            bool added = this->add_to_output_cache(std::move(partition.second->clone()), cache_id);
             if (added) {
                 node_count[part_ids[i]].at(node.id())++;
             }
