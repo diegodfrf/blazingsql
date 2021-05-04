@@ -177,6 +177,16 @@ snowflake_data_provider::snowflake_data_provider(
     : abstractsql_data_provider{sql, total_number_of_nodes, self_node_idx},
       sqlHEnv{nullptr}, sqlHdbc{nullptr}, row_count{0},
       batch_position{0}, completed{false} {
+  if (!sql.dsn.empty()) {
+    const char * condaPrefixc_str = std::getenv("CONDA_PREFIX");
+    if (condaPrefixc_str == nullptr) {
+      throw std::runtime_error{"Conda environment not activated"};
+    }
+
+    const std::string odbcsysiniPath = std::string{condaPrefixc_str} + "/etc";
+    setenv("ODBCSYSINI", odbcsysiniPath.c_str(), false);
+  }
+
   SQLRETURN sqlReturn = SQL_ERROR;
   sqlReturn = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &sqlHEnv);
   if (sqlReturn != SQL_SUCCESS) {
@@ -197,10 +207,15 @@ snowflake_data_provider::snowflake_data_provider(
   }
 
   std::ostringstream oss;
-  oss << "Dsn=" << sql.dsn << ";Database=" << sql.schema
-      << ";Schema=" << sql.sub_schema << ";uid=" << sql.user
-      << ";pwd=" << sql.password;
-  ;
+
+  if (!sql.server.empty()) {
+    oss << "Server=" << sql.server << ";Driver=SnowflakeDSIIDriver";
+  }
+  if (!sql.dsn.empty()) { oss << "Dsn=" << sql.dsn; }
+
+  oss << ";Database=" << sql.schema << ";Schema=" << sql.sub_schema
+      << ";uid=" << sql.user << ";pwd=" << sql.password;
+
   std::string connectionStdString = oss.str();
   SQLCHAR * connectionString = reinterpret_cast<SQLCHAR *>(
       const_cast<char *>(connectionStdString.c_str()));
@@ -220,17 +235,8 @@ snowflake_data_provider::snowflake_data_provider(
 }
 
 snowflake_data_provider::~snowflake_data_provider() {
-  SQLRETURN sqlReturn = SQL_ERROR;
-
-  sqlReturn = SQLFreeHandle(SQL_HANDLE_DBC, sqlHdbc);
-  //if (sqlReturn != SQL_SUCCESS) {
-    //throw std::runtime_error("SnowFlake: free hdbc");
-  //}
-
-  sqlReturn = SQLFreeHandle(SQL_HANDLE_ENV, sqlHEnv);
-  //if (sqlReturn != SQL_SUCCESS) {
-    //throw std::runtime_error("SnowFlake: free env");
-  //}
+  SQLFreeHandle(SQL_HANDLE_DBC, sqlHdbc);
+  SQLFreeHandle(SQL_HANDLE_ENV, sqlHEnv);
 }
 
 std::shared_ptr<data_provider> snowflake_data_provider::clone() {
@@ -272,7 +278,8 @@ data_handle snowflake_data_provider::get_next(bool open_file) {
 
   auto sqlHStmt_deleter = [](SQLHSTMT * sqlHStmt) {
     if (SQLFreeHandle(SQL_HANDLE_STMT, *sqlHStmt) != SQL_SUCCESS) {
-      //throw std::runtime_error("SnowFlake: free statement for get next batch");
+      // throw std::runtime_error("SnowFlake: free statement for get next
+      // batch");
     }
     delete sqlHStmt;
   };
