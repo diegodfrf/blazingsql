@@ -130,6 +130,12 @@ std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::operator
     return applyBooleanFilter(cudf_table_view, evaluated_table[0]->view());
 }
 
+
+
+
+
+
+
 //// eval return vector
 
 //struct evaluate_expressions_vector_functor {

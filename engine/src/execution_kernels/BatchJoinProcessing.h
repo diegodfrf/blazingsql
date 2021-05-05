@@ -43,8 +43,8 @@ public:
 	std::string kernel_name() { return "PartwiseJoin";}
 
 	std::unique_ptr<ral::frame::BlazingTable> join_set(
-		const ral::frame::BlazingTableView & table_left,
-		const ral::frame::BlazingTableView & table_right);
+		std::shared_ptr<ral::frame::BlazingTableView> table_left,
+		std::shared_ptr<ral::frame::BlazingTableView> table_right);
 
 	ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,

@@ -134,13 +134,11 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 
   std::shared_ptr<arrow::Table> table = table_view->view();
 
- 	std::vector<std::unique_ptr<cudf::scalar>> reductions;
+ 	std::vector<std::shared_ptr<arrow::Scalar>> reductions;
  	std::vector<std::string> agg_output_column_names;
  	for (size_t i = 0; i < aggregation_types.size(); i++){
  		if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
- 			std::unique_ptr<cudf::scalar> scalar = cudf::make_numeric_scalar(cudf::data_type(cudf::type_id::INT64));
- 			auto numeric_s = static_cast< cudf::scalar_type_t<int64_t>* >(scalar.get());
- 			numeric_s->set_value((int64_t)(table->num_rows()));
+      std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(table->num_rows());
  			reductions.emplace_back(std::move(scalar));
  		} else {
  			std::vector<std::unique_ptr<ral::frame::BlazingColumn>> aggregation_input_scope_holder;
@@ -154,20 +152,18 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  			}
 
  			if( aggregation_types[i] == AggregateKind::COUNT_VALID) {
- 				std::unique_ptr<cudf::scalar> scalar = cudf::make_numeric_scalar(cudf::data_type(cudf::type_id::INT64));
- 				auto numeric_s = static_cast< cudf::scalar_type_t<int64_t>* >(scalar.get());
- 				numeric_s->set_value((int64_t)(aggregation_input->length() - aggregation_input->null_count()));
+ 				std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(aggregation_input->length() - aggregation_input->null_count());
  				reductions.emplace_back(std::move(scalar));
  			} else {
  				std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation(aggregation_types[i]);
          cudf::type_id theinput_type = cudf::detail::arrow_to_cudf_type(*aggregation_input->type()).id();
  				cudf::type_id output_type = get_aggregation_output_type(theinput_type, aggregation_types[i], false);
-        
+
  				std::shared_ptr<arrow::Scalar> reduction_out = arrow_reduce(aggregation_input, agg, cudf::data_type(output_type));
 
  				if (aggregation_types[i] == AggregateKind::SUM0 && !reduction_out->is_valid){ // if this aggregation was a SUM0, and it was not valid, we want it to be a valid 0 instead
           auto dt = cudf::detail::arrow_to_cudf_type(*reduction_out->type);
- 					std::unique_ptr<cudf::scalar> zero_scalar = get_scalar_from_string("0", dt); // this does not need to be from a string, but this is a convenient way to make the scalar i need
+ 					std::shared_ptr<arrow::Int64Scalar> zero_scalar = std::make_shared<arrow::Int64Scalar>(0);
  					reductions.emplace_back(std::move(zero_scalar));
  				} else {
  					reductions.emplace_back(std::move(reduction_out));
@@ -187,12 +183,12 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		}
  	}
  	// convert scalars into columns
- 	std::vector<std::unique_ptr<cudf::column>> output_columns;
+ 	std::vector<std::shared_ptr<arrow::ChunkedArray>> output_columns;
  	for (size_t i = 0; i < reductions.size(); i++){
- 		std::unique_ptr<cudf::column> temp = cudf::make_column_from_scalar(*(reductions[i]), 1);
- 		output_columns.emplace_back(std::move(temp));
+ 		std::shared_ptr<arrow::Array> temp = arrow::MakeArrayFromScalar((*reductions[i].get()), 1).ValueOrDie();
+ 		output_columns.emplace_back(std::make_shared<arrow::ChunkedArray>(temp));
  	}
- 	return std::make_unique<ral::frame::BlazingCudfTable>(std::make_unique<cudf::table>(std::move(output_columns)), agg_output_column_names);
+    return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), output_columns));
 }
 
 } // namespace cpu
@@ -428,41 +424,16 @@ std::pair<bool, uint64_t> ComputeAggregateKernel::get_estimated_output_num_rows(
 
 // END ComputeAggregateKernel
 
-struct create_empty_table_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> table_view) const
-  {
-    // TODO percy arrow thrown error
-    return nullptr;
-  }
-};
 
-template <>
-std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view) const
-{
-  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
-  return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
-}
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view) const
-{
-  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
-  std::unique_ptr<cudf::table> empty = cudf::empty_like(cudf_table_view->view());
-  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(empty), cudf_table_view->column_names());
-}
-
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>> DistributeAggregateKernel::prepare_partitions(std::shared_ptr<ral::frame::BlazingCudfTable> input,
+std::vector<std::shared_ptr<ral::frame::BlazingTableView>> DistributeAggregateKernel::prepare_partitions(std::shared_ptr<ral::frame::BlazingTableView> input,
                                                                                                         int num_partitions){
-    cudf::table_view batch_view = input->to_table_view();
+    auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(input);
+    cudf::table_view batch_view = cudf_table_view->view();
     std::vector<cudf::table_view> partitioned;
     std::unique_ptr<cudf::table> hashed_data; // Keep table alive in this scope
     if (batch_view.num_rows() > 0) {
         std::vector<cudf::size_type> hashed_data_offsets;
-        std::tie(hashed_data, hashed_data_offsets) = cudf::hash_partition(input->view(), this->columns_to_hash, num_partitions);
+        std::tie(hashed_data, hashed_data_offsets) = cudf::hash_partition(cudf_table_view->view(), this->columns_to_hash, num_partitions);
         // the offsets returned by hash_partition will always start at 0, which is a value we want to ignore for cudf::split
         std::vector<cudf::size_type> split_indexes(hashed_data_offsets.begin() + 1, hashed_data_offsets.end());
         partitioned = cudf::split(hashed_data->view(), split_indexes);
@@ -475,7 +446,7 @@ std::vector<std::shared_ptr<ral::frame::BlazingTableView>> DistributeAggregateKe
 
     std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitions;
     for(auto partition : partitioned) {
-        partitions.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(partition, input->column_names()));
+        partitions.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(partition, cudf_table_view->column_names()));
     }
     return partitions;
 }
@@ -633,7 +604,7 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
     try{
         
-        std::vector< ral::frame::BlazingTableView > tableViewsToConcat;
+        std::vector<std::shared_ptr<ral::frame::BlazingTableView>> tableViewsToConcat;
         for (std::size_t i = 0; i < inputs.size(); i++){
             tableViewsToConcat.emplace_back(inputs[i]->to_table_view());
         }
@@ -668,27 +639,34 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
 
         std::unique_ptr<ral::frame::BlazingTable> columns = nullptr;
         if(aggregation_types.size() == 0) {
-            if (concatenated->is_arrow()) {
-              columns = ral::cpu::compute_groupby_without_aggregations(
-                          concatenated->arrow_table(), mod_group_column_indices);
-            } else {
-              columns = ral::operators::compute_groupby_without_aggregations(
-                      concatenated->to_table_view(), mod_group_column_indices);
-            }
+            columns = ral::execution::backend_dispatcher(
+                    concatenated->get_execution_backend(),
+                    groupby_without_aggregations_functor(),
+                    concatenated->to_table_view(),
+                    mod_group_column_indices);
         } else if (group_column_indices.size() == 0) {
             // aggregations without groupby are only merged on the master node
             if( context->isMasterNode(ral::communication::CommunicationData::getInstance().getSelfNode()) ) {
-                columns = ral::operators::compute_aggregations_without_groupby(
-                        concatenated->to_table_view(), mod_aggregation_input_expressions, mod_aggregation_types,
+                columns = ral::execution::backend_dispatcher(
+                        concatenated->get_execution_backend(),
+                        aggregations_without_groupby_functor(),
+                        concatenated->to_table_view(),
+                        mod_aggregation_input_expressions,
+                        mod_aggregation_types,
                         mod_aggregation_column_assigned_aliases);
             } else {
                 // with aggregations without groupby the distribution phase should deposit an empty dataframe with the right schema into the cache, which is then output here
                 columns = std::move(concatenated);
             }
         } else {
-            columns = ral::operators::compute_aggregations_with_groupby(
-                    concatenated->to_table_view(), mod_aggregation_input_expressions, mod_aggregation_types,
-                    mod_aggregation_column_assigned_aliases, mod_group_column_indices);
+            columns = ral::execution::backend_dispatcher(
+                        concatenated->get_execution_backend(),
+                        aggregations_with_groupby_functor(),
+                        concatenated->to_table_view(),
+                        mod_aggregation_input_expressions,
+                        mod_aggregation_types,
+                        mod_aggregation_column_assigned_aliases,
+                        mod_group_column_indices);
         }
         eventTimer.stop();
 

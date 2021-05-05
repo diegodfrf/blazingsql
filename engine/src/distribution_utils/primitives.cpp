@@ -69,19 +69,19 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 // IMPORTANT: This function expects data to already be sorted according to the searchColIndices and sortOrderTypes
 // IMPORTANT: The TableViews of the data returned point to the same data that was input.
 std::vector<NodeColumnView> partitionData(Context * context,
-	const BlazingTableView & table,
-	const BlazingTableView & pivots,
+	std::shared_ptr<BlazingTableView> table,
+	std::shared_ptr<BlazingTableView> pivots,
 	const std::vector<int> & searchColIndices,
 	std::vector<cudf::order> sortOrderTypes) {
 
-	RAL_EXPECTS(static_cast<size_t>(pivots.view().num_columns()) == searchColIndices.size(), "Mismatched pivots num_columns and searchColIndices");
+	RAL_EXPECTS(static_cast<size_t>(pivots->num_columns()) == searchColIndices.size(), "Mismatched pivots num_columns and searchColIndices");
 
-	cudf::size_type num_rows = table.view().num_rows();
+	cudf::size_type num_rows = table->num_rows();
 	if(num_rows == 0) {
 		std::vector<NodeColumnView> array_node_columns;
 		auto nodes = context->getAllNodes();
 		for(std::size_t i = 0; i < nodes.size(); ++i) {
-			array_node_columns.emplace_back(nodes[i], BlazingTableView(table.view(), table.column_names()));
+			array_node_columns.emplace_back(nodes[i], BlazingTableView(table.view(), table->column_names()));
 		}
 		return array_node_columns;
 	}
@@ -100,7 +100,7 @@ std::vector<NodeColumnView> partitionData(Context * context,
 	std::vector<NodeColumnView> partitioned_node_column_views;
 	for (int i = 0; static_cast<size_t>(i) < partitioned_data.size(); i++){
 		int node_idx = std::min(i / step, static_cast<int>(all_nodes.size() - 1));
-		partitioned_node_column_views.emplace_back(all_nodes[node_idx], BlazingTableView(partitioned_data[i], table.column_names()));
+		partitioned_node_column_views.emplace_back(all_nodes[node_idx], BlazingTableView(partitioned_data[i], table->column_names()));
 	}
 
 	return partitioned_node_column_views;

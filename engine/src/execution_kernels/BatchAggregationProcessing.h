@@ -45,7 +45,7 @@ public:
 
     virtual kstatus run();
 
-    std::vector<std::shared_ptr<ral::frame::BlazingTableView>> prepare_partitions(std::shared_ptr<ral::frame::BlazingCudfTable> input, int num_partitions);
+    std::vector<std::shared_ptr<ral::frame::BlazingTableView>> prepare_partitions(std::shared_ptr<ral::frame::BlazingTableView> input, int num_partitions);
 
 private:
     std::vector<int> group_column_indices;

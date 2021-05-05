@@ -18,7 +18,7 @@ using namespace fmt::literals;
 namespace ral {
 namespace io {
 
-gdf_data_provider::gdf_data_provider(std::vector<ral::frame::BlazingCudfTableView> table_views, std::vector< std::map<std::string,std::string> > column_values)
+gdf_data_provider::gdf_data_provider(std::vector<std::shared_ptr<ral::frame::BlazingTableView>> table_views, std::vector< std::map<std::string,std::string> > column_values)
 : table_views(table_views), current_file(0), column_values(column_values)
 {
 

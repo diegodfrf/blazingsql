@@ -27,8 +27,8 @@ namespace distribution {
 // IMPORTANT: This function expects data to aready be sorted according to the searchColIndices and sortOrderTypes
 // IMPORTANT: The TableViews of the data returned point to the same data that was input.
 	std::vector<NodeColumnView> partitionData(Context * context,
-		const BlazingTableView & table,
-		const BlazingTableView & pivots,
+		std::shared_ptr<BlazingTableView> table,
+		std::shared_ptr<BlazingTableView> pivots,
 		const std::vector<int> & searchColIndices,
 		std::vector<cudf::order> sortOrderTypes);
 
