@@ -5,6 +5,7 @@
 #include "parser/expression_utils.hpp"
 #include "cache_machine/CPUCacheData.h"
 #include "cache_machine/GPUCacheData.h"
+#include "execution_graph/backend_dispatcher.h"
 
 namespace ral {
 namespace batch {
@@ -38,10 +39,15 @@ ral::execution::task_result PartitionSingleNodeKernel::do_process(std::vector< s
 
         for (std::size_t i = 0; i < partitions.size(); i++) {
             std::string cache_id = "output_" + std::to_string(i);
-            this->add_to_output_cache( //std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-                std::make_unique<ral::frame::BlazingTable>(std::make_unique<ral::frame::BlazingTable>(partitions[i]), input->column_names()),
+
+            std::unique_ptr<ral::frame::BlazingTable> temp = ral::execution::backend_dispatcher(
+                                                                partitions[i]->get_execution_backend(),
+                                                                from_table_view_to_table_functor(),
+                                                                partitions[i]);
+            this->add_to_output_cache(
+                std::move(temp),
                 cache_id
-                );
+            );
         }
     }catch(const rmm::bad_alloc& e){
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};

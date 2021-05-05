@@ -332,8 +332,11 @@ set(SRC_FILES ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_graph/CalciteInterpreter.cpp
               ${PROJECT_SOURCE_DIR}/src/parser/expression_utils.cpp
               ${PROJECT_SOURCE_DIR}/src/parser/expression_tree.cpp
-              ${PROJECT_SOURCE_DIR}/src/skip_data/SkipDataProcessor.cpp
-              ${PROJECT_SOURCE_DIR}/src/skip_data/utils.cpp
+              
+              # TODO percy arrow
+              #${PROJECT_SOURCE_DIR}/src/skip_data/SkipDataProcessor.cpp
+              #${PROJECT_SOURCE_DIR}/src/skip_data/utils.cpp
+              
               ${PROJECT_SOURCE_DIR}/src/cython/static.cpp
               ${PROJECT_SOURCE_DIR}/src/cython/initialize.cpp
               ${PROJECT_SOURCE_DIR}/src/cython/io.cpp

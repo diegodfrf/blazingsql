@@ -263,11 +263,18 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
 	fix_column_names_duplicated(result->names);
 
 	for(auto& table : frames){
-    bool is_arrow = table->is_arrow();
-		result->tables.emplace_back(is_arrow? std::make_unique<ResultTable>(table->arrow_table()) : 
-                                          std::make_unique<ResultTable>(table->releaseCudfTable()));
+    auto arrow_table = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
+    bool is_arrow = (arrow_table != nullptr);
     if (is_arrow) {
-      std::cout << "ASDASDAAAAAAAAAAAAAAAAAAAAAAAAAA \n\n" << result->tables.back()->arrow_table->ToString() << "\n\n";
+      result->tables.emplace_back(std::make_unique<ResultTable>(arrow_table->view()));
+    } else {
+      auto cudf_table = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+      assert(cudf_table != nullptr);
+      result->tables.emplace_back(std::make_unique<ResultTable>(cudf_table->releaseCudfTable()));
+    }
+
+    if (is_arrow) {
+      std::cout << "ASDASDAAAAAAAAAAAAAAAAAAAAAAAAAA \n\n" << arrow_table->view()->ToString() << "\n\n";
       std::cout << "LISTO!\n" << std::flush;
     }
 	}
@@ -277,6 +284,7 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
 	comm::graphs_info::getInstance().deregister_graph(ctx_token);
 	return result;
 }
+
 /*
 std::unique_ptr<ResultSet> performPartition(int32_t masterIndex,
 
@@ -334,35 +342,35 @@ std::unique_ptr<ResultSet> performPartition(int32_t masterIndex,
 */
 
 
-std::unique_ptr<ResultSet> runSkipData(ral::frame::BlazingTableView metadata,
+std::unique_ptr<ResultSet> runSkipData(std::shared_ptr<ral::frame::BlazingTableView> metadata,
 	std::vector<std::string> all_column_names, std::string query) {
+// TODO percy arrow
+//	try {
 
-	try {
+//		std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> result_pair = ral::skip_data::process_skipdata_for_table(
+//				metadata, all_column_names, query);
 
-		std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> result_pair = ral::skip_data::process_skipdata_for_table(
-				metadata, all_column_names, query);
+//		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
+//		result->skipdata_analysis_fail = result_pair.second;
+//		if (!result_pair.second){ // if could process skip-data
+//			result->names = result_pair.first->column_names();
+//			result->table = std::make_unique<ResultTable>(result_pair.first->releaseCudfTable());
+//		}
+//		return result;
 
-		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
-		result->skipdata_analysis_fail = result_pair.second;
-		if (!result_pair.second){ // if could process skip-data
-			result->names = result_pair.first->column_names();
-			result->table = std::make_unique<ResultTable>(result_pair.first->releaseCudfTable());
-		}
-		return result;
-
-	} catch(const std::exception & e) {
-		std::cerr << "**[runSkipData]** error parsing metadata.\n";
-		std::cerr << e.what() << std::endl;
-		std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
-		if(logger){
-            logger->error("|||{info}|||||",
-                                        "info"_a="In runSkipData. What: {}"_format(e.what()));
-            logger->flush();
-		}
+//	} catch(const std::exception & e) {
+//		std::cerr << "**[runSkipData]** error parsing metadata.\n";
+//		std::cerr << e.what() << std::endl;
+//		std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
+//		if(logger){
+//            logger->error("|||{info}|||||",
+//                                        "info"_a="In runSkipData. What: {}"_format(e.what()));
+//            logger->flush();
+//		}
 
 
-		throw;
-	}
+//		throw;
+//	}
 }
 
 

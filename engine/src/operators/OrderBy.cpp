@@ -67,7 +67,7 @@ std::unique_ptr<ral::frame::BlazingTable> logicalSort(
 	/*ToDo: Edit this according the Calcite output*/
 	std::vector<cudf::null_order> null_orders(sortColIndices.size(), cudf::null_order::AFTER);
 
-  return ral::execution::backend_dispatcher(table_view->get_execution_backend(), sorted_order_grather_functor(),
+  return ral::execution::backend_dispatcher(table_view->get_execution_backend(), sorted_order_gather_functor(),
     table_view, sortColumns, sortOrderTypes, null_orders);
 }
 
@@ -372,13 +372,14 @@ std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(
 	return partitionPlan;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> merge(std::vector<ral::frame::BlazingTableView> partitions_to_merge, const std::string & query_part) {
+std::unique_ptr<ral::frame::BlazingTable> merge(std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitions_to_merge, const std::string & query_part) {
 	std::vector<cudf::order> sortOrderTypes;
 	std::vector<int> sortColIndices;
 	
 	std::tie(sortColIndices, sortOrderTypes) = get_right_sorts_vars(query_part);
 
-	return sortedMerger(partitions_to_merge, sortOrderTypes, sortColIndices);
+	return ral::execution::backend_dispatcher(partitions_to_merge[0]->get_execution_backend(), sorted_merger_functor(),
+		partitions_to_merge, sortOrderTypes, sortColIndices);
 }
 
 }  // namespace operators

@@ -36,7 +36,7 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
 TableScanInfo getTableScanInfo(std::string logicalPlan);
 
 std::unique_ptr<ResultSet> runSkipData(
-	ral::frame::BlazingTableView metadata,
+	std::shared_ptr<ral::frame::BlazingTableView> metadata,
 	std::vector<std::string> all_column_names,
 	std::string query);
 
@@ -58,7 +58,7 @@ std::pair<std::unique_ptr<PartitionedResultSet>, error_code_t> runQuery_C(int32_
 std::pair<TableScanInfo, error_code_t> getTableScanInfo_C(std::string logicalPlan);
 
 std::pair<std::unique_ptr<ResultSet>, error_code_t> runSkipData_C(
-	ral::frame::BlazingTableView metadata, 
+	std::shared_ptr<ral::frame::BlazingTableView> metadata, 
 	std::vector<std::string> all_column_names, 
 	std::string query);
 

@@ -189,74 +189,75 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values) {
-	if (offset.second == 0) {
-		// cover case for empty files to parse
+  // TODO percy arrow
+//	if (offset.second == 0) {
+//		// cover case for empty files to parse
 
-		std::vector<size_t> column_indices(2 * schema.types.size() + 2);
-		std::iota(column_indices.begin(), column_indices.end(), 0);
+//		std::vector<size_t> column_indices(2 * schema.types.size() + 2);
+//		std::iota(column_indices.begin(), column_indices.end(), 0);
 
-		std::vector<std::string> names(2 * schema.types.size() + 2);
-		std::vector<cudf::type_id> dtypes(2 * schema.types.size() + 2);
+//		std::vector<std::string> names(2 * schema.types.size() + 2);
+//		std::vector<cudf::type_id> dtypes(2 * schema.types.size() + 2);
 
-		size_t index = 0;
-		for(; index < schema.types.size(); index++) {
-			cudf::type_id dtype = schema.types[index];
-			if (dtype == cudf::type_id::STRING)
-				dtype = cudf::type_id::INT32;
+//		size_t index = 0;
+//		for(; index < schema.types.size(); index++) {
+//			cudf::type_id dtype = schema.types[index];
+//			if (dtype == cudf::type_id::STRING)
+//				dtype = cudf::type_id::INT32;
 
-			dtypes[2*index] = dtype;
-			dtypes[2*index + 1] = dtype;
+//			dtypes[2*index] = dtype;
+//			dtypes[2*index + 1] = dtype;
 
-			auto col_name_min = "min_" + std::to_string(index) + "_" + schema.names[index];
-			auto col_name_max = "max_" + std::to_string(index)  + "_" + schema.names[index];
+//			auto col_name_min = "min_" + std::to_string(index) + "_" + schema.names[index];
+//			auto col_name_max = "max_" + std::to_string(index)  + "_" + schema.names[index];
 
-			names[2*index] = col_name_min;
-			names[2*index + 1] = col_name_max;
-		}
-		dtypes[2*index] = cudf::type_id::INT32;
-		names[2*index] = "file_handle_index";
+//			names[2*index] = col_name_min;
+//			names[2*index + 1] = col_name_max;
+//		}
+//		dtypes[2*index] = cudf::type_id::INT32;
+//		names[2*index] = "file_handle_index";
 
-		dtypes[2*index + 1] = cudf::type_id::INT32;
-		names[2*index + 1] = "row_group_index";
-		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
-		result->names = names;
-		auto table = ral::utilities::create_empty_cudf_table(dtypes);
-		result->table = std::make_unique<ResultTable>(std::move(table));
-		result->skipdata_analysis_fail = false;
-		return result;
-	}
-	const DataType data_type_hint = ral::io::inferDataType(file_format_hint);
-	const DataType fileType = inferFileType(files, data_type_hint);
-	std::map<std::string, std::string> args_map = ral::io::to_map(arg_keys, arg_values);
+//		dtypes[2*index + 1] = cudf::type_id::INT32;
+//		names[2*index + 1] = "row_group_index";
+//		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
+//		result->names = names;
+//		auto table = ral::utilities::create_empty_cudf_table(dtypes);
+//		result->table = std::make_unique<ResultTable>(std::move(table));
+//		result->skipdata_analysis_fail = false;
+//		return result;
+//	}
+//	const DataType data_type_hint = ral::io::inferDataType(file_format_hint);
+//	const DataType fileType = inferFileType(files, data_type_hint);
+//	std::map<std::string, std::string> args_map = ral::io::to_map(arg_keys, arg_values);
 
-	std::shared_ptr<ral::io::data_parser> parser;
-	if(fileType == ral::io::DataType::PARQUET) {
-		parser = std::make_shared<ral::io::parquet_parser>();
-	} else if(fileType == ral::io::DataType::ORC) {
-		parser = std::make_shared<ral::io::orc_parser>(args_map);
-	} else if(fileType == ral::io::DataType::JSON) {
-		parser = std::make_shared<ral::io::json_parser>(args_map);
-	} else if(fileType == ral::io::DataType::CSV) {
-		parser = std::make_shared<ral::io::csv_parser>(args_map);
-	}
-	std::vector<Uri> uris;
-	for(auto file_path : files) {
-		uris.push_back(Uri{file_path});
-	}
-	auto provider = std::make_shared<ral::io::uri_data_provider>(uris);
-	auto loader = std::make_shared<ral::io::data_loader>(parser, provider);
-	try{
-		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(offset.first);
-		// ral::utilities::print_blazing_table_view(metadata->to_table_view());
-		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
-		result->names = metadata->column_names();
-		result->table = std::make_unique<ResultTable>(metadata->releaseCudfTable());
-		result->skipdata_analysis_fail = false;
-		return result;
-	} catch(std::exception & e) {
-		std::cerr << e.what() << std::endl;
-		throw;
-	}
+//	std::shared_ptr<ral::io::data_parser> parser;
+//	if(fileType == ral::io::DataType::PARQUET) {
+//		parser = std::make_shared<ral::io::parquet_parser>();
+//	} else if(fileType == ral::io::DataType::ORC) {
+//		parser = std::make_shared<ral::io::orc_parser>(args_map);
+//	} else if(fileType == ral::io::DataType::JSON) {
+//		parser = std::make_shared<ral::io::json_parser>(args_map);
+//	} else if(fileType == ral::io::DataType::CSV) {
+//		parser = std::make_shared<ral::io::csv_parser>(args_map);
+//	}
+//	std::vector<Uri> uris;
+//	for(auto file_path : files) {
+//		uris.push_back(Uri{file_path});
+//	}
+//	auto provider = std::make_shared<ral::io::uri_data_provider>(uris);
+//	auto loader = std::make_shared<ral::io::data_loader>(parser, provider);
+//	try{
+//		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(offset.first);
+//		// ral::utilities::print_blazing_table_view(metadata->to_table_view());
+//		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
+//		result->names = metadata->column_names();
+//		result->table = std::make_unique<ResultTable>(metadata->releaseCudfTable());
+//		result->skipdata_analysis_fail = false;
+//		return result;
+//	} catch(std::exception & e) {
+//		std::cerr << e.what() << std::endl;
+//		throw;
+//	}
 }
 
 std::pair<bool, std::string> registerFileSystem(
