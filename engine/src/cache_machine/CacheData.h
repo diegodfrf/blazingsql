@@ -255,7 +255,7 @@ public:
 	 * Utility function which can take a CacheData and if its a standard GPU cache data, it will downgrade it to CPU or Disk
 	 * @return If the input CacheData is not of a type that can be downgraded, it will just return the original input, otherwise it will return the downgraded CacheData.
 	 */
-	static std::unique_ptr<CacheData> downgradeCacheData(std::unique_ptr<CacheData> cacheData, std::string id, std::shared_ptr<Context> ctx);
+	static std::unique_ptr<CacheData> downgradeGPUCacheData(std::unique_ptr<CacheData> cacheData, std::string id, std::shared_ptr<Context> ctx);
 
 protected:
 	CacheDataType cache_type; /**< The CacheDataType that is used to store the dataframe representation. */

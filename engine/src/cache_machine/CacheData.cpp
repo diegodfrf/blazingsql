@@ -17,7 +17,7 @@ void MetadataDictionary::set_value(std::string key, std::string value) {
 	this->values[key] = value;
 }
 
-std::unique_ptr<CacheData> CacheData::downgradeCacheData(std::unique_ptr<CacheData> cacheData, std::string id, std::shared_ptr<Context> ctx) {
+std::unique_ptr<CacheData> CacheData::downgradeGPUCacheData(std::unique_ptr<CacheData> cacheData, std::string id, std::shared_ptr<Context> ctx) {
 	// if its not a GPU cacheData, then we can't downgrade it, so we can just return it
 	if (cacheData->get_type() != ral::cache::CacheDataType::GPU){
 		return cacheData;
@@ -25,7 +25,7 @@ std::unique_ptr<CacheData> CacheData::downgradeCacheData(std::unique_ptr<CacheDa
 		CodeTimer cacheEventTimer(false);
 		cacheEventTimer.start();
 
-		std::unique_ptr<ral::frame::BlazingTable> table = cacheData->decache();
+		std::unique_ptr<ral::frame::BlazingTable> table = cacheData->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		std::shared_ptr<spdlog::logger> cache_events_logger = spdlog::get("cache_events_logger");
 
 		// lets first try to put it into CPU

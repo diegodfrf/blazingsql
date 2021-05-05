@@ -57,14 +57,11 @@ public:
 
     const std::vector<ral::memory::blazing_chunked_column_info> &  get_blazing_chunked_column_infos() const;
 
-    bool is_arrow() const { return (this->arrow_table != nullptr); }
-
 private:
     std::vector<ColumnTransport> columns_offsets;
     std::vector<ral::memory::blazing_chunked_column_info> chunked_column_infos;
     std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>> allocations;
-    size_t part_id;
-    std::shared_ptr<arrow::Table> arrow_table;
+    size_t part_id;    
 };
 
 }  // namespace frame

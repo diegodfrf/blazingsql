@@ -17,22 +17,23 @@ public:
 	* Constructor
 	* @param table The BlazingTable that is moved into the CacheData.
 	*/
-	GPUCacheData(std::unique_ptr<ral::frame::BlazingTable> table);
+	GPUCacheData(std::unique_ptr<ral::frame::BlazingCudfTable> table);
 
 	/**
 	* Constructor
 	* @param table The BlazingTable that is moved into the CacheData.
 	* @param metadata The metadata that will be used in transport and planning.
 	*/
-	GPUCacheData(std::unique_ptr<ral::frame::BlazingTable> table, const MetadataDictionary & metadata);
+	GPUCacheData(std::unique_ptr<ral::frame::BlazingCudfTable> table, const MetadataDictionary & metadata);
 
 	/**
-	* Move the BlazingTable out of this Cache
-	* This function only exists so that we can interact with all cache data by
-	* calling decache on them.
-	* @return The BlazingTable that was used to construct this CacheData.
+	* @brief Remove the payload from this CacheData.
+	* This removes the payload for the CacheData. After this the CacheData will
+	* almost always go out of scope and be destroyed.
+	* @param backend the execution backend
+	* @return a BlazingTable generated from the source of data for this CacheData. The type of BlazingTable returned will depend on the backend
 	*/
-	std::unique_ptr<ral::frame::BlazingTable> decache() override;
+	std::unique_ptr<ral::frame::BlazingTable> decache(execution::execution_backend backend) override;
 
 	/**
 	* Get the amount of GPU memory consumed by this CacheData
@@ -60,10 +61,10 @@ public:
 	*/
 	std::shared_ptr<ral::frame::BlazingTableView> getTableView();
 
-	void set_data(std::unique_ptr<ral::frame::BlazingTable> table);
+	void set_data(std::unique_ptr<ral::frame::BlazingCudfTable> table);
 
 protected:
-	std::unique_ptr<ral::frame::BlazingTable> data; /**< Stores the data to be returned in decache */
+	std::unique_ptr<ral::frame::BlazingCudfTable> data_; /**< Stores the data to be returned in decache */
 };
 
 } // namespace cache

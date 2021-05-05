@@ -112,7 +112,7 @@ public:
 	}
 	// take the first cacheData in this CacheMachine that it can find (looking in reverse order) that is in the GPU put it in RAM or Disk as oppropriate
 	// this function does not change the order of the caches
-	virtual size_t downgradeCacheData();
+	virtual size_t downgradeGPUCacheData();
 
     bool has_data_in_index_now(size_t index);
 
@@ -163,7 +163,7 @@ public:
 
 	std::unique_ptr<ral::cache::CacheData> pullCacheData() override;
 
-	size_t downgradeCacheData() override { // dont want to be able to downgrage concatenating caches
+	size_t downgradeGPUCacheData() override { // dont want to be able to downgrage concatenating caches
 		return 0;
 	}
 

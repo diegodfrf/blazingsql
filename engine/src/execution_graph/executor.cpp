@@ -71,7 +71,7 @@ std::size_t task::task_memory_needed() {
     return bytes_to_decache + kernel->estimate_output_bytes(inputs) + kernel->estimate_operating_bytes(inputs);
 }
 
-
+// WSM NEED TO REFACTOR THIS. Also look at set_data
 void task::run(cudaStream_t stream, executor * executor){
     std::vector< std::unique_ptr<ral::frame::BlazingTable> > input_gpu;
     CodeTimer decachingEventTimer;

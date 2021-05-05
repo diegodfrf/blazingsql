@@ -130,9 +130,9 @@ cdef extern from "../include/io/io.h" nogil:
         string adcJsonFile
 
     cdef struct FolderPartitionMetadata:
-        string name;
-        set[string] values;
-        type_id data_type;
+        string name
+        set[string] values
+        type_id data_type
 
     pair[bool, string] registerFileSystemHDFS(HDFS hdfs, string root, string authority) except +raiseRegisterFileSystemHDFSError
     pair[bool, string] registerFileSystemGCS( GCS gcs, string root, string authority) except +raiseRegisterFileSystemGCSError
@@ -186,12 +186,12 @@ cdef extern from "../src/cache_machine/CacheMachine.h" namespace "ral::cache":
 
 cdef extern from "../src/cache_machine/CacheData.h" namespace "ral::cache":
         cdef cppclass CacheData:
-            unique_ptr[BlazingTable] decache()
+            # unique_ptr[BlazingTable] decache() // WSM commenting out for now
             MetadataDictionary getMetadata()
 
 cdef extern from "../src/cache_machine/GPUCacheData.h" namespace "ral::cache":
         cdef cppclass GPUCacheData:
-            unique_ptr[BlazingTable] decache()
+            # unique_ptr[BlazingTable] decache() // WSM commenting out for now
             MetadataDictionary getMetadata()
 
 # REMARK: We have some compilation errors from cython assigning temp = unique_ptr[ResultSet]

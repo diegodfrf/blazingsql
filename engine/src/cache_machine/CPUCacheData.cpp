@@ -3,33 +3,32 @@
 namespace ral {
 namespace cache {
 
-CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingTable> gpu_table, bool use_pinned)
-	: CacheData(CacheDataType::CPU, gpu_table->column_names(), gpu_table->column_types(), gpu_table->num_rows())
+CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned)
+	: CacheData(CacheDataType::CPU, table->column_names(), table->column_types(), gpu_table->num_rows())
 {
-	ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(gpu_table.get());
-	bool is_arrow = (arrow_table_ptr != nullptr);
-
-  if (is_arrow) {
-    this->host_table = std::make_unique<ral::frame::BlazingHostTable>(arrow_table_ptr->view());
+	
+  if (table->get_execution_backend().id() == ral::execution::backend_id::ARROW) {
+	  // WSM TODO. Need to make BlazingHostTable arrow based constructor
+    // ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
+    // this->host_table = std::make_unique<ral::frame::BlazingHostTable>(arrow_table_ptr->view());
   } else {
-		ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(gpu_table.get());
-    this->host_table = ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
+    ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+    this->host_table = ral::communication::messages::serialize_gpu_message_to_host_table(table->to_table_view(), use_pinned);
   }
 }
 
 CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingTable> gpu_table,const MetadataDictionary & metadata, bool use_pinned)
 	: CacheData(CacheDataType::CPU, gpu_table->column_names(), gpu_table->column_types(), gpu_table->num_rows())
 {
-	ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(gpu_table.get());
-	bool is_arrow = (arrow_table_ptr != nullptr);
-
-  if (is_arrow) {
-    this->host_table = std::make_unique<ral::frame::BlazingHostTable>(arrow_table_ptr->view());
+  if (table->get_execution_backend().id() == ral::execution::backend_id::ARROW) {
+	  // WSM TODO. Need to make BlazingHostTable arrow based constructor
+    // ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
+    // this->host_table = std::make_unique<ral::frame::BlazingHostTable>(arrow_table_ptr->view());
   } else {
-		ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(gpu_table.get());
-    this->host_table = ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
+    ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+    this->host_table = ral::communication::messages::serialize_gpu_message_to_host_table(table->to_table_view(), use_pinned);
   }
-	this->metadata = metadata;
+  this->metadata = metadata;
 }
 
 CPUCacheData::CPUCacheData(const std::vector<blazingdb::transport::ColumnTransport> & column_transports,

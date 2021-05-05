@@ -54,19 +54,10 @@ void BlazingHostTable::set_names(std::vector<std::string> names) {
 }
 
 cudf::size_type BlazingHostTable::num_rows() const {
-  if (this->arrow_table != nullptr) {
-    return this->arrow_table->num_rows();
-  }
-
-    return columns_offsets.empty() ? 0 : columns_offsets.front().metadata.size;
+  return columns_offsets.empty() ? 0 : columns_offsets.front().metadata.size;
 }
 
 cudf::size_type BlazingHostTable::num_columns() const {
-  if (this->is_arrow()) {
-    int a = this->arrow_table->num_columns();
-    return a;
-  }
-
     return columns_offsets.size();
 }
 
@@ -91,8 +82,9 @@ const std::vector<ColumnTransport> &BlazingHostTable::get_columns_offsets() cons
 }
 
 std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
-  assert(this->is_arrow());
-  return std::make_unique<ral::frame::BlazingArrowTable>(this->arrow_table);
+    // WSM TODO
+//   assert(this->is_arrow());
+//   return std::make_unique<ral::frame::BlazingArrowTable>(this->arrow_table);
 }
 
 std::unique_ptr<BlazingCudfTable> BlazingHostTable::get_cudf_table() const {

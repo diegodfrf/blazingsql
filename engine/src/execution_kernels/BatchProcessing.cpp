@@ -190,12 +190,7 @@ kstatus TableScan::run() {
             auto row_group_ids = schema.get_rowgroup_ids(file_index);
             //this is the part where we make the task now
 
-            std::unique_ptr<ral::cache::CacheData> input = nullptr;
-            if (this->parser->type() == DataType::ARROW) {
-              input = std::make_unique<ral::cache::ArrowCacheData>(handle, parser, schema, row_group_ids, projections);
-            } else {
-              input = std::make_unique<ral::cache::CacheDataIO>(handle, parser, schema, file_schema, row_group_ids, projections);
-            }
+            std::unique_ptr<ral::cache::CacheData> input = std::make_unique<ral::cache::CacheDataIO>(handle, parser, schema, file_schema, row_group_ids, projections);
 
             std::vector<std::unique_ptr<ral::cache::CacheData> > inputs;
             inputs.push_back(std::move(input));
@@ -378,13 +373,8 @@ kstatus BindableTableScan::run() {
             auto row_group_ids = schema.get_rowgroup_ids(file_index);
             //this is the part where we make the task now
 
-            std::unique_ptr<ral::cache::CacheData> input = nullptr;
-            if (this->parser->type() == DataType::ARROW) {
-              input = std::make_unique<ral::cache::ArrowCacheData>(handle, parser, schema, row_group_ids, projections);
-            } else {
-              input = std::make_unique<ral::cache::CacheDataIO>(handle, parser, schema, file_schema, row_group_ids, projections);
-            }
-
+            std::unique_ptr<ral::cache::CacheData> input = std::make_unique<ral::cache::CacheDataIO>(handle, parser, schema, file_schema, row_group_ids, projections);
+            
             std::vector<std::unique_ptr<ral::cache::CacheData>> inputs;
             inputs.push_back(std::move(input));
             auto output_cache = this->output_cache();

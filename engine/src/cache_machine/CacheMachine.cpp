@@ -305,18 +305,17 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 
     // we dont want to add empty tables to a cache, unless we have never added anything
 	if (!this->something_added || table->num_rows() > 0 || always_add){
-		for (auto col_ind = 0; col_ind < table->num_columns(); col_ind++){
-            // TODO percy arrow
-            ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
-	        bool is_arrow = (arrow_table_ptr != nullptr);
-            if (is_arrow) continue;
+		if (table->get_execution_backend().id() == ral::execution::backend_id::CUDF ){
             ral::frame::BlazingCudfTable *cudf_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
-			if (cudf_table_ptr->view().column(col_ind).offset() > 0){
-				cudf_table_ptr->ensureOwnership();
-				break;
-			}
+            for (auto col_ind = 0; col_ind < table->num_columns(); col_ind++){
+                
+                if (cudf_table_ptr->view().column(col_ind).offset() > 0){
+                    cudf_table_ptr->ensureOwnership();
+                    break;
+                }
 
-		}
+            }
+        }
 
 		if (message_id == ""){
 			message_id = this->cache_machine_name;
@@ -324,7 +323,7 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 
 		num_rows_added += table->num_rows();
 		num_bytes_added += table->size_in_bytes();
-		size_t cacheIndex = 0;
+		size_t cacheIndex = table->get_execution_backend().id() == ral::execution::backend_id::CUDF ? 0 : 1;
 		while(cacheIndex < memory_resources.size()) {
 
 			auto memory_to_use = (this->memory_resources[cacheIndex]->get_memory_used() + table->size_in_bytes());
@@ -338,8 +337,7 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 				if(cacheIndex == 0) {
 					// before we put into a cache, we need to make sure we fully own the table
 					table->ensureOwnership();
-					std::unique_ptr<CacheData> cache_data;
-					cache_data = std::make_unique<GPUCacheData>(std::move(table),metadata);
+					std::unique_ptr<CacheData> cache_data = std::make_unique<GPUCacheData>(std::move(table),metadata);
 					auto item =	std::make_unique<message>(std::move(cache_data), message_id);
 					this->waitingCache->put(std::move(item));
 
@@ -360,8 +358,8 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 
 				} else {
 					if(cacheIndex == 1) {
-						std::unique_ptr<CacheData> cache_data;
-						cache_data = std::make_unique<CPUCacheData>(std::move(table), metadata, use_pinned);
+						// WSM CONTINUE HERE WHEN WE HAVE A PROPER ArrowCacheData
+						std::unique_ptr<CacheData> cache_data = std::make_unique<CPUCacheData>(std::move(table), metadata, use_pinned);
 							
 						auto item =	std::make_unique<message>(std::move(cache_data), message_id);
 						this->waitingCache->put(std::move(item));
@@ -654,7 +652,7 @@ std::unique_ptr<ral::cache::CacheData> CacheMachine::pullCacheData() {
 
 // take the first cacheData in this CacheMachine that it can find (looking in reverse order) that is in the GPU put it in RAM or Disk as oppropriate
 // this function does not change the order of the caches
-size_t CacheMachine::downgradeCacheData() {
+size_t CacheMachine::downgradeGPUCacheData() {
 	size_t bytes_downgraded = 0;
 	std::unique_lock<std::mutex> lock = this->waitingCache->lock();
 	std::vector<std::unique_ptr<message>> all_messages = this->waitingCache->get_all_unsafe();
@@ -664,7 +662,7 @@ size_t CacheMachine::downgradeCacheData() {
 			std::string message_id = all_messages[i]->get_message_id();
 			auto current_cache_data = all_messages[i]->release_data();
 			bytes_downgraded += current_cache_data->size_in_bytes();
-			auto new_cache_data = CacheData::downgradeCacheData(std::move(current_cache_data), message_id, ctx);
+			auto new_cache_data = CacheData::downgradeGPUCacheData(std::move(current_cache_data), message_id, ctx);
 
 			auto new_message =	std::make_unique<message>(std::move(new_cache_data), message_id);
 			all_messages[i] = std::move(new_message);
