@@ -1296,44 +1296,6 @@ hash_partition_functor::operator()<ral::frame::BlazingCudfTable>(
 }
 
 
-/////////////////////////// split functor
-
-struct split_functor {
-  template <typename T>
-  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> table_View,
-      std::vector<cudf::size_type> const& splits) const
-  {
-    // TODO percy arrow thrown error
-    //return nullptr;
-  }
-};
-
-template <>
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-split_functor::operator()<ral::frame::BlazingArrowTable>(    
-    std::shared_ptr<ral::frame::BlazingTableView> table_View,
-    std::vector<cudf::size_type> const& splits) const
-{
-  // TODO percy arrow
-  //return std::make_pair(nullptr, {});
-}
-
-template <>
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-split_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_View,
-    std::vector<cudf::size_type> const& splits) const
-{
-  auto cudf_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_View);
-  std::vector<std::string> names;
-  auto tbs = cudf::split(cudf_view->view(), splits);
-  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
-  for (auto tb : tbs) {
-    ret.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(tb, cudf_view->column_names()));
-  }
-  return ret;
-}
 
 ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 	std::shared_ptr<ral::cache::CacheMachine> /*output*/,

@@ -46,7 +46,7 @@ struct TableSchema {
 	TableSchema & operator=(TableSchema const &other) = default;
 	TableSchema & operator=(TableSchema &&) = default;
 
-	std::vector<ral::frame::BlazingTableView> blazingTableViews;
+	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> blazingTableViews;
 	std::vector<cudf::type_id> types;
 	std::vector<std::string> files;
 	std::vector<std::string> datasource;
@@ -56,7 +56,7 @@ struct TableSchema {
 	int data_type;
 	bool has_header_csv = false;
 
-	std::shared_ptr<ral::frame::BlazingTableView> metadata;
+	std::shared_ptr<std::shared_ptr<ral::frame::BlazingTableView>> metadata;
 	std::vector<std::vector<int>> row_groups_ids;
 	std::shared_ptr<arrow::Table> arrow_table; //must be a vector?
 };

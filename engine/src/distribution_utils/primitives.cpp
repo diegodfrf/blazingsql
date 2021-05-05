@@ -6,13 +6,13 @@
 
 #include <cudf/search.hpp>
 #include <cudf/sorting.hpp>
-#include "cudf/detail/gather.hpp"
 #include "cudf/copying.hpp"
 #include <cudf/merge.hpp>
 #include <cudf/utilities/traits.hpp>
 
 #include "utilities/CommonOperations.h"
 #include "operators/OrderBy.h"
+#include "execution_graph/backend_dispatcher.h"
 
 #include "utilities/error.hpp"
 #include "utilities/ctpl_stl.h"
@@ -37,7 +37,7 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 	const std::vector<cudf::order> & sortOrderTypes) {
 
 	// just to call concatTables
-	std::vector<BlazingTableView> samplesView;
+	std::vector<std::shared_ptr<BlazingTableView>> samplesView;
 	for (std::size_t i = 0; i < samples.size(); i++){
 		samplesView.push_back(samples[i]->to_table_view());
 	}
@@ -46,9 +46,11 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 
 	std::vector<cudf::null_order> null_orders(sortOrderTypes.size(), cudf::null_order::AFTER);
 	// TODO this is just a default setting. Will want to be able to properly set null_order
-	std::unique_ptr<cudf::column> sort_indices = cudf::sorted_order( concatSamples->view(), sortOrderTypes, null_orders);
+	//std::unique_ptr<cudf::column> sort_indices = cudf::sorted_order( concatSamples->view(), sortOrderTypes, null_orders);
+	//std::unique_ptr<cudf::table> sortedSamples = cudf::detail::gather( concatSamples->view(), sort_indices->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
 
-	std::unique_ptr<cudf::table> sortedSamples = cudf::detail::gather( concatSamples->view(), sort_indices->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
+	std::unique_ptr<ral::frame::BlazingTable> sortedSamples = ral::execution::backend_dispatcher(concatSamples->to_table_view()->get_execution_backend(), ral::operators::sorted_order_gather_functor(),
+		concatSamples->to_table_view(), concatSamples->to_table_view(), sortOrderTypes, null_orders);
 
 	// lets get names from a non-empty table
 	std::vector<std::string> names;
@@ -62,7 +64,7 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 		throw std::runtime_error("ERROR in generatePartitionPlans. names.size() == 0");
 	}
 
-	return getPivotPointsTable(number_partitions, BlazingTableView(sortedSamples->view(), names));
+	return getPivotPointsTable(number_partitions, sortedSamples->to_table_view());
 }
 
 // This function locates the pivots in the table and partitions the data on those pivot points.
@@ -81,7 +83,7 @@ std::vector<NodeColumnView> partitionData(Context * context,
 		std::vector<NodeColumnView> array_node_columns;
 		auto nodes = context->getAllNodes();
 		for(std::size_t i = 0; i < nodes.size(); ++i) {
-			array_node_columns.emplace_back(nodes[i], BlazingTableView(table.view(), table->column_names()));
+			array_node_columns.emplace_back(nodes[i], table);
 		}
 		return array_node_columns;
 	}
@@ -90,7 +92,7 @@ std::vector<NodeColumnView> partitionData(Context * context,
 		sortOrderTypes.assign(searchColIndices.size(), cudf::order::ASCENDING);
 	}
 
-	std::vector<cudf::table_view> partitioned_data = ral::operators::partition_table(pivots, table, sortOrderTypes, searchColIndices);
+	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitioned_data = ral::operators::partition_table(pivots, table, sortOrderTypes, searchColIndices);
 
 	std::vector<Node> all_nodes = context->getAllNodes();
 
@@ -100,39 +102,16 @@ std::vector<NodeColumnView> partitionData(Context * context,
 	std::vector<NodeColumnView> partitioned_node_column_views;
 	for (int i = 0; static_cast<size_t>(i) < partitioned_data.size(); i++){
 		int node_idx = std::min(i / step, static_cast<int>(all_nodes.size() - 1));
-		partitioned_node_column_views.emplace_back(all_nodes[node_idx], BlazingTableView(partitioned_data[i], table->column_names()));
+		partitioned_node_column_views.emplace_back(all_nodes[node_idx], partitioned_data[i]);
 	}
 
 	return partitioned_node_column_views;
 }
 
-std::unique_ptr<BlazingTable> sortedMerger(std::vector<BlazingTableView> & tables,
-	const std::vector<cudf::order> & sortOrderTypes,
-	const std::vector<int> & sortColIndices) {
 
-	// TODO this is just a default setting. Will want to be able to properly set null_order
-	std::vector<cudf::null_order> null_orders(sortOrderTypes.size(), cudf::null_order::AFTER);
+std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partitions, std::shared_ptr<BlazingTableView> sortedSamples){
 
-	std::vector<cudf::table_view> cudf_table_views(tables.size());
-	for(size_t i = 0; i < tables.size(); i++) {
-		cudf_table_views[i] = tables[i].view();
-	}
-	std::unique_ptr<cudf::table> merged_table = cudf::merge(cudf_table_views, sortColIndices, sortOrderTypes, null_orders);
-
-	// lets get names from a non-empty table
-	std::vector<std::string> names;
-	for(size_t i = 0; i < tables.size(); i++) {
-		if (tables[i].column_names().size() > 0){
-			names = tables[i].column_names();
-			break;
-		}
-	}
-	return std::make_unique<BlazingTable>(std::move(merged_table), names);
-}
-
-std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partitions, const BlazingTableView & sortedSamples){
-
-	cudf::size_type outputRowSize = sortedSamples.view().num_rows();
+	cudf::size_type outputRowSize = sortedSamples->num_rows();
 	cudf::size_type pivotsSize = outputRowSize > 0 ? number_partitions - 1 : 0;
 
 	int32_t step = outputRowSize / number_partitions;
@@ -143,9 +122,10 @@ std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partiti
 
 	auto gather_map = ral::utilities::vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
 
-	std::unique_ptr<cudf::table> pivots = cudf::detail::gather( sortedSamples.view(), gather_map->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
-
-	return std::make_unique<BlazingTable>(std::move(pivots), sortedSamples.column_names());
+  // TODO percy rommel arrow
+//	std::unique_ptr<ral::frame::BlazingTable> pivots = ral::execution::backend_dispatcher(table_view->get_execution_backend(), gather_functor(),
+//															sortedSamples->view(), gather_map->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
+//	return std::move(pivots);
 }
 
 

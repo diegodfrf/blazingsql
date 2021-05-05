@@ -243,7 +243,7 @@ bool apply_skip_data_rules(ral::parser::parse_tree& tree) {
 // minmax_metadata_table => use these indices [[0, 3, 5]]
 // minmax_metadata_table => minmax_metadata_table[[0, 1,  6, 7,  10, 11, size - 2, size - 1]]
 std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_table(
-    const ral::frame::BlazingTableView & metadata_view, const std::vector<std::string> & names, std::string table_scan) {
+    std::shared_ptr<ral::frame::BlazingTableView> metadata_view, const std::vector<std::string> & names, std::string table_scan) {
 
     std::string filter_string;
     try {
@@ -279,12 +279,12 @@ std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_
         }
     }
 
-    cudf::size_type rows = metadata_view.num_rows();
+    cudf::size_type rows = metadata_view->num_rows();
     std::unique_ptr<cudf::column> temp_no_data = cudf::make_fixed_width_column(
         cudf::data_type{cudf::type_id::INT8}, rows,
         cudf::mask_state::UNINITIALIZED);
 
-    std::vector<std::string> metadata_names = metadata_view.column_names();
+    std::vector<std::string> metadata_names = metadata_view->column_names();
     std::vector<std::unique_ptr<ral::frame::BlazingColumn>> metadata_columns = metadata_view.toBlazingColumns();
     std::vector<std::unique_ptr<ral::frame::BlazingColumn>> projected_metadata_cols;
     std::vector<bool> valid_metadata_columns;

@@ -97,33 +97,32 @@ std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
 
 std::unique_ptr<BlazingCudfTable> BlazingHostTable::get_cudf_table() const {
     std::vector<rmm::device_buffer> gpu_raw_buffers(chunked_column_infos.size());
+  // TODO percy arrow
+//    try{
+//        int buffer_index = 0;
+//        for(auto & chunked_column_info : chunked_column_infos){
+//            gpu_raw_buffers[buffer_index].resize(chunked_column_info.use_size);
+//            size_t position = 0;
+//            for(size_t i = 0; i < chunked_column_info.chunk_index.size(); i++){
+//                size_t chunk_index = chunked_column_info.chunk_index[i];
+//                size_t offset = chunked_column_info.offset[i];
+//                size_t chunk_size = chunked_column_info.size[i];
+//                cudaMemcpyAsync((void *) (gpu_raw_buffers[buffer_index].data() + position), allocations[chunk_index]->data + offset, chunk_size, cudaMemcpyHostToDevice,0);
+//                position += chunk_size;
+//            }
+//            buffer_index++;
+//        }
+//        cudaStreamSynchronize(0);
+//    }catch(std::exception & e){
+//        auto logger = spdlog::get("batch_logger");
+//        if (logger){
+//            logger->error("|||{info}|||||",
+//                    "info"_a="ERROR in BlazingHostTable::get_gpu_table(). What: {}"_format(e.what()));
+//        }
+//        throw;
+//    }
 
-    try{
-        int buffer_index = 0;
-        for(auto & chunked_column_info : chunked_column_infos){
-            gpu_raw_buffers[buffer_index].resize(chunked_column_info.use_size);
-            size_t position = 0;
-            for(size_t i = 0; i < chunked_column_info.chunk_index.size(); i++){
-                size_t chunk_index = chunked_column_info.chunk_index[i];
-                size_t offset = chunked_column_info.offset[i];
-                size_t chunk_size = chunked_column_info.size[i];
-                cudaMemcpyAsync((void *) (gpu_raw_buffers[buffer_index].data() + position), allocations[chunk_index]->data + offset, chunk_size, cudaMemcpyHostToDevice,0);
-                position += chunk_size;
-            }
-            buffer_index++;
-        }
-        cudaStreamSynchronize(0);
-    }catch(std::exception & e){
-        auto logger = spdlog::get("batch_logger");
-        if (logger){
-            logger->error("|||{info}|||||",
-                    "info"_a="ERROR in BlazingHostTable::get_gpu_table(). What: {}"_format(e.what()));
-        }
-        throw;
-    }
-
-    return std::move(comm::deserialize_from_gpu_raw_buffers(columns_offsets,
-                                    gpu_raw_buffers));
+//    return std::move(comm::deserialize_from_gpu_raw_buffers(columns_offsets, gpu_raw_buffers));
 }
 
 std::vector<ral::memory::blazing_allocation_chunk> BlazingHostTable::get_raw_buffers() const {

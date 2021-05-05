@@ -144,7 +144,7 @@ upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
 
 
 
-struct sorted_order_grather_functor {
+struct sorted_order_gather_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
@@ -158,7 +158,7 @@ struct sorted_order_grather_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> sorted_order_grather_functor::operator()<ral::frame::BlazingArrowTable>(    
+std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::operator()<ral::frame::BlazingArrowTable>(    
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::shared_ptr<ral::frame::BlazingTableView> sortColumns_view,
     const std::vector<cudf::order> & sortOrderTypes,
@@ -169,7 +169,7 @@ std::unique_ptr<ral::frame::BlazingTable> sorted_order_grather_functor::operator
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> sorted_order_grather_functor::operator()<ral::frame::BlazingCudfTable>(
+std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::shared_ptr<ral::frame::BlazingTableView> sortColumns_view,
     const std::vector<cudf::order> & sortOrderTypes,
