@@ -209,8 +209,8 @@ NOTES:
 ##### SnowFlake
 SnowFlake works with [unixODBC](http://www.unixodbc.com/). There are two options to connect to snowflake which are the following:
 
-##### Option 1
-Execute the script `snowflake_odbc_setup.sh` which will install and configure [snowflake driver for odbc 2.23.2](https://sfc-repo.snowflakecomputing.com/odbc/linux/2.23.2/index.html)
+###### Option 1
+Execute the script `./snowflake_odbc_setup.sh` which will install and configure [snowflake driver for odbc 2.23.2](https://sfc-repo.snowflakecomputing.com/odbc/linux/2.23.2/index.html)
 
 After the installation now you can start using snowflake without creating an odbc.ini file, an example is shown below.
 
@@ -228,7 +228,7 @@ bc.create_table('MY_TABLE', 'MY_SNOWFLAKE_TABLE',
 df = bc.sql("SELECT * FROM MY_TABLE")
 print(df)
 ```
-##### Option 2
+###### Option 2
 Download the [snowflake driver for odbc 2.23.2](https://sfc-repo.snowflakecomputing.com/odbc/linux/2.23.2/index.html) and unpack it in the /opt directory
 Create the odbc.ini and odbcinst.ini files in the /etc directory in order to register a DSN (Datasource provider)
 
