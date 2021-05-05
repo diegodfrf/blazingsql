@@ -7,7 +7,7 @@ BOLDGREEN="\e[1;${GREEN}"
 ITALICRED="\e[3;${RED}"
 ENDCOLOR="\e[0m"
 
-if [ -z $CONDA_PREFIX ]; then
+if [ ! -z $CONDA_PREFIX ]; then
     echo -e "${GREEN}Installing snowflake odbc driver${ENDCOLOR}"
     wget https://sfc-repo.snowflakecomputing.com/odbc/linux/2.23.2/snowflake_linux_x8664_odbc-2.23.2.tgz
     tar xf snowflake_linux_x8664_odbc-2.23.2.tgz -C $CONDA_PREFIX/opt
@@ -24,7 +24,9 @@ SQLLevel=1
 ODBCINST_INI
     echo -e "${GREEN}set ODBCSYSINI variable as conda env var${ENDCOLOR}"
     conda env config vars set ODBCSYSINI=$CONDA_PREFIX/etc
-    source activate $CONDA_DEFAULT_ENV
+    eval "$(conda shell.bash hook)"
+    conda activate $CONDA_DEFAULT_ENV
+    export ODBCSYSINI=$CONDA_PREFIX/etc
     echo -e "${GREEN}cleanup temporary files${ENDCOLOR}"
     rm -f snowflake_linux_x8664_odbc-2.23.2.tgz
     echo -e "${GREEN}Installation complete!${ENDCOLOR}"
