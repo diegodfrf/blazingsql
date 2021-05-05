@@ -80,7 +80,7 @@ You can find our full documentation at [docs.blazingdb.com](https://docs.blazing
   * Compute Capability >= 6.0
 * CUDA Support
   * 11.0
-  * 10.2
+  * 11.2
 * Python Support
   * 3.7
   * 3.8
