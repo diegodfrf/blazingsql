@@ -169,7 +169,7 @@ void distributing_kernel::broadcast(std::unique_ptr<ral::frame::BlazingTable> ta
 }
 
 
-void distributing_kernel::scatter(std::vector<ral::frame::BlazingTableView> partitions,
+void distributing_kernel::scatter(std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitions,
         ral::cache::CacheMachine* output,
         std::string message_id_prefix,
         std::string cache_id,
@@ -182,12 +182,12 @@ void distributing_kernel::scatter(std::vector<ral::frame::BlazingTableView> part
             // hash_partition followed by split does not create a partition that we can own, so we need to clone it.
             // if we dont clone it, hashed_data will go out of scope before we get to use the partition
             // also we need a BlazingTable to put into the cache, we cant cache views.
-            bool added = output->addToCache(std::move(partitions[i].clone()), message_id_prefix, false);
+            bool added = output->addToCache(std::move(partitions[i]->clone()), message_id_prefix, false);
             if (added) {
                 node_count[message_tracker_idx].at(node.id())++;
             }
         } else {
-            send_message(std::move(partitions[i].clone()),
+            send_message(std::move(partitions[i]->clone()),
                 true, //specific_cache
                 cache_id, //cache_id
                 {nodes[i].id()}, //target_id

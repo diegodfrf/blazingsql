@@ -74,7 +74,7 @@ class distributing_kernel : public kernel {
      * @param cache_id Indicates what cache a message should be routed to.
      * @param message_tracker_idx The message tracker index.
      */
-    void scatter(std::vector<ral::frame::BlazingTableView> partitions,
+    void scatter(std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitions,
         ral::cache::CacheMachine* output,
         std::string message_id_prefix,
         std::string cache_id,

@@ -299,7 +299,8 @@ set(SRC_FILES ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchJoinProcessing.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchOrderByProcessing.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchUnionProcessing.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchWindowFunctionProcessing.cpp
+              # TODO percy arrow
+              #${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchWindowFunctionProcessing.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchProcessing.cpp
               ${PROJECT_SOURCE_DIR}/src/config/GPUManager.cu
               ${PROJECT_SOURCE_DIR}/src/operators/OrderBy.cpp

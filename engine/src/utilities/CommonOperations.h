@@ -4,11 +4,17 @@
 #include <vector>
 #include "execution_kernels/LogicPrimitives.h"
 #include "cudf/column/column_factories.hpp"
-
+#include <random>
 #include <arrow/scalar.h>
 #include <cudf/scalar/scalar.hpp>
+#include <cudf/copying.hpp>
 
 namespace ral {
+
+
+
+
+
 
 namespace cpu {
 namespace utilities {
@@ -28,7 +34,7 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::unique_ptr<B
 
 std::unique_ptr<BlazingTable> concatTables(const std::vector<std::shared_ptr<BlazingTableView>> & tables);
 
-std::unique_ptr<BlazingTable> getLimitedRows(const BlazingTableView& table, cudf::size_type num_rows, bool front=true);
+std::unique_ptr<BlazingTable> getLimitedRows(std::shared_ptr<BlazingTableView> table_view, cudf::size_type num_rows, bool front=true);
 
 std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
 	const std::vector<cudf::data_type> &dtypes, std::vector<size_t> column_indices = std::vector<size_t>());
@@ -65,5 +71,158 @@ std::vector<T> column_to_vector(cudf::column_view column){
 
 
 
+
+
+
+
+
+
+
+
 }  // namespace utilities
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////// create_empty_table_functor / empty_like functor
+struct create_empty_table_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_view) const
+  {
+    // TODO percy arrow thrown error
+    return nullptr;
+  }
+};
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view) const
+{
+  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
+}
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view) const
+{
+  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
+  std::unique_ptr<cudf::table> empty = cudf::empty_like(cudf_table_view->view());
+  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(empty), cudf_table_view->column_names());
+}
+
+
+
+//////////// from_table_view_to_table functor
+
+struct from_table_view_to_table_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_view) const
+  {
+    // TODO percy arrow thrown error
+    return nullptr;
+  }
+};
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> from_table_view_to_table_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view) const
+{
+  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
+}
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> from_table_view_to_table_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view) const
+{
+  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
+  return std::make_unique<ral::frame::BlazingCudfTable>(cudf_table_view->view(), cudf_table_view->column_names());
+}
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////////////////// sample functor
+
+
+
+
+
+
+
+struct sample_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_view,
+      cudf::size_type const num_samples,
+      std::vector<std::string> sortColNames,
+      std::vector<int> sortColIndices) const
+  {
+    // TODO percy arrow thrown error
+    return nullptr;
+  }
+};
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    cudf::size_type const num_samples,
+    std::vector<std::string> sortColNames,
+    std::vector<int> sortColIndices) const
+{
+  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
+}
+
+template <>
+std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    cudf::size_type const num_samples,
+    std::vector<std::string> sortColNames,
+    std::vector<int> sortColIndices) const
+{
+  std::random_device rd;
+  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
+  auto samples = cudf::sample(cudf_table_view->view().select(sortColIndices), num_samples, cudf::sample_with_replacement::FALSE, rd());
+  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(samples), sortColNames);
+}
+
+
+
+
+
 }  // namespace ral

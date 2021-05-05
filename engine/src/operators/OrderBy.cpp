@@ -11,6 +11,7 @@
 #include "parser/expression_utils.hpp"
 #include "utilities/CommonOperations.h"
 #include <blazingdb/io/Util/StringUtil.h>
+#include "execution_graph/backend_dispatcher.h"
 
 using namespace fmt::literals;
 
@@ -22,9 +23,9 @@ std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t>
 limit_table(std::shared_ptr<arrow::Table> table, int64_t num_rows_limit) {
 	cudf::size_type table_rows = table->num_rows();
 	if (num_rows_limit <= 0) {
-		return std::make_tuple(std::make_unique<ral::frame::BlazingTable>(arrow::Table::Make(table->schema(), table->columns(), 0)), false, 0);
+		return std::make_tuple(std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns(), 0)), false, 0);
 	} else if (num_rows_limit >= table_rows) {
-		return std::make_tuple(std::make_unique<ral::frame::BlazingTable>(arrow::Table::Make(table->schema(), table->columns())), true, num_rows_limit - table_rows);
+		return std::make_tuple(std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns())), true, num_rows_limit - table_rows);
 	} else {
 		return std::make_tuple(ral::cpu::utilities::getLimitedRows(table, num_rows_limit), false, 0);
 	}
@@ -56,20 +57,18 @@ const std::string DESCENDING_ORDER_SORT_TEXT = "DESC";
  * @returns A BlazingTable with rows sorted.
  *---------------------------------------------------------------------------**/
 std::unique_ptr<ral::frame::BlazingTable> logicalSort(
-  	const ral::frame::BlazingTableView & table,
+  std::shared_ptr<ral::frame::BlazingTableView> table_view,
 	const std::vector<int> & sortColIndices,
 	const std::vector<cudf::order> & sortOrderTypes) {
 
-	cudf::table_view sortColumns = table.view().select(sortColIndices);
+	std::shared_ptr<ral::frame::BlazingTableView> sortColumns = ral::execution::backend_dispatcher(
+    table_view->get_execution_backend(), select_functor(), table_view, sortColIndices);
 
 	/*ToDo: Edit this according the Calcite output*/
 	std::vector<cudf::null_order> null_orders(sortColIndices.size(), cudf::null_order::AFTER);
 
-	std::unique_ptr<cudf::column> output = cudf::sorted_order( sortColumns, sortOrderTypes, null_orders );
-
-	std::unique_ptr<cudf::table> gathered = cudf::gather( table.view(), output->view() );
-
-	return std::make_unique<ral::frame::BlazingTable>( std::move(gathered), table.column_names() );
+  return ral::execution::backend_dispatcher(table_view->get_execution_backend(), sorted_order_grather_functor(),
+    table_view, sortColumns, sortOrderTypes, null_orders);
 }
 
 
@@ -215,25 +214,33 @@ int64_t get_limit_rows_when_relational_alg_is_simple(const std::string & query_p
 }
 
 std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t>
-limit_table(const ral::frame::BlazingTableView & table, int64_t num_rows_limit) {
+limit_table(std::shared_ptr<ral::frame::BlazingTableView> table_view, int64_t num_rows_limit) {
 
-	cudf::size_type table_rows = table.num_rows();
+	cudf::size_type table_rows = table_view->num_rows();
 	if (num_rows_limit <= 0) {
-		return std::make_tuple(std::make_unique<ral::frame::BlazingTable>(cudf::empty_like(table.view()), table.column_names()), false, 0);
+    std::unique_ptr<ral::frame::BlazingTable> empty = ral::execution::backend_dispatcher(
+                                                        table_view->get_execution_backend(),
+                                                        create_empty_table_functor(),
+                                                        table_view);
+		return std::make_tuple(std::move(empty), false, 0);
 	} else if (num_rows_limit >= table_rows) {
-		return std::make_tuple(std::make_unique<ral::frame::BlazingTable>(table.view(), table.column_names()), true, num_rows_limit - table_rows);
+    std::unique_ptr<ral::frame::BlazingTable> temp = ral::execution::backend_dispatcher(
+                                                        table_view->get_execution_backend(),
+                                                        from_table_view_to_table_functor(),
+                                                        table_view);
+		return std::make_tuple(std::move(temp), true, num_rows_limit - table_rows);
 	} else {
-		return std::make_tuple(ral::utilities::getLimitedRows(table, num_rows_limit), false, 0);
+		return std::make_tuple(ral::utilities::getLimitedRows(table_view, num_rows_limit), false, 0);
 	}
 }
 
-std::unique_ptr<ral::frame::BlazingTable> sort(const ral::frame::BlazingTableView & table, const std::string & query_part){
+std::unique_ptr<ral::frame::BlazingTable> sort(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string & query_part){
 	std::vector<cudf::order> sortOrderTypes;
 	std::vector<int> sortColIndices;
 
 	std::tie(sortColIndices, sortOrderTypes) = get_right_sorts_vars(query_part);
 
-	return logicalSort(table, sortColIndices, sortOrderTypes);
+	return logicalSort(table_view, sortColIndices, sortOrderTypes);
 }
 
 std::size_t compute_total_samples(std::size_t num_rows) {
@@ -247,7 +254,7 @@ std::size_t compute_total_samples(std::size_t num_rows) {
 	return num_samples;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> sample(const ral::frame::BlazingTableView & table, const std::string & query_part){
+std::unique_ptr<ral::frame::BlazingTable> sample(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string & query_part){
 	std::vector<cudf::order> sortOrderTypes;
 	std::vector<int> sortColIndices;
 	
@@ -262,34 +269,37 @@ std::unique_ptr<ral::frame::BlazingTable> sample(const ral::frame::BlazingTableV
 		std::tie(sortColIndices, sortOrderTypes, std::ignore) = get_sort_vars(query_part);
 	}
 	
-	auto tableNames = table.column_names();
+	auto tableNames = table_view->column_names();
 	std::vector<std::string> sortColNames(sortColIndices.size());
 	std::transform(sortColIndices.begin(), sortColIndices.end(), sortColNames.begin(), [&](auto index) { return tableNames[index]; });
 
-	std::size_t num_samples = compute_total_samples(table.num_rows());
-	std::random_device rd;
-	auto samples = cudf::sample(table.view().select(sortColIndices), num_samples, cudf::sample_with_replacement::FALSE, rd());
+	std::size_t num_samples = compute_total_samples(table_view->num_rows());
+	auto samples = ral::execution::backend_dispatcher(
+                   table_view->get_execution_backend(),
+                   sample_functor(),
+                   table_view,
+                   num_samples, sortColNames, sortColIndices);
 
-	return std::make_unique<ral::frame::BlazingTable>(std::move(samples), sortColNames);
+	return samples;
 }
 
-std::vector<cudf::table_view> partition_table(const ral::frame::BlazingTableView & partitionPlan,
-	const ral::frame::BlazingTableView & sortedTable,
+std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partition_table(std::shared_ptr<ral::frame::BlazingTableView> partitionPlan,
+	std::shared_ptr<ral::frame::BlazingTableView> sortedTable,
 	const std::vector<cudf::order> & sortOrderTypes,
 	const std::vector<int> & sortColIndices) {
 	
-	if (sortedTable.num_rows() == 0) {
-		return {sortedTable.view()};
+	if (sortedTable->num_rows() == 0) {
+		return {sortedTable};
 	}
 
 	// TODO this is just a default setting. Will want to be able to properly set null_order
 	std::vector<cudf::null_order> null_orders(sortOrderTypes.size(), cudf::null_order::AFTER);
 
-	cudf::table_view columns_to_search = sortedTable.view().select(sortColIndices);
-	auto pivot_indexes = cudf::upper_bound(columns_to_search, partitionPlan.view(), sortOrderTypes, null_orders);
+  std::shared_ptr<ral::frame::BlazingTableView> columns_to_search = ral::execution::backend_dispatcher(
+    sortedTable->get_execution_backend(), select_functor(), sortedTable, sortColIndices);
 
-	std::vector<cudf::size_type> split_indexes = ral::utilities::column_to_vector<cudf::size_type>(pivot_indexes->view());
-	return cudf::split(sortedTable.view(), split_indexes);
+  return ral::execution::backend_dispatcher(columns_to_search->get_execution_backend(), upper_bound_split_functor(),
+    sortedTable, columns_to_search, partitionPlan, sortOrderTypes, null_orders);
 }
 
 std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(
