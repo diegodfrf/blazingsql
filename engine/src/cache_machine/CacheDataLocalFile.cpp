@@ -77,15 +77,19 @@ size_t CacheDataLocalFile::size_in_bytes() const {
 	return size_in_bytes_;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> CacheDataLocalFile::decache() {
+std::unique_ptr<ral::frame::BlazingTable> CacheDataLocalFile::decache(execution::execution_backend backend) {
 
-	cudf::io::orc_reader_options read_opts = cudf::io::orc_reader_options::builder(cudf::io::source_info{this->filePath_});
-	auto result = cudf::io::read_orc(read_opts);
+	if (backend.id() == ral::execution::backend_id::CUDF) {
+		cudf::io::orc_reader_options read_opts = cudf::io::orc_reader_options::builder(cudf::io::source_info{this->filePath_});
+		auto result = cudf::io::read_orc(read_opts);
 
-	// Remove temp orc files
-	const char *orc_path_file = this->filePath_.c_str();
-	remove(orc_path_file);
-	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result.tbl), this->col_names);
+		// Remove temp orc files
+		const char *orc_path_file = this->filePath_.c_str();
+		remove(orc_path_file);
+		return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result.tbl), this->col_names);
+	} else {
+		// WSM TODO need to implement this
+	}
 }
 
 } // namespace cache

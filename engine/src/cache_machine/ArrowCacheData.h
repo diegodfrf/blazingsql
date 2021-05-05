@@ -18,7 +18,7 @@ public:
 	* @param metadata The metadata that will be used in transport and planning.
 	*/
 	ArrowCacheData(std::unique_ptr<ral::frame::BlazingArrowTable> table, const MetadataDictionary & metadata)
-		: CacheData(CacheDataType::ARROW,table->column_names(), table->get_schema(), table->num_rows()),  data{std::move(table)} {
+		: CacheData(CacheDataType::ARROW,table->column_names(), table->get_schema(), table->num_rows()),  data_{std::move(table)} {
 			this->metadata = metadata;
 		}
 
@@ -51,7 +51,7 @@ public:
 	virtual ~ArrowCacheData();
 
 private:
-	std::unique_ptr<ral::frame::BlazingArrowTable> table_;
+	std::unique_ptr<ral::frame::BlazingArrowTable> data_;
 };
 
 } // namespace cache

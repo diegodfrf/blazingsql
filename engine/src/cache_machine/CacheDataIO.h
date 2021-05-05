@@ -28,12 +28,13 @@ public:
 	);
 
 	/**
-	* Constructor
-	* @param table The BlazingTable that is converted into an ORC file and stored
-	* on disk.
-	* @ param orc_files_path The path where the file should be stored.
+	* @brief Remove the payload from this CacheData.
+	* This removes the payload for the CacheData. After this the CacheData will
+	* almost always go out of scope and be destroyed.
+	* @param backend the execution backend
+	* @return a BlazingTable generated from the source of data for this CacheData. The type of BlazingTable returned will depend on the backend
 	*/
-	std::unique_ptr<ral::frame::BlazingTable> decache() override;
+	std::unique_ptr<ral::frame::BlazingTable> decache(execution::execution_backend backend) override;
 
 	/**
 	* Get the amount of GPU memory that the decached BlazingTable WOULD consume.

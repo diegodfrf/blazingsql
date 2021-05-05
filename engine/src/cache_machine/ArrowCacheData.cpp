@@ -17,24 +17,18 @@ size_t get_arrow_data_size(std::shared_ptr<arrow::ArrayData> data) {
   return ret;
 }
 
-ArrowCacheData::ArrowCacheData(ral::io::data_handle handle,
-	std::shared_ptr<ral::io::data_parser> parser,
-	ral::io::Schema schema,
-	std::vector<int> row_group_ids,
-	std::vector<int> projections)
-	: CacheData(CacheDataType::ARROW, schema.get_names(), schema.get_data_types(), handle.arrow_table->num_rows()),
-	handle(handle), parser(parser), schema(schema),
-	row_group_ids(row_group_ids),
-	projections(projections)
-	{
 
-	}
 
-std::unique_ptr<ral::frame::BlazingTable> ArrowCacheData::decache() {
-  return parser->parse_batch(handle, schema, projections, row_group_ids);
+std::unique_ptr<ral::frame::BlazingTable> ArrowCacheData::decache(execution::execution_backend backend) {
+  if (backend.id() == ral::execution::backend_id::ARROW) {
+    return std::move(data_);
+  } else {
+  // WSM TODO need to implement
+  }
 }
 
 size_t ArrowCacheData::size_in_bytes() const {
+  // WSM TODO need to implement
   return 0;
   // TODO percy arrow
 //  size_t ret = 0;
@@ -47,7 +41,7 @@ size_t ArrowCacheData::size_in_bytes() const {
 }
 
 void ArrowCacheData::set_names(const std::vector<std::string> & names) {
-	this->schema.set_names(names);
+	// WSM TODO need to implement
 }
 
 ArrowCacheData::~ArrowCacheData() {}
