@@ -2,7 +2,7 @@
  * Copyright 2021 Percy Camilo Triveño Aucahuasi <percy.camilo.ta@gmail.com>
  */
 
-// NOTES 
+// NOTES
 /*
   The JDBC API throws three different exceptions:
 
@@ -25,7 +25,7 @@ namespace io {
 // For mysql operators see https://dev.mysql.com/doc/refman/8.0/en/non-typed-operators.html
 
 struct mysql_table_info {
-  // mysql doest have exact info about partition size ... so for now we dont 
+  // mysql doest have exact info about partition size ... so for now we dont
   // need to rely on partition info
   //std::vector<std::string> partitions;
   size_t estimated_table_row_count;
