@@ -52,7 +52,7 @@ struct sorted_merger_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator()<ral::frame::BlazingArrowTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator()<ral::frame::BlazingArrowTable>(
 		std::vector<std::shared_ptr<BlazingTableView>> tables,
 		const std::vector<cudf::order> & sortOrderTypes,
 		const std::vector<int> & sortColIndices) const
@@ -62,7 +62,7 @@ std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator()<ral:
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator()<ral::frame::BlazingCudfTable>(
 		std::vector<std::shared_ptr<BlazingTableView>> tables,
 		const std::vector<cudf::order> & sortOrderTypes,
 		const std::vector<int> & sortColIndices) const
@@ -100,7 +100,7 @@ struct gather_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingArrowTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingArrowTable>(
 		std::vector<std::shared_ptr<BlazingTableView>> tables,
 		const std::vector<cudf::order> & sortOrderTypes,
 		const std::vector<int> & sortColIndices) const
@@ -110,7 +110,7 @@ std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame:
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingCudfTable>(
 		std::vector<std::shared_ptr<BlazingTableView>> tables,
 		const std::vector<cudf::order> & sortOrderTypes,
 		const std::vector<int> & sortColIndices) const

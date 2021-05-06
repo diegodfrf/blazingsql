@@ -17,12 +17,6 @@
 #include <cudf/concatenate.hpp>
 
 namespace ral {
-
-
-
-
-
-
 namespace cpu {
 namespace utilities {
 	std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<arrow::Table> table, cudf::size_type num_rows, bool front=true);
@@ -136,7 +130,7 @@ struct create_empty_table_like_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor::operator()<ral::frame::BlazingArrowTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
@@ -145,7 +139,7 @@ std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor::opera
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
@@ -196,7 +190,7 @@ struct from_table_view_to_table_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> from_table_view_to_table_functor::operator()<ral::frame::BlazingArrowTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> from_table_view_to_table_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
@@ -205,7 +199,7 @@ std::unique_ptr<ral::frame::BlazingTable> from_table_view_to_table_functor::oper
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> from_table_view_to_table_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> from_table_view_to_table_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
@@ -245,7 +239,7 @@ struct sample_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral::frame::BlazingArrowTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     cudf::size_type const num_samples,
     std::vector<std::string> sortColNames,
@@ -256,7 +250,7 @@ std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral::frame:
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     cudf::size_type const num_samples,
     std::vector<std::string> sortColNames,
@@ -294,7 +288,7 @@ struct checkIfConcatenatingStringsWillOverflow_functor {
 };
 
 template <>
-bool checkIfConcatenatingStringsWillOverflow_functor::operator()<ral::frame::BlazingArrowTable>(
+inline bool checkIfConcatenatingStringsWillOverflow_functor::operator()<ral::frame::BlazingArrowTable>(
     const std::vector<std::shared_ptr<ral::frame::BlazingTableView>> & tables) const
 {
   // this check is only relevant to Cudf
@@ -302,7 +296,7 @@ bool checkIfConcatenatingStringsWillOverflow_functor::operator()<ral::frame::Bla
 }
 
 template <>
-bool checkIfConcatenatingStringsWillOverflow_functor::operator()<ral::frame::BlazingCudfTable>(
+inline bool checkIfConcatenatingStringsWillOverflow_functor::operator()<ral::frame::BlazingCudfTable>(
     const std::vector<std::shared_ptr<ral::frame::BlazingTableView>> & tables) const
 {
   std::vector<std::shared_ptr<ral::frame::BlazingCudfTableView>> in;
@@ -348,7 +342,7 @@ struct concat_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> concat_functor::operator()<ral::frame::BlazingArrowTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> concat_functor::operator()<ral::frame::BlazingArrowTable>(
     std::vector<std::shared_ptr<ral::frame::BlazingTableView>> table_views,
     size_t empty_count,
     std::vector<std::string> names) const
@@ -371,7 +365,7 @@ std::unique_ptr<ral::frame::BlazingTable> concat_functor::operator()<ral::frame:
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> concat_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> concat_functor::operator()<ral::frame::BlazingCudfTable>(
     std::vector<std::shared_ptr<ral::frame::BlazingTableView>> table_views,
     size_t empty_count,
     std::vector<std::string> names) const
@@ -417,7 +411,7 @@ struct split_functor {
 };
 
 template <>
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
+inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
 split_functor::operator()<ral::frame::BlazingArrowTable>(    
     std::shared_ptr<ral::frame::BlazingTableView> table_View,
     std::vector<cudf::size_type> const& splits) const
@@ -427,7 +421,7 @@ split_functor::operator()<ral::frame::BlazingArrowTable>(
 }
 
 template <>
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
+inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
 split_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_View,
     std::vector<cudf::size_type> const& splits) const
@@ -470,7 +464,7 @@ struct normalize_types_functor {
 };
 
 template <>
-void
+inline void
 normalize_types_functor::operator()<ral::frame::BlazingArrowTable>(    
     std::unique_ptr<ral::frame::BlazingTable> & table,
     const std::vector<cudf::data_type> & types,
@@ -481,7 +475,7 @@ normalize_types_functor::operator()<ral::frame::BlazingArrowTable>(
 }
 
 template <>
-void
+inline void
 normalize_types_functor::operator()<ral::frame::BlazingCudfTable>(
     std::unique_ptr<ral::frame::BlazingTable> & table,
     const std::vector<cudf::data_type> & types,
