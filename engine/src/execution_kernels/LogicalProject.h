@@ -12,7 +12,7 @@
 namespace ral {
 namespace cpu {
 
-std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
+inline std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
   std::shared_ptr<arrow::Table> table,
   std::shared_ptr<arrow::ChunkedArray> boolValues){
   //auto filteredTable = cudf::apply_boolean_mask(
@@ -21,7 +21,7 @@ std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
   //  filteredTable),table.column_names());
 }
 
-std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluate_expressions(
+inline std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluate_expressions(
     std::shared_ptr<arrow::Table> table,
     const std::vector<std::string> & expressions) {
   std::cout << "FILTERRRRRRRRRRRRRRRRRR ARROWWWWWWWWWWWWWWWWWWWWWWWWWWWWW!!!!!!!\n";
@@ -56,13 +56,7 @@ std::unique_ptr<ral::frame::BlazingTable> process_project(
   blazingdb::manager::Context * context);
 
 
-
-
-
-
-
-
-std::unique_ptr<ral::frame::BlazingCudfTable> applyBooleanFilter(
+inline std::unique_ptr<ral::frame::BlazingCudfTable> applyBooleanFilter(
   std::shared_ptr<ral::frame::BlazingCudfTableView> table_view,
   const cudf::column_view & boolValues){
   auto filteredTable = cudf::apply_boolean_mask(table_view->view(),boolValues);
@@ -79,14 +73,14 @@ struct build_only_schema {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingArrowTableView>(
+inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingArrowTableView>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   return nullptr;
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingCudfTableView>(
+inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingCudfTableView>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   auto *table_view_ptr = dynamic_cast<ral::frame::BlazingCudfTableView*>(table_view.get());
@@ -108,7 +102,7 @@ struct evaluate_expressions_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::operator()<ral::frame::BlazingArrowTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::operator()<ral::frame::BlazingArrowTable>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::vector<std::string> & expressions) const
 {
   ral::frame::BlazingArrowTableView *table_view_ptr = dynamic_cast<ral::frame::BlazingArrowTableView*>(table_view.get());
@@ -121,7 +115,7 @@ std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::operator
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::operator()<ral::frame::BlazingCudfTable>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::vector<std::string> & expressions) const
 {
     auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
