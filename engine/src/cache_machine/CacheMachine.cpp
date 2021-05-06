@@ -334,10 +334,12 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 				if(cache_level_override != -1){
 					cacheIndex = cache_level_override;
 				}
-				if(cacheIndex == 0) {
-					// before we put into a cache, we need to make sure we fully own the table
-					table->ensureOwnership();
-					std::unique_ptr<CacheData> cache_data = std::make_unique<GPUCacheData>(std::move(table),metadata);
+				if(cacheIndex == 0 && table->get_execution_backend().id() == ral::execution::backend_id::CUDF) {
+					
+                    std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
+                    // before we put into a cache, we need to make sure we fully own the table
+                    cudf_table->ensureOwnership();
+					std::unique_ptr<CacheData> cache_data = std::make_unique<GPUCacheData>(std::move(cudf_table),metadata);
 					auto item =	std::make_unique<message>(std::move(cache_data), message_id);
 					this->waitingCache->put(std::move(item));
 
@@ -750,6 +752,7 @@ ConcatenatingCacheMachine::ConcatenatingCacheMachine(std::shared_ptr<Context> co
 	}
 
 // This method does not guarantee the relative order of the messages to be preserved
+// WSM TODO refactor this to duse pullCacheData and convert that to a ConcatCacheData
 std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCache(execution::execution_backend backend) {
     CodeTimer cacheEventTimerGeneral;
     cacheEventTimerGeneral.start();
@@ -801,8 +804,12 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 			table_views.push_back(tables_holder[i]->to_table_view());
 
 			// if we dont have to concatenate all, lets make sure we are not overflowing, and if we are, lets put one back
-			if (!concat_all && ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views)){
-				auto cache_data = std::make_unique<GPUCacheData>(std::move(tables_holder.back()));
+			if (!concat_all && 
+                backend.id() == ral::execution::backend_id::CUDF &&
+                ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views)){
+
+                    // WSM TODO. need to be able to convert a std::unique_ptr<ral::frame::BlazingTable> to a std::unique_ptr<ral::frame::BlazingCudfTable>
+				std::unique_ptr<GPUCacheData> cache_data ; //= std::make_unique<GPUCacheData>(std::move(tables_holder.back()));
 				tables_holder.pop_back();
 				table_views.pop_back();
 				collected_messages[i] =	std::make_unique<message>(std::move(cache_data), collected_messages[i]->get_message_id());

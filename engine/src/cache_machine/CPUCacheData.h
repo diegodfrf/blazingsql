@@ -77,7 +77,7 @@ public:
 	*/
 	void set_names(const std::vector<std::string> & names) override
 	{
-		host_table->set_names(names);
+		host_table->set_column_names(names);
 	}
 
 	/**

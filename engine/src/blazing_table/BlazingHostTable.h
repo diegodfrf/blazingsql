@@ -19,7 +19,7 @@ using ColumnTransport = blazingdb::transport::ColumnTransport;
     The reference to implement this class was based on the way how BlazingTable objects are send/received 
     by the communication library.
 */ 
-class BlazingHostTable {
+class BlazingHostTable  {
 public:
 
     // for data from cudf
@@ -27,22 +27,19 @@ public:
         std::vector<ral::memory::blazing_chunked_column_info> && chunked_column_infos,
         std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>> && allocations);
 
-    // for data from arrow
-    BlazingHostTable(std::shared_ptr<arrow::Table> arrow_table);
-
     ~BlazingHostTable();
 
-    std::vector<cudf::data_type> get_schema() const;
+    std::vector<cudf::data_type> column_types() const;
 
     std::vector<std::string> column_names() const;
 
-    void set_names(std::vector<std::string> names);
+    void set_column_names(std::vector<std::string> names);
 
     cudf::size_type num_rows() const ;
 
     cudf::size_type num_columns() const ;
 
-    std::size_t size_in_bytes() ;
+    std::size_t size_in_bytes() const;
 
     void setPartitionId(const size_t &part_id) ;
 

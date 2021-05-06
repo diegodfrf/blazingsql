@@ -1,5 +1,6 @@
 #include "ConcatCacheData.h"
 #include "utilities/CommonOperations.h"
+#include "execution_graph/backend_dispatcher.h"
 
 namespace ral {
 namespace cache {

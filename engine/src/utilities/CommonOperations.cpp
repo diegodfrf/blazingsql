@@ -206,7 +206,7 @@ std::unique_ptr<ral::frame::BlazingTable> concatTables(const std::vector<std::sh
 
 	std::vector<std::string> names;
 	std::vector<std::shared_ptr<BlazingTableView>> table_views_to_concat;
-	execution::execution_backend common_backend = tables.size() > 0 ? tables[0]->get_execution_backend() ? execution::execution_backend(execution::backend_id::NONE);
+	execution::execution_backend common_backend = tables.size() > 0 ? tables[0]->get_execution_backend() : execution::execution_backend(execution::backend_id::NONE);
 	for(size_t i = 0; i < tables.size(); i++) {
 		if (tables[i]->column_names().size() > 0){ // lets make sure we get the names from a table that is not empty
 			names = tables[i]->column_names();
