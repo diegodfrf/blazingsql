@@ -13,7 +13,11 @@ GPUCacheData::GPUCacheData(std::unique_ptr<ral::frame::BlazingCudfTable> table, 
 }
 
 std::unique_ptr<ral::frame::BlazingTable> GPUCacheData::decache(execution::execution_backend backend) {
-    return std::move(data_);
+    if (backend.id() == ral::execution::backend_id::CUDF) {
+        return std::move(data_);
+    } else {
+        return std::make_unique<ral::frame::BlazingArrowTable>(std::move(data_));
+    }
 }
 
 size_t GPUCacheData::size_in_bytes() const {

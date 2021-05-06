@@ -102,8 +102,8 @@ void task::run(cudaStream_t stream, executor * executor){
             if (i < last_input_decached && input->get_type() == ral::cache::CacheDataType::GPU ){
                 //this was a gpu cachedata so now its not valid
                 
-                // WSM TODO need to have a way of converting a unique_ptr of BlazingTable to BlazingCudfTable to do this here
-                // static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(input_tables[i]));
+                std::unique_ptr<ral::frame::BlazingCudfTable> temp_cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(input_tables[i].release()));
+                static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(temp_cudf_table));
             }
             i++;
         }
@@ -163,8 +163,8 @@ void task::run(cudaStream_t stream, executor * executor){
                 if  (input->get_type() == ral::cache::CacheDataType::GPU){
                     //this was a gpu cachedata so now its not valid
                     if(task_result.inputs.size() > 0 && i <= task_result.inputs.size() && task_result.inputs[i] != nullptr && task_result.inputs[i]->is_valid()){ 
-                        // WSM TODO need to have a way of converting a unique_ptr of BlazingTable to BlazingCudfTable to do this here
-                        // static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(task_result.inputs[i]));
+                        std::unique_ptr<ral::frame::BlazingCudfTable> temp_cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(task_result.inputs[i].release()));
+                        static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(temp_cudf_table));                        
                     }else{
                         //the input was lost and it was a gpu dataframe which is not recoverable
                         throw rmm::bad_alloc(task_result.what.c_str());

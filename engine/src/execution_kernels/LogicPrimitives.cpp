@@ -2,6 +2,7 @@
 
 #include "LogicPrimitives.h"
 #include "cudf/column/column_factories.hpp"
+#include "cudf/interop.hpp"
 #include "blazing_table/BlazingColumnView.h"
 #include "blazing_table/BlazingColumnOwner.h"
 
@@ -86,6 +87,17 @@ std::unique_ptr<BlazingTable> BlazingArrowTableView::clone() const {
 BlazingArrowTable::BlazingArrowTable(std::shared_ptr<arrow::Table> arrow_table)
   : BlazingTable(execution::backend_id::ARROW, true)
 	, BlazingArrowTableView(arrow_table) {
+}
+
+BlazingArrowTable::BlazingArrowTable(std::unique_ptr<BlazingCudfTable> blazing_cudf_table)
+  : BlazingTable(execution::backend_id::ARROW, true), BlazingArrowTableView(nullptr) {
+	
+	std::vector<cudf::column_metadata> arrow_metadata(blazing_cudf_table->num_columns());
+	for(int i = 0; i < blazing_cudf_table->num_columns(); ++i){
+		arrow_metadata[i].name = blazing_cudf_table->column_names()[i];
+	}
+	// TODO this also takes in an arrow::MemoryPool.
+	this->arrow_table = cudf::to_arrow(blazing_cudf_table->view(), arrow_metadata);
 }
 
 std::unique_ptr<BlazingTable> BlazingArrowTable::clone() const {
@@ -213,7 +225,7 @@ cudf::table_view BlazingCudfTableView::view() const{
 // END BlazingCudfTableView
 
 
-// BEGIN BlazingCudfTableView
+// BEGIN BlazingCudfTable
 
 BlazingCudfTable::BlazingCudfTable(std::vector<std::unique_ptr<BlazingColumn>> columns, const std::vector<std::string> & columnNames)
 	: BlazingTable(execution::backend_id::CUDF, true)
@@ -236,6 +248,19 @@ BlazingCudfTable::BlazingCudfTable(const cudf::table_view & table, const std::ve
 		columns.emplace_back(std::make_unique<BlazingColumnView>(table.column(i)));
 	}
 	this->columnNames = columnNames;
+}
+
+BlazingCudfTable::BlazingCudfTable(std::unique_ptr<BlazingArrowTable> blazing_arrow_table)
+	: BlazingTable(execution::backend_id::CUDF, true){
+
+	std::shared_ptr<arrow::Table> arrow_table = blazing_arrow_table->view();
+	std::unique_ptr<cudf::table> cudf_table = cudf::from_arrow(*(arrow_table.get()));
+
+	std::vector<std::unique_ptr<cudf::column>> columns_in = cudf_table->release();
+	for (size_t i = 0; i < columns_in.size(); i++){
+		columns.emplace_back(std::make_unique<BlazingColumnOwner>(std::move(columns_in[i])));
+	}
+	this->columnNames = blazing_arrow_table->column_names();	
 }
 
 void BlazingCudfTable::ensureOwnership(){
@@ -330,7 +355,7 @@ std::unique_ptr<BlazingTable> BlazingCudfTable::clone() const {
 	return this->to_table_view()->clone();
 }
 
-// END BlazingCudfTableView
+// END BlazingCudfTable
 
 std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<cudf::type_id> column_types,
 																  std::vector<std::string> column_names) {

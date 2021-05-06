@@ -23,7 +23,7 @@ std::unique_ptr<ral::frame::BlazingTable> ArrowCacheData::decache(execution::exe
   if (backend.id() == ral::execution::backend_id::ARROW) {
     return std::move(data_);
   } else {
-  // WSM TODO need to implement
+    return std::make_unique<ral::frame::BlazingCudfTable>(std::move(data_));
   }
 }
 

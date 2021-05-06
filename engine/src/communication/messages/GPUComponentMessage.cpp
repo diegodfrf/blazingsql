@@ -149,7 +149,7 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_tabl
 	return table;
 }
 
-auto deserialize_from_gpu_raw_buffers(const std::vector<ColumnTransport> & columns_offsets,
+std::unique_ptr<ral::frame::BlazingCudfTable> deserialize_from_gpu_raw_buffers(const std::vector<ColumnTransport> & columns_offsets,
 									  const std::vector<rmm::device_buffer> & raw_buffers) {
 	auto num_columns = columns_offsets.size();
 	std::vector<std::unique_ptr<cudf::column>> received_samples(num_columns);
