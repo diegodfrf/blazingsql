@@ -45,7 +45,7 @@ struct select_functor {
 };
 
 template <>
-std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<ral::frame::BlazingArrowTable>(    
+inline std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     const std::vector<int> & sortColIndices) const
 {
@@ -54,7 +54,7 @@ std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<ral::fr
 }
 
 template <>
-std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     const std::vector<int> & sortColIndices) const
 {
@@ -93,7 +93,7 @@ struct upper_bound_split_functor {
 };
 
 template <>
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
+inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
 upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
     std::shared_ptr<ral::frame::BlazingTableView> t,
@@ -106,7 +106,7 @@ upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
 }
 
 template <>
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
+inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
 upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
     std::shared_ptr<ral::frame::BlazingTableView> t,
@@ -158,7 +158,7 @@ struct sorted_order_gather_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::operator()<ral::frame::BlazingArrowTable>(    
+inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::shared_ptr<ral::frame::BlazingTableView> sortColumns_view,
     const std::vector<cudf::order> & sortOrderTypes,
@@ -169,7 +169,7 @@ std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::operator(
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::shared_ptr<ral::frame::BlazingTableView> sortColumns_view,
     const std::vector<cudf::order> & sortOrderTypes,
