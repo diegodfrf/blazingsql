@@ -14,19 +14,21 @@ ConcatCacheData::ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_d
 	}
 }
 
-std::unique_ptr<ral::frame::BlazingTable> ConcatCacheData::decache() {
+std::unique_ptr<ral::frame::BlazingTable> ConcatCacheData::decache(execution::execution_backend backend) {
 	if(_cache_datas.empty()) {
-		return ral::utilities::create_empty_cudf_table(col_names, schema);
+		return ral::execution::backend_dispatcher(backend,
+													create_empty_table_functor(),
+													col_names, schema);		
 	}
 
 	if (_cache_datas.size() == 1)	{
-		return _cache_datas[0]->decache();
+		return _cache_datas[0]->decache(backend);
 	}
 
 	std::vector<std::unique_ptr<ral::frame::BlazingTable>> tables_holder;
 	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> table_views;
 	for (auto && cache_data : _cache_datas){
-		tables_holder.push_back(cache_data->decache());
+		tables_holder.push_back(cache_data->decache(backend));
 		table_views.push_back(tables_holder.back()->to_table_view());
 
 		RAL_EXPECTS(!ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views), "Concatenating tables will overflow");

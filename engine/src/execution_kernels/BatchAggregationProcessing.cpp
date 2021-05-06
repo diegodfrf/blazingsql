@@ -484,7 +484,7 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
 
                     std::unique_ptr<ral::frame::BlazingTable> empty = ral::execution::backend_dispatcher(
                                                                         input->get_execution_backend(),
-                                                                        create_empty_table_functor(),
+                                                                        create_empty_table_like_functor(),
                                                                         input->to_table_view());
 
                     bool added = this->add_to_output_cache(std::move(empty), "", true);
