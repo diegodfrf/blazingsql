@@ -179,19 +179,14 @@ cdef extern from "../src/cache_machine/CacheMachine.h" namespace "ral::cache":
             void print() nogil
         cdef cppclass CacheMachine:
             void addCacheData(unique_ptr[CacheData] cache_data, const string & message_id, bool always_add ) nogil except +
-            void addToCache(unique_ptr[BlazingTable] table, const string & message_id , bool always_add) nogil except+
-            unique_ptr[CacheData] pullCacheData() nogil  except +
-            unique_ptr[CacheData] pullCacheData(string message_id) nogil except +
             bool has_next_now() except +
 
 cdef extern from "../src/cache_machine/CacheData.h" namespace "ral::cache":
         cdef cppclass CacheData:
-            unique_ptr[BlazingTable] decache()
             MetadataDictionary getMetadata()
 
 cdef extern from "../src/cache_machine/GPUCacheData.h" namespace "ral::cache":
         cdef cppclass GPUCacheData:
-            unique_ptr[BlazingTable] decache()
             MetadataDictionary getMetadata()
 
 # REMARK: We have some compilation errors from cython assigning temp = unique_ptr[ResultSet]
