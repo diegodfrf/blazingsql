@@ -90,7 +90,7 @@ cdef extern from "../include/io/io.h" nogil:
         SQLITE = 9
 
     cdef struct TableSchema:
-        vector[BlazingTableView] blazingTableViews
+        vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
         vector[type_id] types
         vector[string]  names
         vector[string]  files
@@ -99,7 +99,7 @@ cdef extern from "../include/io/io.h" nogil:
         vector[bool] in_file
         int data_type
         bool has_header_csv
-        BlazingTableView metadata
+        shared_ptr[BlazingCudfTableView] metadata
         vector[vector[int]] row_groups_ids
         shared_ptr[CTable] arrow_table
 
@@ -144,7 +144,7 @@ cdef extern from "../include/io/io.h" nogil:
 
 
 cdef extern from "../src/execution_kernels/LogicPrimitives.h" namespace "ral::frame":
-        cdef cppclass BlazingTable:
+        cdef cppclass BlazingCudfTable:
             BlazingTable(unique_ptr[CudfTable] table, const vector[string] & columnNames)
             BlazingTable(const CudfTableView & table, const vector[string] & columnNames)
             size_type num_columns
@@ -154,7 +154,7 @@ cdef extern from "../src/execution_kernels/LogicPrimitives.h" namespace "ral::fr
             void ensureOwnership()
             unique_ptr[CudfTable] releaseCudfTable()
 
-        cdef cppclass BlazingTableView:
+        cdef cppclass BlazingCudfTableView:
             BlazingTableView()
             BlazingTableView(CudfTableView, vector[string]) except +
             CudfTableView view()
