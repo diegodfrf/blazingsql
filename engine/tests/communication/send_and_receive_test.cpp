@@ -158,7 +158,7 @@ TEST_F(SendAndReceiveTest, SendAndReceiveTest0) {
     
   output_cache->addToCache(std::move(table),"",true,metadata, true);
 
-  auto received_table = input_cache->pullFromCache();
+  auto received_table = input_cache->pullFromCache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 
   auto table_for_comparison = build_custom_table();
   cudf::test::expect_tables_equivalent(table_for_comparison->view(), received_table->view());	
@@ -208,7 +208,7 @@ TEST_F(SendAndReceiveTest, SendAndReceiveALOT) {
   for (int i = 0; i < num_send; i++){
     receive_threads.push_back(std::thread([input_cache, &table_for_comparison,i]{
 
-      auto received_table = input_cache->pullFromCache();
+      auto received_table = input_cache->pullFromCache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
       std::cout<<"input_cache->pullFromCache() "<<i<<std::endl;
 
   
@@ -256,7 +256,7 @@ TEST_F(SendAndReceiveTest, SendAndReceiveALOT) {
   for (int i = 0; i < num_send; i++){
     receive_threads.push_back(std::thread([input_cache, &table_for_comparison]{
 
-      auto received_table = input_cache->pullFromCache();
+      auto received_table = input_cache->pullFromCache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
   
       cudf::test::expect_tables_equivalent(table_for_comparison->view(), received_table->view());	
       }));

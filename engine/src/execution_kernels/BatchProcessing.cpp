@@ -48,38 +48,6 @@ std::vector<int> get_projections_wrapper(size_t num_columns, const std::string &
   return projections;
 }
 
-// BEGIN BatchSequence
-
-BatchSequence::BatchSequence(std::shared_ptr<ral::cache::CacheMachine> cache, const ral::cache::kernel * kernel, bool ordered)
-: cache{cache}, kernel{kernel}, ordered{ordered}
-{}
-
-void BatchSequence::set_source(std::shared_ptr<ral::cache::CacheMachine> cache) {
-    this->cache = cache;
-}
-
-std::unique_ptr<ral::frame::BlazingTable> BatchSequence::next() {
-    if (ordered) {
-        return cache->pullFromCache();
-    } else {
-        return cache->pullUnorderedFromCache();
-    }
-}
-
-bool BatchSequence::wait_for_next() {
-    if (kernel) {
-        std::string message_id = std::to_string((int)kernel->get_type_id()) + "_" + std::to_string(kernel->get_id());
-    }
-
-    return cache->wait_for_next();
-}
-
-bool BatchSequence::has_next_now() {
-    return cache->has_next_now();
-}
-
-// END BatchSequence
-
 // BEGIN BatchSequenceBypass
 
 BatchSequenceBypass::BatchSequenceBypass(std::shared_ptr<ral::cache::CacheMachine> cache, const ral::cache::kernel * kernel)
@@ -599,13 +567,14 @@ std::pair<bool, uint64_t> Filter::get_estimated_output_num_rows(){
 
 
 kstatus Print::run() {
-    std::lock_guard<std::mutex> lg(print_lock);
-    BatchSequence input(this->input_cache(), this);
-    while (input.wait_for_next() ) {
-        auto batch = input.next();
-        // TODO percy rommel arrow
-        //ral::utilities::print_blazing_cudf_table_view(batch->to_table_view());
-    }
+    // WSM TODO need to reimplement this without using BatchSequence
+    // std::lock_guard<std::mutex> lg(print_lock);
+    // BatchSequence input(this->input_cache(), this);
+    // while (input.wait_for_next() ) {
+    //     auto batch = input.next();
+    //     // TODO percy rommel arrow
+    //     //ral::utilities::print_blazing_cudf_table_view(batch->to_table_view());
+    // }
     return kstatus::stop;
 }
 
@@ -615,7 +584,7 @@ kstatus Print::run() {
 
 kstatus OutputKernel::run() {
     while (this->input_.get_cache()->wait_for_next()) {
-        std::unique_ptr<frame::BlazingTable> temp_output = this->input_.get_cache()->pullFromCache();
+        std::unique_ptr<frame::BlazingTable> temp_output = this->input_.get_cache()->pullFromCache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 
         if(temp_output){
             output.emplace_back(std::move(temp_output));

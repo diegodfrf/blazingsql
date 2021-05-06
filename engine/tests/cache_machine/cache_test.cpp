@@ -92,7 +92,7 @@ TEST_F(CacheMachineTest, CacheMachineTest) {
 		std::cout << ">> " << i << "|" << table->size_in_bytes() << std::endl;
 		cacheMachine.addToCache(std::move(table));
 		if(i % 5 == 0) {
-			auto cacheTable = cacheMachine.pullFromCache();
+			auto cacheTable = cacheMachine.pullFromCache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		}
 	}
 	std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -121,7 +121,7 @@ TEST_F(CacheMachineTest, CPUCacheMachineTest) {
 	auto compare_table = build_custom_table();
 
 	for(int i = 0; i < 10; ++i) {
-		auto cacheTable = cacheMachine.pullFromCache();
+		auto cacheTable = cacheMachine.pullFromCache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		cudf::test::expect_tables_equivalent(compare_table->view(), cacheTable->view());						
 	}
 

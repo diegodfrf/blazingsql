@@ -423,7 +423,7 @@ void CacheMachine::wait_until_finished() {
 }
 
 
-std::unique_ptr<ral::frame::BlazingTable> CacheMachine::get_or_wait(size_t index) {
+std::unique_ptr<ral::frame::BlazingTable> CacheMachine::get_or_wait(execution::execution_backend backend, size_t index) {
     CodeTimer cacheEventTimer;
     cacheEventTimer.start();
 
@@ -434,7 +434,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::get_or_wait(size_t index
     std::string message_id = message_data->get_message_id();
     size_t num_rows = message_data->get_data().num_rows();
     size_t num_bytes = message_data->get_data().size_in_bytes();
-    std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache();
+    std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache(backend);
 
     cacheEventTimer.stop();
     if(cache_events_logger) {
@@ -485,7 +485,7 @@ std::unique_ptr<ral::cache::CacheData>  CacheMachine::get_or_wait_CacheData(size
 	return output;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullFromCache() {
+std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullFromCache(execution::execution_backend backend) {
     CodeTimer cacheEventTimer;
     cacheEventTimer.start();
 
@@ -507,7 +507,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullFromCache() {
     size_t num_rows = message_data->get_data().num_rows();
     size_t num_bytes = message_data->get_data().size_in_bytes();
     int dataType = static_cast<int>(message_data->get_data().get_type());
-	std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache();
+	std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache(backend);
 
     cacheEventTimer.stop();
     if(cache_events_logger) {
@@ -558,9 +558,9 @@ std::unique_ptr<ral::cache::CacheData> CacheMachine::pullCacheData(std::string m
 	return output;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullUnorderedFromCache() {
+std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullUnorderedFromCache(execution::execution_backend backend) {
     if (is_array_access) {
-        return this->pullFromCache();
+        return this->pullFromCache(backend);
     }
 
     CodeTimer cacheEventTimer;
@@ -585,7 +585,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullUnorderedFromCache()
         size_t num_rows = message_data->get_data().num_rows();
         size_t num_bytes = message_data->get_data().size_in_bytes();
         int dataType = static_cast<int>(message_data->get_data().get_type());
-        std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache();
+        std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache(backend);
 
         cacheEventTimer.stop();
         if(cache_events_logger) {
@@ -604,7 +604,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullUnorderedFromCache()
 
 		return output;
 	} else {
-		return pullFromCache();
+		return pullFromCache(backend);
 	}
 }
 
@@ -750,7 +750,7 @@ ConcatenatingCacheMachine::ConcatenatingCacheMachine(std::shared_ptr<Context> co
 	}
 
 // This method does not guarantee the relative order of the messages to be preserved
-std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCache() {
+std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCache(execution::execution_backend backend) {
     CodeTimer cacheEventTimerGeneral;
     cacheEventTimerGeneral.start();
 
@@ -787,7 +787,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 		output = nullptr;
 	} else if (collected_messages.size() == 1) {
 		auto data = collected_messages[0]->release_data();
-		output = data->decache();
+		output = data->decache(backend);
 		num_rows = output->num_rows();
 	}	else {
 		std::vector<std::unique_ptr<ral::frame::BlazingTable>> tables_holder;
@@ -797,7 +797,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 		    cacheEventTimer.start();
 
 			auto data = collected_messages[i]->release_data();
-			tables_holder.push_back(data->decache());
+			tables_holder.push_back(data->decache(backend));
 			table_views.push_back(tables_holder[i]->to_table_view());
 
 			// if we dont have to concatenate all, lets make sure we are not overflowing, and if we are, lets put one back

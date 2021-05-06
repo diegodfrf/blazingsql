@@ -51,7 +51,7 @@ public:
 
 	virtual void put(size_t index, std::unique_ptr<ral::cache::CacheData> cacheData);
 
-	virtual std::unique_ptr<ral::frame::BlazingTable> get_or_wait(size_t index);
+	virtual std::unique_ptr<ral::frame::BlazingTable> get_or_wait(execution::execution_backend backend, size_t index);
 
 	virtual std::unique_ptr<ral::cache::CacheData> get_or_wait_CacheData(size_t index);
 
@@ -95,9 +95,9 @@ public:
 		return cache_count;
 	}
 
-  virtual std::unique_ptr<ral::frame::BlazingTable> pullFromCache();
+  virtual std::unique_ptr<ral::frame::BlazingTable> pullFromCache(execution::execution_backend backend);
 
-	virtual std::unique_ptr<ral::frame::BlazingTable> pullUnorderedFromCache();
+	virtual std::unique_ptr<ral::frame::BlazingTable> pullUnorderedFromCache(execution::execution_backend backend);
 
 	std::vector<std::unique_ptr<ral::cache::CacheData> > pull_all_cache_data();
 
@@ -155,10 +155,10 @@ public:
 
 	~ConcatenatingCacheMachine() = default;
 
-	std::unique_ptr<ral::frame::BlazingTable> pullFromCache() override;
+	std::unique_ptr<ral::frame::BlazingTable> pullFromCache(execution::execution_backend backend) override;
 
-	std::unique_ptr<ral::frame::BlazingTable> pullUnorderedFromCache() override {
-		return pullFromCache();
+	std::unique_ptr<ral::frame::BlazingTable> pullUnorderedFromCache(execution::execution_backend backend) override {
+		return pullFromCache(backend);
 	}
 
 	std::unique_ptr<ral::cache::CacheData> pullCacheData() override;

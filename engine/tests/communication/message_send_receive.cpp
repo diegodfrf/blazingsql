@@ -798,7 +798,7 @@ void ReceiverCall(const UcpWorkerAddress &peerUcpWorkerAddress,
   {
     std::unique_ptr<ral::cache::CacheData> cache_data = input_cache->pullCacheData();
     ral::cache::MetadataDictionary metadata = cache_data->getMetadata();
-    std::unique_ptr<ral::frame::BlazingTable> table = cache_data->decache();
+    std::unique_ptr<ral::frame::BlazingTable> table = cache_data->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
     
     auto expected_metadata = generate_metadata();
     EXPECT_TRUE(expected_metadata.get_values() == metadata.get_values());

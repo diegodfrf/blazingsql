@@ -61,8 +61,8 @@ ral::execution::task_result PartitionSingleNodeKernel::do_process(std::vector< s
 kstatus PartitionSingleNodeKernel::run() {
     CodeTimer timer;
 
-    BatchSequence input_partitionPlan(this->input_.get_cache("input_b"), this);
-    partitionPlan = std::move(input_partitionPlan.next());
+    // WSM TODO. We should not be materializing this here in the run function
+    // partitionPlan = this->input_.get_cache("input_b").pullFromCache();
 
     while(this->input_.get_cache("input_a")->wait_for_next()){
         std::unique_ptr <ral::cache::CacheData> cache_data = this->input_.get_cache("input_a")->pullCacheData();
@@ -401,9 +401,9 @@ ral::execution::task_result PartitionKernel::do_process(std::vector< std::unique
 kstatus PartitionKernel::run() {
     CodeTimer timer;
 
-    BatchSequence input_partitionPlan(this->input_.get_cache("input_b"), this);
-    partitionPlan = input_partitionPlan.next();
-    assert(partitionPlan != nullptr);
+    // WSM TODO. We should not be materializing this here in the run() function
+    // partitionPlan = this->input_.get_cache("input_b").pullFromCache();
+    // assert(partitionPlan != nullptr);
 
     context->incrementQuerySubstep();
 
