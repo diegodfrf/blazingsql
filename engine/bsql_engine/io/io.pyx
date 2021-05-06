@@ -166,7 +166,7 @@ cdef unique_ptr[cio.PartitionedResultSet] getExecuteGraphResultPython(shared_ptr
 #    with nogil:
 #        return blaz_move(cio.performPartition(masterIndex,  ctxToken, blazingTableView, column_names))
 
-cdef unique_ptr[cio.ResultSet] runSkipDataPython(BlazingTableView metadata, vector[string] all_column_names, string query) nogil except +:
+cdef unique_ptr[cio.ResultSet] runSkipDataPython(BlazingCudfTableView metadata, vector[string] all_column_names, string query) nogil except +:
     with nogil:
         return blaz_move(cio.runSkipData( metadata, all_column_names, query))
 
@@ -263,7 +263,7 @@ cdef class PyBlazingCache:
         cdef Column cython_col
         for cython_col in cudf_data._data.values():
            column_views.push_back(cython_col.view())
-        cdef unique_ptr[BlazingTable] blazing_table = make_unique[BlazingTable](table_view(column_views), column_names)
+        cdef unique_ptr[BlazingCudfTable] blazing_table = make_unique[BlazingCudfTable](table_view(column_views), column_names)
         deref(blazing_table).ensureOwnership()
         cdef unique_ptr[cio.GPUCacheData] ptr = make_unique[cio.GPUCacheData](move(blazing_table),c_metadata)
         cdef string msg_id = metadata["message_id"].encode()
@@ -283,7 +283,7 @@ cdef class PyBlazingCache:
         cdef Column cython_col
         for cython_col in cudf_data._data.values():
             column_views.push_back(cython_col.view())
-        cdef unique_ptr[BlazingTable] blazing_table = make_unique[BlazingTable](table_view(column_views), column_names)
+        cdef unique_ptr[BlazingCudfTable] blazing_table = make_unique[BlazingCudfTable](table_view(column_views), column_names)
         deref(blazing_table).ensureOwnership()
         cdef string message_id
         with nogil:
@@ -294,7 +294,7 @@ cdef class PyBlazingCache:
         with nogil:
             cache_data = blaz_move(deref(self.c_cache).pullCacheData())
         cdef MetadataDictionary metadata = deref(cache_data).getMetadata()
-        cdef unique_ptr[BlazingTable] table = deref(cache_data).decache()
+        cdef unique_ptr[BlazingCudfTable] table = deref(cache_data).decache()
 
         metadata_temp = metadata.get_values()
         metadata_py = {}
@@ -504,7 +504,7 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
 
     cdef vector[vector[string]] filesAll
     cdef vector[string] currentFilesAll
-    cdef vector[BlazingTableView] blazingTableViews
+    cdef vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
 
     cdef vector[vector[map[string,string]]] uri_values_cpp_all
     cdef vector[map[string,string]] uri_values_cpp
@@ -562,7 +562,7 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
           column_views.resize(0)
           for cython_col in cython_table._data.columns:
             column_views.push_back(cython_col.view())
-          blazingTableViews.push_back(BlazingTableView(table_view(column_views), names))
+          blazingTableViews.push_back(make_shared[BlazingCudfTableView](table_view(column_views), names))
         currentTableSchemaCpp.blazingTableViews = blazingTableViews
 
       if table.fileType == 6: # if arrow Table
@@ -645,7 +645,7 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
 
 cpdef runSkipDataCaller(table, queryPy):
     cdef string query
-    cdef BlazingTableView metadata
+    cdef shared_ptr[BlazingCudfTableView] metadata
     cdef vector[string] all_column_names
     cdef vector[column_view] column_views
     cdef Column cython_col
@@ -663,7 +663,7 @@ cpdef runSkipDataCaller(table, queryPy):
     metadata_col_names = [name.encode() for name in table.metadata._data.keys()]
     for cython_col in table.metadata._data.values():
       column_views.push_back(cython_col.view())
-    metadata = BlazingTableView(table_view(column_views), metadata_col_names)
+    metadata = make_shared[BlazingCudfTableView](table_view(column_views), metadata_col_names)
 
     resultSet = blaz_move(runSkipDataPython( metadata, all_column_names, query))
 

@@ -150,7 +150,7 @@ cdef extern from "../src/execution_kernels/LogicPrimitives.h" namespace "ral::fr
             size_type num_columns
             size_type num_rows
             CudfTableView view()
-            vector[string] names()
+            vector[string] column_names()
             void ensureOwnership()
             unique_ptr[CudfTable] releaseCudfTable()
 
@@ -158,7 +158,7 @@ cdef extern from "../src/execution_kernels/LogicPrimitives.h" namespace "ral::fr
             BlazingTableView()
             BlazingTableView(CudfTableView, vector[string]) except +
             CudfTableView view()
-            vector[string] names()
+            vector[string] column_names()
 
 cdef extern from "../src/execution_graph/graph.h" namespace "ral::cache":
         cdef struct graph_progress:
