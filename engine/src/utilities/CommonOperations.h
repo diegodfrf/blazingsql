@@ -160,7 +160,7 @@ struct create_empty_table_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
     const std::vector<std::string> &column_names,
 	  const std::vector<cudf::data_type> &dtypes) const
 {
@@ -169,7 +169,7 @@ std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
     const std::vector<std::string> &column_names,
 	  const std::vector<cudf::data_type> &dtypes) const
 {
