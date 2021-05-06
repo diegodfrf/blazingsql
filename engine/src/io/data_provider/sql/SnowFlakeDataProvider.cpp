@@ -292,10 +292,7 @@ data_handle snowflake_data_provider::get_next(bool open_file) {
 	}
 
 	auto sqlHStmt_deleter = [](SQLHSTMT * sqlHStmt) {
-		if(SQLFreeHandle(SQL_HANDLE_STMT, *sqlHStmt) != SQL_SUCCESS) {
-			// throw std::runtime_error("SnowFlake: free statement for get next
-			// batch");
-		}
+		SQLFreeHandle(SQL_HANDLE_STMT, *sqlHStmt);
 		delete sqlHStmt;
 	};
 	handle.sql_handle.snowflake_sqlhdbc.reset(
