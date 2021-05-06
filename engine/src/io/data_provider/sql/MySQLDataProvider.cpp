@@ -113,7 +113,7 @@ mysql_table_info get_mysql_table_info(sql::Connection *con, const std::string &t
   mysql_table_info ret;
 
   try {
-    std::string query = "EXPLAIN PARTITIONS SELECT * FROM " + table;
+    std::string query = "EXPLAIN SELECT * FROM " + table;
     auto res = execute_mysql_query(con, query);
 
     while (res->next()) {
