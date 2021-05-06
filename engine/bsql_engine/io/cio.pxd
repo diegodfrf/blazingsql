@@ -233,7 +233,7 @@ cdef extern from "../include/engine/engine.h" nogil:
         unique_ptr[PartitionedResultSet] getExecuteGraphResult(shared_ptr[graph], int ctx_token) nogil except +raiseRunExecuteGraphError
 
         #unique_ptr[ResultSet] performPartition(int masterIndex, int ctxToken, BlazingTableView blazingTableView, vector[string] columnNames) except +raisePerformPartitionError
-        unique_ptr[ResultSet] runSkipData(BlazingTableView metadata, vector[string] all_column_names, string query) nogil except +raiseRunSkipDataError
+        unique_ptr[ResultSet] runSkipData(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +raiseRunSkipDataError
 
         TableScanInfo getTableScanInfo(string logicalPlan)
 

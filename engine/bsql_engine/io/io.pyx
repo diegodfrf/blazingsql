@@ -166,7 +166,7 @@ cdef unique_ptr[cio.PartitionedResultSet] getExecuteGraphResultPython(shared_ptr
 #    with nogil:
 #        return blaz_move(cio.performPartition(masterIndex,  ctxToken, blazingTableView, column_names))
 
-cdef unique_ptr[cio.ResultSet] runSkipDataPython(BlazingCudfTableView metadata, vector[string] all_column_names, string query) nogil except +:
+cdef unique_ptr[cio.ResultSet] runSkipDataPython(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +:
     with nogil:
         return blaz_move(cio.runSkipData( metadata, all_column_names, query))
 
