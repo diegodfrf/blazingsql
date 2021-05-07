@@ -16,7 +16,7 @@
 namespace ral {
 namespace io {
 
-static inline void ReadRowCount(
+static inline void ReadEstimatedTableRowCount(
 	SQLHDBC sqlHdbc, const sql_info & sql, std::size_t & row_count) {
 	SQLHSTMT sqlHStmt;
 	SQLRETURN sqlReturn = SQLAllocHandle(SQL_HANDLE_STMT, sqlHdbc, &sqlHStmt);
@@ -187,14 +187,14 @@ static inline void PopulateTableInfo(SQLHDBC sqlHdbc,
 		throw std::runtime_error("SnowFlake: free stmt for table info");
 	}
 
-	ReadRowCount(sqlHdbc, sql, row_count);
+	ReadEstimatedTableRowCount(sqlHdbc, sql, row_count);
 }
 
 snowflake_data_provider::snowflake_data_provider(const sql_info & sql,
 	std::size_t total_number_of_nodes,
 	std::size_t self_node_idx)
 	: abstractsql_data_provider{sql, total_number_of_nodes, self_node_idx},
-	  sqlHEnv{nullptr}, sqlHdbc{nullptr}, row_count{0},
+	  sqlHEnv{nullptr}, sqlHdbc{nullptr}, estimated_table_row_count{0},
 	  batch_position{0}, completed{false} {
 	SQLRETURN sqlReturn = SQL_ERROR;
 	sqlReturn = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &sqlHEnv);
@@ -235,7 +235,8 @@ snowflake_data_provider::snowflake_data_provider(const sql_info & sql,
 		throw std::runtime_error("SnowFlake: driver connection");
 	}
 
-	PopulateTableInfo(sqlHdbc, sql, column_names, column_types, row_count);
+	PopulateTableInfo(
+		sqlHdbc, sql, column_names, column_types, estimated_table_row_count);
 }
 
 snowflake_data_provider::~snowflake_data_provider() {
@@ -313,7 +314,7 @@ data_handle snowflake_data_provider::get_next(bool open_file) {
 }
 
 std::size_t snowflake_data_provider::get_num_handles() {
-	std::size_t ret = row_count / sql.table_batch_size;
+	std::size_t ret = estimated_table_row_count / sql.table_batch_size;
 	return ret == 0 ? ret : 1;
 }
 
