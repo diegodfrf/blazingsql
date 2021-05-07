@@ -257,6 +257,14 @@ public:
 	 */
 	static std::unique_ptr<CacheData> downgradeGPUCacheData(std::unique_ptr<CacheData> cacheData, std::string id, std::shared_ptr<Context> ctx);
 
+
+	/**
+	 * @brief Factory function that can take a BlazingTable of any type, and convert it to a CacheData of the correct type for its backend without data conversion
+	 * @param table is a BlazingTable of any type
+	 * @return  a CacheData of the correct type for its backend without data conversion
+	 */
+	static std::unique_ptr<CacheData> MakeCacheData(std::unique_ptr<ral::frame::BlazingTable> table);
+
 protected:
 	CacheDataType cache_type; /**< The CacheDataType that is used to store the dataframe representation. */
 	std::vector<std::string> col_names; /**< A vector storing the names of the columns in the dataframe representation. */

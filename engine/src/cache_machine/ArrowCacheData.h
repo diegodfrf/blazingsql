@@ -12,6 +12,16 @@ namespace cache {
 */
 class ArrowCacheData : public CacheData {
 public:
+
+	/**
+	* Constructor
+	* @param table The BlazingTable that is moved into the CacheData.
+	*/
+	ArrowCacheData(std::unique_ptr<ral::frame::BlazingArrowTable> table)
+		: CacheData(CacheDataType::ARROW,table->column_names(), table->column_types(), table->num_rows()),  data_{std::move(table)} {
+			
+		}
+
 	/**
 	* Constructor
 	* @param table The BlazingTable that is moved into the CacheData.

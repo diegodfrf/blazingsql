@@ -360,9 +360,8 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 
 				} else {
 					if(cacheIndex == 1) {
-						// WSM CONTINUE HERE WHEN WE HAVE A PROPER ArrowCacheData
 						std::unique_ptr<CacheData> cache_data = std::make_unique<CPUCacheData>(std::move(table), metadata, use_pinned);
-							
+                        							
 						auto item =	std::make_unique<message>(std::move(cache_data), message_id);
 						this->waitingCache->put(std::move(item));
 
@@ -385,8 +384,8 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 						// BlazingMutableThread t([table = std::move(table), this, cacheIndex, message_id]() mutable {
 						// want to get only cache directory where orc files should be saved
 						std::string orc_files_path = ral::communication::CommunicationData::getInstance().get_cache_directory();
-						// WSM TODO add metadata to CacheDataLocalFile
 						auto cache_data = std::make_unique<CacheDataLocalFile>(std::move(table), orc_files_path, (ctx ? std::to_string(ctx->getContextToken()) : "none"));
+                        cache_data->setMetadata(metadata);
 						auto item =	std::make_unique<message>(std::move(cache_data), message_id);
 						this->waitingCache->put(std::move(item));
 						// NOTE: Wait don't kill the main process until the last thread is finished!
@@ -808,8 +807,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
                 backend.id() == ral::execution::backend_id::CUDF &&
                 ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views)){
 
-                    // WSM TODO. need to be able to convert a std::unique_ptr<ral::frame::BlazingTable> to a std::unique_ptr<ral::frame::BlazingCudfTable>
-				std::unique_ptr<GPUCacheData> cache_data ; //= std::make_unique<GPUCacheData>(std::move(tables_holder.back()));
+                std::unique_ptr<CacheData> cache_data = CacheData::MakeCacheData(std::move(tables_holder.back()));
 				tables_holder.pop_back();
 				table_views.pop_back();
 				collected_messages[i] =	std::make_unique<message>(std::move(cache_data), collected_messages[i]->get_message_id());
