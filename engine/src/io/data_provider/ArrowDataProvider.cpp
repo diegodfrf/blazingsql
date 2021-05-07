@@ -55,11 +55,17 @@ std::vector<data_handle> arrow_data_provider::get_some(std::size_t num_files, bo
 
 data_handle arrow_data_provider::get_next(bool /*open_file*/) {
 	if(column_values.size() == 0) {
-		data_handle handle(nullptr, {}, Uri("arrow"), std::make_shared<ral::frame::BlazingArrowTableView>(arrow_tables[current_file]));
+		data_handle handle;
+    handle.uri = Uri("arrow");
+    handle.arrow_table = arrow_tables[current_file];
+    handle.column_values = {};
 		current_file++;
 		return handle;
 	} else {
-		data_handle handle(nullptr, column_values[current_file], Uri("arrow"), std::make_shared<ral::frame::BlazingArrowTableView>(arrow_tables[current_file]));
+		data_handle handle;
+    handle.uri = Uri("arrow");
+    handle.arrow_table = arrow_tables[current_file];
+    handle.column_values = column_values[current_file];
 		current_file++;
 		return handle;
 	}
