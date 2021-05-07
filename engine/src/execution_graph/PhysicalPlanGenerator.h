@@ -5,7 +5,8 @@
 #include "execution_kernels/BatchAggregationProcessing.h"
 #include "execution_kernels/BatchJoinProcessing.h"
 #include "execution_kernels/BatchUnionProcessing.h"
-#include "execution_kernels/BatchWindowFunctionProcessing.h"
+// TODO percy arrow
+//#include "execution_kernels/BatchWindowFunctionProcessing.h"
 #include "io/Schema.h"
 #include "utilities/CommonOperations.h"
 #include "parser/expression_utils.hpp"
@@ -89,13 +90,16 @@ struct tree_processor {
 			k = std::make_shared<SortAndSampleKernel>(kernel_id,expr, kernel_context, query_graph);
 
 		} else if (is_generate_overlaps(expr)) {
-			k = std::make_shared<OverlapGeneratorKernel>(kernel_id,expr, kernel_context, query_graph);
+      // TODO percy arrow
+			//k = std::make_shared<OverlapGeneratorKernel>(kernel_id,expr, kernel_context, query_graph);
 		
 		} else if (is_accumulate_overlaps(expr)) {
-			k = std::make_shared<OverlapAccumulatorKernel>(kernel_id,expr, kernel_context, query_graph);
+      // TODO percy arrow
+			//k = std::make_shared<OverlapAccumulatorKernel>(kernel_id,expr, kernel_context, query_graph);
 		
 		} else if (is_window_compute(expr)) {
-			k = std::make_shared<ComputeWindowKernel>(kernel_id,expr, kernel_context, query_graph);
+      // TODO percy arrow
+			//k = std::make_shared<ComputeWindowKernel>(kernel_id,expr, kernel_context, query_graph);
 
 		} else if (is_merge(expr)) {
 			k = std::make_shared<MergeStreamKernel>(kernel_id,expr, kernel_context, query_graph);
