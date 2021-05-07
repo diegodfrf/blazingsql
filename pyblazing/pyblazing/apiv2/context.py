@@ -3190,10 +3190,11 @@ class BlazingContext(object):
                 or ftype == DataType.JSON
                 or ftype == DataType.CSV
             ):
-                if query_table.has_metadata():
-                    currentTableNodes = self._optimize_skip_data_getSlices(
-                        query_table, table_scans[table_idx]
-                    )
+                if query_table.has_metadata() and False: #Todo SkipData rommel arrow
+                    pass
+                    # currentTableNodes = self._optimize_skip_data_getSlices(
+                    #     query_table, table_scans[table_idx]
+                    # )
                 else:
                     # If all files are accessible by all nodes,
                     # it is better to distribute them in the old way
@@ -3225,10 +3226,11 @@ class BlazingContext(object):
                 or query_table.fileType == DataType.SQLITE
                 or query_table.fileType == DataType.POSTGRESQL
             ):
-                if query_table.has_metadata():
-                    currentTableNodes = self._optimize_skip_data_getSlices(
-                        query_table, table_scans[table_idx]
-                    )
+                if query_table.has_metadata() and False: #Todo SkipData rommel arrow
+                    pass
+                    # currentTableNodes = self._optimize_skip_data_getSlices(
+                    #     query_table, table_scans[table_idx]
+                    # )
                 else:
                     # If all files are accessible by all nodes,
                     # it is better to distribute them in the old way

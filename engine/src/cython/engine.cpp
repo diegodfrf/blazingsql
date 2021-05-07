@@ -10,7 +10,7 @@
 #include "../io/data_provider/GDFDataProvider.h"
 #include "../io/data_provider/ArrowDataProvider.h"
 #include "../io/data_provider/UriDataProvider.h"
-#include "../skip_data/SkipDataProcessor.h"
+//#include "../skip_data/SkipDataProcessor.h" //Todo arrow rommel arrow
 #include "../execution_kernels/LogicalFilter.h"
 
 #include <numeric>
@@ -64,14 +64,10 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 		}
 
     auto _name = tableSchema.names;
-    std::cout << "ALFA 1\n";
     auto _calcite_to_file_indices = tableSchema.calcite_to_file_indices;
-    std::cout << "ALFA 2\n";
     auto _in_file = tableSchema.in_file;
-    std::cout << "ALFA 3\n";
     std::cout << tableSchema.row_groups_ids.size() << "\n";
     auto _row_groups_ids = tableSchema.row_groups_ids;
-    std::cout << "ALFA 4\n";
     
     ral::io::Schema schema;
     try {
@@ -82,7 +78,6 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
         _row_groups_ids);
     } catch (const std::exception &exc) {
         // catch anything thrown within try block that derives from std::exception
-        std::cout << "NODISOSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n";
         std::cout << exc.what() << "\n";
     }
 
@@ -345,32 +340,31 @@ std::unique_ptr<ResultSet> performPartition(int32_t masterIndex,
 std::unique_ptr<ResultSet> runSkipData(std::shared_ptr<ral::frame::BlazingTableView> metadata,
 	std::vector<std::string> all_column_names, std::string query) {
 // TODO percy arrow
-//	try {
+// 	try {
 
-//		std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> result_pair = ral::skip_data::process_skipdata_for_table(
-//				metadata, all_column_names, query);
+// 		std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> result_pair = ral::skip_data::process_skipdata_for_table(
+// 				metadata, all_column_names, query);
 
-//		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
-//		result->skipdata_analysis_fail = result_pair.second;
-//		if (!result_pair.second){ // if could process skip-data
-//			result->names = result_pair.first->column_names();
-//			result->table = std::make_unique<ResultTable>(result_pair.first->releaseCudfTable());
-//		}
-//		return result;
+// 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
+// 		result->skipdata_analysis_fail = result_pair.second;
+// 		if (!result_pair.second){ // if could process skip-data
+// 			result->names = result_pair.first->column_names();
+// 			ral::frame::BlazingCudfTable* current_result = dynamic_cast<ral::frame::BlazingCudfTable*>(result_pair.first.get());
+// 			result->table = std::make_unique<ResultTable>(current_result->releaseCudfTable());
+// 		}
+// 		return result;
 
-//	} catch(const std::exception & e) {
-//		std::cerr << "**[runSkipData]** error parsing metadata.\n";
-//		std::cerr << e.what() << std::endl;
-//		std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
-//		if(logger){
-//            logger->error("|||{info}|||||",
-//                                        "info"_a="In runSkipData. What: {}"_format(e.what()));
-//            logger->flush();
-//		}
-
-
-//		throw;
-//	}
+// 	} catch(const std::exception & e) {
+// 		std::cerr << "**[runSkipData]** error parsing metadata.\n";
+// 		std::cerr << e.what() << std::endl;
+// 		std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
+// 		if(logger){
+// 			logger->error("|||{info}|||||",
+// 							"info"_a="In runSkipData. What: {}"_format(e.what()));
+// 			logger->flush();
+// 		}
+// 		throw;
+// 	}
 }
 
 
