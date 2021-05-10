@@ -90,7 +90,7 @@ cdef extern from "../include/io/io.h" nogil:
         SQLITE = 9
 
     cdef struct TableSchema:
-        vector[BlazingTableView] blazingTableViews
+        vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
         vector[type_id] types
         vector[string]  names
         vector[string]  files
@@ -99,7 +99,7 @@ cdef extern from "../include/io/io.h" nogil:
         vector[bool] in_file
         int data_type
         bool has_header_csv
-        BlazingTableView metadata
+        shared_ptr[BlazingCudfTableView] metadata
         vector[vector[int]] row_groups_ids
         shared_ptr[CTable] arrow_table
 
@@ -144,21 +144,21 @@ cdef extern from "../include/io/io.h" nogil:
 
 
 cdef extern from "../src/execution_kernels/LogicPrimitives.h" namespace "ral::frame":
-        cdef cppclass BlazingTable:
+        cdef cppclass BlazingCudfTable:
             BlazingTable(unique_ptr[CudfTable] table, const vector[string] & columnNames)
             BlazingTable(const CudfTableView & table, const vector[string] & columnNames)
             size_type num_columns
             size_type num_rows
             CudfTableView view()
-            vector[string] names()
+            vector[string] column_names()
             void ensureOwnership()
             unique_ptr[CudfTable] releaseCudfTable()
 
-        cdef cppclass BlazingTableView:
+        cdef cppclass BlazingCudfTableView:
             BlazingTableView()
             BlazingTableView(CudfTableView, vector[string]) except +
             CudfTableView view()
-            vector[string] names()
+            vector[string] column_names()
 
 cdef extern from "../src/execution_graph/graph.h" namespace "ral::cache":
         cdef struct graph_progress:
@@ -179,19 +179,14 @@ cdef extern from "../src/cache_machine/CacheMachine.h" namespace "ral::cache":
             void print() nogil
         cdef cppclass CacheMachine:
             void addCacheData(unique_ptr[CacheData] cache_data, const string & message_id, bool always_add ) nogil except +
-            void addToCache(unique_ptr[BlazingTable] table, const string & message_id , bool always_add) nogil except+
-            unique_ptr[CacheData] pullCacheData() nogil  except +
-            unique_ptr[CacheData] pullCacheData(string message_id) nogil except +
             bool has_next_now() except +
 
 cdef extern from "../src/cache_machine/CacheData.h" namespace "ral::cache":
         cdef cppclass CacheData:
-            unique_ptr[BlazingTable] decache()
             MetadataDictionary getMetadata()
 
 cdef extern from "../src/cache_machine/GPUCacheData.h" namespace "ral::cache":
         cdef cppclass GPUCacheData:
-            unique_ptr[BlazingTable] decache()
             MetadataDictionary getMetadata()
 
 # REMARK: We have some compilation errors from cython assigning temp = unique_ptr[ResultSet]
@@ -233,7 +228,7 @@ cdef extern from "../include/engine/engine.h" nogil:
         unique_ptr[PartitionedResultSet] getExecuteGraphResult(shared_ptr[graph], int ctx_token) nogil except +raiseRunExecuteGraphError
 
         #unique_ptr[ResultSet] performPartition(int masterIndex, int ctxToken, BlazingTableView blazingTableView, vector[string] columnNames) except +raisePerformPartitionError
-        unique_ptr[ResultSet] runSkipData(BlazingTableView metadata, vector[string] all_column_names, string query) nogil except +raiseRunSkipDataError
+        unique_ptr[ResultSet] runSkipData(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +raiseRunSkipDataError
 
         TableScanInfo getTableScanInfo(string logicalPlan)
 

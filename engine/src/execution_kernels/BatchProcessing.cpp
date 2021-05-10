@@ -35,8 +35,7 @@ std::vector<int> get_projections_wrapper(size_t num_columns, const std::string &
   if (expression.empty()) {
     std::vector<int> projections(num_columns);
     std::iota(projections.begin(), projections.end(), 0);
-    std::cout << "ESEMPTY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
-    return projections;
+return projections;
   }
 
   std::vector<int> projections = get_projections(expression);
@@ -44,7 +43,6 @@ std::vector<int> get_projections_wrapper(size_t num_columns, const std::string &
       projections.resize(num_columns);
       std::iota(projections.begin(), projections.end(), 0);
   }
-  std::cout << "PROJECTIONSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS!\n" << projections.size() << "\n";
   return projections;
 }
 

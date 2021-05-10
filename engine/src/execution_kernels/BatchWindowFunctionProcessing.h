@@ -7,6 +7,8 @@
 
 namespace ral {
 namespace batch {
+// TODO percy arrow
+namespace todo_arrow_percy {
 
 using ral::cache::distributing_kernel;
 using ral::cache::kstatus;
@@ -189,7 +191,7 @@ private:
 	std::vector<cudf::data_type> schema;
 };
 
-
+} // namespace todo_arrow_percy
 } // namespace batch
 } // namespace ral
 
