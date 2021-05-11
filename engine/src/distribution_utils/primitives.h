@@ -90,9 +90,10 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator
 struct gather_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
-		std::vector<std::shared_ptr<BlazingTableView>> tables,
-		const std::vector<cudf::order> & sortOrderTypes,
-		const std::vector<int> & sortColIndices) const
+		std::shared_ptr<BlazingTableView> table,
+		std::unique_ptr<cudf::column> column,
+		cudf::out_of_bounds_policy out_of_bounds_policy,
+		cudf::detail::negative_index_policy negative_index_policy) const
   {
     // TODO percy arrow thrown error
     return nullptr;
@@ -101,9 +102,10 @@ struct gather_functor {
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingArrowTable>(
-		std::vector<std::shared_ptr<BlazingTableView>> tables,
-		const std::vector<cudf::order> & sortOrderTypes,
-		const std::vector<int> & sortColIndices) const
+		std::shared_ptr<BlazingTableView> table,
+		std::unique_ptr<cudf::column> column,
+		cudf::out_of_bounds_policy out_of_bounds_policy,
+		cudf::detail::negative_index_policy negative_index_policy) const
 {
   // TODO percy arrow
   return nullptr;
@@ -111,32 +113,16 @@ inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral:
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingCudfTable>(
-		std::vector<std::shared_ptr<BlazingTableView>> tables,
-		const std::vector<cudf::order> & sortOrderTypes,
-		const std::vector<int> & sortColIndices) const
+		std::shared_ptr<BlazingTableView> table,
+		std::unique_ptr<cudf::column> column,
+		cudf::out_of_bounds_policy out_of_bounds_policy,
+		cudf::detail::negative_index_policy negative_index_policy) const
 {
-  // TODO percy rommel arrow
-//	std::unique_ptr<cudf::table> pivots = cudf::detail::gather( sortedSamples->view(), gather_map->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
+	// TODO percy rommel arrow
+	ral::frame::BlazingCudfTableView *table_ptr = dynamic_cast<ral::frame::BlazingCudfTableView*>(table.get());
+	std::unique_ptr<cudf::table> pivots = cudf::detail::gather(table_ptr->view(), column->view(), out_of_bounds_policy, negative_index_policy);
 
-
-//	// TODO this is just a default setting. Will want to be able to properly set null_order
-//	std::vector<cudf::null_order> null_orders(sortOrderTypes.size(), cudf::null_order::AFTER);
-
-//	std::vector<cudf::table_view> cudf_table_views(tables.size());
-//	for(size_t i = 0; i < tables.size(); i++) {
-//		cudf_table_views[i] = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(tables[i])->view();
-//	}
-//	std::unique_ptr<cudf::table> merged_table = cudf::merge(cudf_table_views, sortColIndices, sortOrderTypes, null_orders);
-
-//	// lets get names from a non-empty table
-//	std::vector<std::string> names;
-//	for(size_t i = 0; i < tables.size(); i++) {
-//		if (tables[i]->column_names().size() > 0){
-//			names = tables[i]->column_names();
-//			break;
-//		}
-//	}
-//	return std::make_unique<ral::frame::BlazingTable>(std::move(merged_table), names);
+	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(pivots), table->column_names());
 }
 
 }  // namespace distribution
