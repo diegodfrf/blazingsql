@@ -189,9 +189,10 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values) {
-  // TODO percy arrow
-//	if (offset.second == 0) {
-//		// cover case for empty files to parse
+		// TODO percy arrow
+	if (offset.second == 0) {
+		std::cout<<"offset.second = 0\n";
+		// cover case for empty files to parse
 
 //		std::vector<size_t> column_indices(2 * schema.types.size() + 2);
 //		std::iota(column_indices.begin(), column_indices.end(), 0);
@@ -225,39 +226,40 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 //		result->table = std::make_unique<ResultTable>(std::move(table));
 //		result->skipdata_analysis_fail = false;
 //		return result;
-//	}
-//	const DataType data_type_hint = ral::io::inferDataType(file_format_hint);
-//	const DataType fileType = inferFileType(files, data_type_hint);
-//	std::map<std::string, std::string> args_map = ral::io::to_map(arg_keys, arg_values);
+	}
+	const DataType data_type_hint = ral::io::inferDataType(file_format_hint);
+	const DataType fileType = inferFileType(files, data_type_hint);
+	std::map<std::string, std::string> args_map = ral::io::to_map(arg_keys, arg_values);
 
-//	std::shared_ptr<ral::io::data_parser> parser;
-//	if(fileType == ral::io::DataType::PARQUET) {
-//		parser = std::make_shared<ral::io::parquet_parser>();
-//	} else if(fileType == ral::io::DataType::ORC) {
-//		parser = std::make_shared<ral::io::orc_parser>(args_map);
-//	} else if(fileType == ral::io::DataType::JSON) {
-//		parser = std::make_shared<ral::io::json_parser>(args_map);
-//	} else if(fileType == ral::io::DataType::CSV) {
-//		parser = std::make_shared<ral::io::csv_parser>(args_map);
-//	}
-//	std::vector<Uri> uris;
-//	for(auto file_path : files) {
-//		uris.push_back(Uri{file_path});
-//	}
-//	auto provider = std::make_shared<ral::io::uri_data_provider>(uris);
-//	auto loader = std::make_shared<ral::io::data_loader>(parser, provider);
-//	try{
-//		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(offset.first);
-//		// ral::utilities::print_blazing_table_view(metadata->to_table_view());
-//		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
-//		result->names = metadata->column_names();
-//		result->table = std::make_unique<ResultTable>(metadata->releaseCudfTable());
-//		result->skipdata_analysis_fail = false;
-//		return result;
-//	} catch(std::exception & e) {
-//		std::cerr << e.what() << std::endl;
-//		throw;
-//	}
+	std::shared_ptr<ral::io::data_parser> parser;
+	if(fileType == ral::io::DataType::PARQUET) {
+		parser = std::make_shared<ral::io::parquet_parser>();
+	} else if(fileType == ral::io::DataType::ORC) {
+		parser = std::make_shared<ral::io::orc_parser>(args_map);
+	} else if(fileType == ral::io::DataType::JSON) {
+		parser = std::make_shared<ral::io::json_parser>(args_map);
+	} else if(fileType == ral::io::DataType::CSV) {
+		parser = std::make_shared<ral::io::csv_parser>(args_map);
+	}
+	std::vector<Uri> uris;
+	for(auto file_path : files) {
+		uris.push_back(Uri{file_path});
+	}
+	auto provider = std::make_shared<ral::io::uri_data_provider>(uris);
+	auto loader = std::make_shared<ral::io::data_loader>(parser, provider);
+	try{
+		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(offset.first);
+		// ral::utilities::print_blazing_table_view(metadata->to_table_view());
+		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
+		result->names = metadata->column_names();
+		ral::frame::BlazingCudfTable* current_metadata_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(metadata.get());
+		result->table = std::make_unique<ResultTable>(current_metadata_ptr->releaseCudfTable());
+		result->skipdata_analysis_fail = false;
+		return result;
+	} catch(std::exception & e) {
+		std::cerr << e.what() << std::endl;
+		throw;
+	}
 }
 
 std::pair<bool, std::string> registerFileSystem(

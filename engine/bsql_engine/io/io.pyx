@@ -166,7 +166,7 @@ cdef unique_ptr[cio.PartitionedResultSet] getExecuteGraphResultPython(shared_ptr
 #    with nogil:
 #        return blaz_move(cio.performPartition(masterIndex,  ctxToken, blazingTableView, column_names))
 
-cdef unique_ptr[cio.ResultSet] runSkipDataPython(BlazingTableView metadata, vector[string] all_column_names, string query) nogil except +:
+cdef unique_ptr[cio.ResultSet] runSkipDataPython(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +:
     with nogil:
         return blaz_move(cio.runSkipData( metadata, all_column_names, query))
 
@@ -246,75 +246,74 @@ cpdef pair[bool, string] registerFileSystemCaller(fs, root, authority):
 cdef class PyBlazingCache:
     cdef shared_ptr[cio.CacheMachine] c_cache
 
-# WSM commenting out for now
-    # def add_to_cache_with_meta(self,cudf_data,metadata):
-    #     cdef cio.MetadataDictionary c_metadata
-    #     cdef map[string,string] metadata_map
-    #     cdef string c_key
-    #     for key in metadata.keys():
-    #       if key != "worker_ids":
-    #         c_key = key.encode()
-    #         metadata_map[c_key] = metadata[key].encode()
+# TODO percy rommel william felipe arrow do we need this?
+#    def add_to_cache_with_meta(self,cudf_data,metadata):
+#        cdef cio.MetadataDictionary c_metadata
+#        cdef map[string,string] metadata_map
+#        cdef string c_key
+#        for key in metadata.keys():
+#          if key != "worker_ids":
+#            c_key = key.encode()
+#            metadata_map[c_key] = metadata[key].encode()
 
-    #     c_metadata.set_values(metadata_map)
-    #     cdef vector[string] column_names
-    #     for column_name in cudf_data:
-    #        column_names.push_back(str.encode(column_name))
-    #     cdef vector[column_view] column_views
-    #     cdef Column cython_col
-    #     for cython_col in cudf_data._data.values():
-    #        column_views.push_back(cython_col.view())
-    #     cdef unique_ptr[BlazingTable] blazing_table = make_unique[BlazingTable](table_view(column_views), column_names)
-    #     deref(blazing_table).ensureOwnership()
-    #     cdef unique_ptr[cio.GPUCacheData] ptr = make_unique[cio.GPUCacheData](move(blazing_table),c_metadata)
-    #     cdef string msg_id = metadata["message_id"].encode()
-    #     with nogil:
-    #         deref(self.c_cache).addCacheData(blaz_move2(ptr),msg_id,1)
-
-
-    def has_next_now(self,):
-        return deref(self.c_cache).has_next_now()
-
-    def add_to_cache(self,cudf_data):
-        cdef vector[string] column_names
-        for column_name in cudf_data:
-            column_names.push_back(str.encode(column_name))
-
-        cdef vector[column_view] column_views
-        cdef Column cython_col
-        for cython_col in cudf_data._data.values():
-            column_views.push_back(cython_col.view())
-        cdef unique_ptr[BlazingTable] blazing_table = make_unique[BlazingTable](table_view(column_views), column_names)
-        deref(blazing_table).ensureOwnership()
-        cdef string message_id
-        with nogil:
-            deref(self.c_cache).addToCache(blaz_move(blazing_table),message_id,1)
-
-# WSM commenting out for now
-    # def pull_from_cache(self):
-    #     cdef unique_ptr[CacheData] cache_data
-    #     with nogil:
-    #         cache_data = blaz_move(deref(self.c_cache).pullCacheData())
-    #     cdef MetadataDictionary metadata = deref(cache_data).getMetadata()
-    #     cdef unique_ptr[BlazingTable] table = deref(cache_data).decache()
-
-    #     metadata_temp = metadata.get_values()
-    #     metadata_py = {}
-    #     for key_val in metadata_temp:
-    #         key = key_val.first.decode('utf-8')
-    #         val = key_val.second.decode('utf-8')
-    #         if(key == "worker_ids"):
-    #             metadata_py[key] = val.split(",")
-    #         else:
-    #             metadata_py[key] = val
+#        c_metadata.set_values(metadata_map)
+#        cdef vector[string] column_names
+#        for column_name in cudf_data:
+#           column_names.push_back(str.encode(column_name))
+#        cdef vector[column_view] column_views
+#        cdef Column cython_col
+#        for cython_col in cudf_data._data.values():
+#           column_views.push_back(cython_col.view())
+#        cdef unique_ptr[BlazingCudfTable] blazing_table = make_unique[BlazingCudfTable](table_view(column_views), column_names)
+#        deref(blazing_table).ensureOwnership()
+#        cdef unique_ptr[cio.GPUCacheData] ptr = make_unique[cio.GPUCacheData](move(blazing_table),c_metadata)
+#        cdef string msg_id = metadata["message_id"].encode()
+#        with nogil:
+#            deref(self.c_cache).addCacheData(blaz_move2(ptr),msg_id,1)
 
 
-    #     decoded_names = []
-    #     for i in range(deref(table).column_names().size()):
-    #         decoded_names.append(deref(table).column_names()[i].decode('utf-8'))
-    #     df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(deref(table).releaseCudfTable()), decoded_names)._data)
-    #     df._rename_columns(decoded_names)
-    #     return df, metadata_py
+#    def has_next_now(self,):
+#        return deref(self.c_cache).has_next_now()
+
+#    def add_to_cache(self,cudf_data):
+#        cdef vector[string] column_names
+#        for column_name in cudf_data:
+#            column_names.push_back(str.encode(column_name))
+
+#        cdef vector[column_view] column_views
+#        cdef Column cython_col
+#        for cython_col in cudf_data._data.values():
+#            column_views.push_back(cython_col.view())
+#        cdef unique_ptr[BlazingCudfTable] blazing_table = make_unique[BlazingCudfTable](table_view(column_views), column_names)
+#        deref(blazing_table).ensureOwnership()
+#        cdef string message_id
+#        with nogil:
+#            deref(self.c_cache).addToCache(blaz_move(blazing_table),message_id,1)
+
+#    def pull_from_cache(self):
+#        cdef unique_ptr[CacheData] cache_data
+#        with nogil:
+#            cache_data = blaz_move(deref(self.c_cache).pullCacheData())
+#        cdef MetadataDictionary metadata = deref(cache_data).getMetadata()
+#        cdef unique_ptr[BlazingCudfTable] table = deref(cache_data).decache()
+
+#        metadata_temp = metadata.get_values()
+#        metadata_py = {}
+#        for key_val in metadata_temp:
+#            key = key_val.first.decode('utf-8')
+#            val = key_val.second.decode('utf-8')
+#            if(key == "worker_ids"):
+#                metadata_py[key] = val.split(",")
+#            else:
+#                metadata_py[key] = val
+
+
+#        decoded_names = []
+#        for i in range(deref(table).column_names().size()):
+#            decoded_names.append(deref(table).column_names()[i].decode('utf-8'))
+#        df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(deref(table).releaseCudfTable()), decoded_names)._data)
+#        df._rename_columns(decoded_names)
+#        return df, metadata_py
 
 cpdef initializeCaller(uint16_t ralId, string worker_id, string network_iface_name,  int ralCommunicationPort, vector[NodeMetaDataUCP] workers_ucp_info,
         bool singleNode, map[string,string] config_options, string allocation_mode, size_t initial_pool_size, size_t maximum_pool_size, bool enable_logging):
@@ -506,7 +505,7 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
 
     cdef vector[vector[string]] filesAll
     cdef vector[string] currentFilesAll
-    cdef vector[BlazingTableView] blazingTableViews
+    cdef vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
 
     cdef vector[vector[map[string,string]]] uri_values_cpp_all
     cdef vector[map[string,string]] uri_values_cpp
@@ -564,7 +563,7 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
           column_views.resize(0)
           for cython_col in cython_table._data.columns:
             column_views.push_back(cython_col.view())
-          blazingTableViews.push_back(BlazingTableView(table_view(column_views), names))
+          blazingTableViews.push_back(make_shared[BlazingCudfTableView](table_view(column_views), names))
         currentTableSchemaCpp.blazingTableViews = blazingTableViews
 
       if table.fileType == 6: # if arrow Table
@@ -647,10 +646,11 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
 
 cpdef runSkipDataCaller(table, queryPy):
     cdef string query
-    cdef BlazingTableView metadata
+    cdef shared_ptr[BlazingCudfTableView] metadata
     cdef vector[string] all_column_names
     cdef vector[column_view] column_views
     cdef Column cython_col
+    cdef vector[string] the_column_names
 
     query = str.encode(queryPy)
     all_column_names.resize(0)
@@ -665,7 +665,9 @@ cpdef runSkipDataCaller(table, queryPy):
     metadata_col_names = [name.encode() for name in table.metadata._data.keys()]
     for cython_col in table.metadata._data.values():
       column_views.push_back(cython_col.view())
-    metadata = BlazingTableView(table_view(column_views), metadata_col_names)
+    for cn in metadata_col_names:
+      the_column_names.push_back(cn)
+    metadata = make_shared[BlazingCudfTableView](table_view(column_views), the_column_names)
 
     resultSet = blaz_move(runSkipDataPython( metadata, all_column_names, query))
 
@@ -679,7 +681,6 @@ cpdef runSkipDataCaller(table, queryPy):
       decoded_names = []
       for i in range(names.size()):
           decoded_names.append(names[i].decode('utf-8'))
-
       df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet).table).cudf_table), decoded_names)._data)
       return_object['metadata'] = df
       return return_object

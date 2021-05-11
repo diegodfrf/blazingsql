@@ -396,27 +396,27 @@ std::vector<std::unique_ptr<BlazingColumn>> cudfTableViewToBlazingColumns(const 
 
 // BEGIN BlazingScalar
 
-BlazingScalar::BlazingScalar(execution::backend_id execution_backend_id)
-  : ral::execution::BlazingDispatchable(execution_backend_id) {
-}
+//BlazingScalar::BlazingScalar(execution::backend_id execution_backend_id)
+//  : ral::execution::BlazingDispatchable(execution_backend_id) {
+//}
 
-// END BlazingScalar
+//// END BlazingScalar
 
-// BEGIN BlazingArrowScalar
-BlazingArrowScalar::BlazingArrowScalar(std::shared_ptr<arrow::Scalar> scalar)
-  : BlazingScalar(ral::execution::backend_id::ARROW), scalar(scalar) {
-}
+//// BEGIN BlazingArrowScalar
+//BlazingArrowScalar::BlazingArrowScalar(std::shared_ptr<arrow::Scalar> scalar)
+//  : BlazingScalar(ral::execution::backend_id::ARROW), scalar(scalar) {
+//}
 
-std::shared_ptr<arrow::Scalar> BlazingArrowScalar::value() const {
-  return this->scalar;
-}
+//std::shared_ptr<arrow::Scalar> BlazingArrowScalar::value() const {
+//  return this->scalar;
+//}
 
-// END BlazingArrowScalar
+//// END BlazingArrowScalar
 
-// BEGIN BlazingArrowScalar
-BlazingCudfScalar::BlazingCudfScalar(std::unique_ptr<cudf::scalar> scalar)
-  : BlazingScalar(ral::execution::backend_id::CUDF) {
-}
+//// BEGIN BlazingArrowScalar
+//BlazingCudfScalar::BlazingCudfScalar(std::unique_ptr<cudf::scalar> scalar)
+//  : BlazingScalar(ral::execution::backend_id::CUDF) {
+//}
 
 //std::unique_ptr<cudf::scalar> BlazingCudfScalar::value() const {
   //return this->scalar;

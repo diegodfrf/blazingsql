@@ -27,12 +27,9 @@ Schema::Schema(std::vector<std::string> names,
 	std::vector<std::vector<int>> row_groups_ids)
 	: names(names), calcite_to_file_indices(calcite_to_file_indices), types(types),
 	  in_file(in_file), row_groups_ids{row_groups_ids} {
-  std::cout << "Schema::Schema CTORRRR 2 --> 1\n";
 	if(in_file.size() != names.size()) {
-    std::cout << "Schema::Schema CTORRRR 2 --> 2\n";
 		this->in_file.resize(names.size(), true);
 	}
-  std::cout << "Schema::Schema CTORRRR 2 --> 3 ... salida\n";
 }
 
 Schema::Schema(std::vector<std::string> names, std::vector<cudf::type_id> types)

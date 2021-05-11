@@ -137,40 +137,40 @@ private:
 };
 
 // TODO percy arrow cudf scalar
-class BlazingScalar: public execution::BlazingDispatchable {
-public:
-  BlazingScalar(execution::backend_id execution_backend_id);
-  BlazingScalar(BlazingScalar &&) = default;
-  virtual ~BlazingScalar() = default;
+//class BlazingScalar: public execution::BlazingDispatchable {
+//public:
+//  BlazingScalar(execution::backend_id execution_backend_id);
+//  BlazingScalar(BlazingScalar &&) = default;
+//  virtual ~BlazingScalar() = default;
 
-  virtual cudf::data_type type() const = 0;
-};
+//  virtual cudf::data_type type() const = 0;
+//};
 
-class BlazingArrowScalar: public BlazingScalar {
-public:
-  BlazingArrowScalar(std::shared_ptr<arrow::Scalar> scalar);
-  BlazingArrowScalar(BlazingArrowScalar &&) = default;
-  virtual ~BlazingArrowScalar() = default;
+//class BlazingArrowScalar: public BlazingScalar {
+//public:
+//  BlazingArrowScalar(std::shared_ptr<arrow::Scalar> scalar);
+//  BlazingArrowScalar(BlazingArrowScalar &&) = default;
+//  virtual ~BlazingArrowScalar() = default;
 
-  cudf::data_type type() const override;
-  std::shared_ptr<arrow::Scalar> value() const;
+//  cudf::data_type type() const override;
+//  std::shared_ptr<arrow::Scalar> value() const;
 
-private:
-  std::shared_ptr<arrow::Scalar> scalar;
-};
+//private:
+//  std::shared_ptr<arrow::Scalar> scalar;
+//};
 
-class BlazingCudfScalar: public BlazingScalar {
-public:
-  BlazingCudfScalar(std::unique_ptr<cudf::scalar> scalar);
-  BlazingCudfScalar(BlazingCudfScalar &&) = default;
-  virtual ~BlazingCudfScalar() = default;
+//class BlazingCudfScalar: public BlazingScalar {
+//public:
+//  BlazingCudfScalar(std::unique_ptr<cudf::scalar> scalar);
+//  BlazingCudfScalar(BlazingCudfScalar &&) = default;
+//  virtual ~BlazingCudfScalar() = default;
 
-  cudf::data_type type() const override;
-  //std::unique_ptr<cudf::scalar> value() const;
+//  cudf::data_type type() const override;
+//  //std::unique_ptr<cudf::scalar> value() const;
 
-private:
-  //std::unique_ptr<cudf::scalar> scalar;
-};
+//private:
+//  //std::unique_ptr<cudf::scalar> scalar;
+//};
 
 std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<cudf::data_type> column_types,
 									   std::vector<std::string> column_names);

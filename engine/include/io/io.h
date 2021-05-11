@@ -46,7 +46,7 @@ struct TableSchema {
 	TableSchema & operator=(TableSchema const &other) = default;
 	TableSchema & operator=(TableSchema &&) = default;
 
-	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> blazingTableViews;
+	std::vector<std::shared_ptr<ral::frame::BlazingCudfTableView>> blazingTableViews;
 	std::vector<cudf::type_id> types;
 	std::vector<std::string> files;
 	std::vector<std::string> datasource;
