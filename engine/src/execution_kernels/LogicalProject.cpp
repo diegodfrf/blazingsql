@@ -972,7 +972,7 @@ struct process_project_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingArrowTableView>(
+std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     const std::vector<std::string> & expressions,
     const std::vector<std::string> & out_column_names) const
@@ -981,7 +981,7 @@ std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ra
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingCudfTableView>(
+std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingCudfTable>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view,
   const std::vector<std::string> & expressions,
   const std::vector<std::string> & out_column_names) const
@@ -990,7 +990,7 @@ std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ra
   
   std::unique_ptr<ral::frame::BlazingTable> evaluated_table = ral::execution::backend_dispatcher(
     table_view->get_execution_backend(),
-    evaluate_expressions_functor(),
+    evaluate_expressions_wo_filter_functor(),
     table_view, expressions);
   
   auto evaluated_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(evaluated_table.get());
@@ -1003,7 +1003,6 @@ std::unique_ptr<ral::frame::BlazingTable> process_project(
   std::unique_ptr<ral::frame::BlazingTable> blazing_table_in,
   const std::string & query_part,
   blazingdb::manager::Context * context) {
-
     std::string combined_expression = get_query_part(query_part);
 
     std::vector<std::string> named_expressions = get_expressions_from_expression_list(combined_expression);
