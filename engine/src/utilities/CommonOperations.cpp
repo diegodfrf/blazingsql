@@ -227,8 +227,11 @@ std::unique_ptr<ral::frame::BlazingTable> concatTables(const std::vector<std::sh
     }
   }
   
-  return ral::execution::backend_dispatcher(common_backend, concat_functor(),
+  std::cout<<"concatTables before dispatcher"<<std::endl;
+  auto out = ral::execution::backend_dispatcher(common_backend, concat_functor(),
       table_views_to_concat, empty_count, names);
+	  std::cout<<"concatTables after dispatcher"<<std::endl;
+	  return out;
 }
 
 std::unique_ptr<BlazingTable> getLimitedRows(std::shared_ptr<BlazingTableView> table, cudf::size_type num_rows, bool front){

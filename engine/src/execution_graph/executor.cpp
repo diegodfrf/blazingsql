@@ -1,5 +1,6 @@
 #include "executor.h"
 #include "cache_machine/GPUCacheData.h"
+#include "cache_machine/CacheDataIO.h"
 
 using namespace fmt::literals;
 
@@ -89,12 +90,27 @@ void task::run(cudaStream_t stream, executor * executor){
             last_input_decached++;
 
             // WSM TODO this execution paradigm needs to be made more intelligent
+            std::cout<<"task::run"<<std::endl;
             if (input->get_type() == ral::cache::CacheDataType::ARROW){
+                std::cout<<"task::run arrow"<<std::endl;
                 input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::ARROW))));
+            } else if (input->get_type() == ral::cache::CacheDataType::GPU) {
+                std::cout<<"task::run gpu"<<std::endl;
+                input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
+            } else if (input->get_type() == ral::cache::CacheDataType::IO_FILE){
+                std::cout<<"task::run io"<<std::endl;
+                ral::cache::CacheDataIO* cache_data_io_ptr = dynamic_cast<ral::cache::CacheDataIO*>(input.get());
+                if (cache_data_io_ptr->GetParserType() == ral::io::ARROW){
+                    std::cout<<"task::run io arrow"<<std::endl;
+                    input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::ARROW))));
+                } else {
+                    std::cout<<"task::run io else"<<std::endl;
+                    input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
+                }
             } else {
+                std::cout<<"task::run else"<<std::endl;
                 input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
             }
-                    
         }
     }catch(const rmm::bad_alloc& e){
         int i = 0;

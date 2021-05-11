@@ -52,6 +52,12 @@ public:
 	void set_names(const std::vector<std::string> & names) override;
 
 	/**
+	 * Returns the data type of the parser
+	 * @return the DataType of the parser
+	 */
+	ral::io::DataType GetParserType();
+
+	/**
 	* Destructor
 	*/
 	virtual ~CacheDataIO() {}

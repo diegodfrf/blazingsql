@@ -51,9 +51,8 @@ std::unique_ptr<ral::frame::BlazingTable> arrow_parser::parse_batch(
   auto new_schema = std::make_shared<arrow::Schema>(fields, data_handle.arrow_table->schema()->metadata());
 	auto aa = std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(new_schema, cols, data_handle.arrow_table->num_rows()));
 
-  // std::cout << "QQQQQQQQQQQQQQQQQQ????????????\n";
-  // std::cout << "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n\n" << aa->arrow_table()->ToString() << "\n\n\n FFGGGGGGG" << std::flush;
-
+  std::cout << "QQQQQQQQQQQQQQQQQQ????????????\n";
+  
   return aa;
 }
 

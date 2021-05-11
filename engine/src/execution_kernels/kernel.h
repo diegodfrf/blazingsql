@@ -223,12 +223,13 @@ public:
 	 */
 	virtual std::string kernel_name() { return "base_kernel"; }
 
-	/**
-	 * @brief given an execution backend, it returns true or false if the do_process function has been implemented for that execution backend
-	 * @param backend the execution backend
-	 * @returns returns true if the do_process function has been implemented for that execution backend or false otherwise
-	 */
-	virtual bool has_execution_backend(execution::execution_backend backend);
+// WSM TODO, need to add this to all kernels
+	// /**
+	//  * @brief given an execution backend, it returns true or false if the do_process function has been implemented for that execution backend
+	//  * @param backend the execution backend
+	//  * @returns returns true if the do_process function has been implemented for that execution backend or false otherwise
+	//  */
+	// virtual bool has_execution_backend(execution::execution_backend backend);
 
 	/**
 	* @brief notify the kernel that a task it dispatched was completed successfully.

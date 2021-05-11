@@ -35,7 +35,10 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatCacheData::decache(execution::ex
 		RAL_EXPECTS(!ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views), "Concatenating tables will overflow");
 	}
 
-	return ral::utilities::concatTables(table_views);
+	std::cout<<"ConcatCacheData::decache concatTables "<<std::endl;
+	std::unique_ptr<ral::frame::BlazingTable> temp_out =  ral::utilities::concatTables(table_views);
+	std::cout<<"ConcatCacheData::decache concatTables success"<<std::endl;
+	return temp_out;
 }
 
 size_t ConcatCacheData::size_in_bytes() const {

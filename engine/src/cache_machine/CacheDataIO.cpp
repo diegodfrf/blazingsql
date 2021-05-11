@@ -23,7 +23,9 @@ size_t CacheDataIO::size_in_bytes() const{
 }
 
 std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execution_backend backend){
+	std::cout<<"CacheDataIO::decache"<<std::endl;
 	if (backend.id() == ral::execution::backend_id::CUDF) {
+		std::cout<<"CacheDataIO::decache CUDF"<<std::endl;
 		if (schema.all_in_file()){
 			std::unique_ptr<ral::frame::BlazingTable> loaded_table = parser->parse_batch(handle, file_schema, projections, row_group_ids);
 			return loaded_table;
@@ -72,12 +74,23 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execut
 			return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), names);
 		}
 	} else {
+		std::cout<<"CacheDataIO::decache not CUDF"<<std::endl;
 		// WSM TODO need to implement this
+		if (this->parser->type() == io::DataType::ARROW){
+			std::cout<<"CacheDataIO::decache not CUDF arrow parser"<<std::endl;
+			std::unique_ptr<ral::frame::BlazingTable> loaded_table = parser->parse_batch(handle, file_schema, projections, row_group_ids);
+			std::cout<<"CacheDataIO::decache not CUDF arrow parser done"<<std::endl;
+			return loaded_table;
+		}
 	}
 }
 
 void CacheDataIO::set_names(const std::vector<std::string> & names) {
 	this->schema.set_names(names);
+}
+
+ral::io::DataType CacheDataIO::GetParserType() {
+	return this->parser->type();
 }
 
 
