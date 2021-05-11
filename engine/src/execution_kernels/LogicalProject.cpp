@@ -972,16 +972,19 @@ struct process_project_functor {
 };
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingArrowTableView>(
+std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     const std::vector<std::string> & expressions,
     const std::vector<std::string> & out_column_names) const
 {
-  return nullptr;
+  return ral::execution::backend_dispatcher(
+    table_view->get_execution_backend(),
+    evaluate_expressions_functor(),
+    table_view, expressions);
 }
 
 template <>
-std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingCudfTableView>(
+std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingCudfTable>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view,
   const std::vector<std::string> & expressions,
   const std::vector<std::string> & out_column_names) const
