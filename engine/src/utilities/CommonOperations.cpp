@@ -22,6 +22,22 @@ namespace ral {
 namespace cpu {
 namespace utilities {
 
+std::shared_ptr<arrow::Schema> build_arrow_schema(
+    const std::vector<std::shared_ptr<arrow::ChunkedArray>> &columns,
+    const std::vector<std::string> &column_names,
+    std::shared_ptr<const arrow::KeyValueMetadata> metadata)
+{
+  assert(columns.size() == column_names.size());
+  std::vector<std::shared_ptr<arrow::Field>> fields;
+  fields.resize(columns.size());
+  for (int i = 0; i < columns.size(); ++i) {
+    fields[i] = arrow::field(
+                  column_names[i],
+                  columns[i]->type());
+  }
+  return arrow::schema(fields, metadata);
+}
+
 std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<arrow::Table> table, cudf::size_type num_rows, bool front){
 	if (num_rows == 0) {
 		return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns(), 0));

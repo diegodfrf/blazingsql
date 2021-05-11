@@ -135,7 +135,11 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 
   std::shared_ptr<arrow::Table> table = table_view->view();
 
-  std::cout<<"compute_aggregations_without_groupby arrow got arrow table"<<std::endl;
+  std::cout << "AFFFFFFFFFFFFFFFFFFFFFFTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n\n" << table->ToString() << "\n\n";
+  for (auto a : aggregation_input_expressions) {
+    std::cout << a << "  \n";
+  }
+   std::cout << "el fin en agg esto .... !\n\n";
 
  	std::vector<std::shared_ptr<arrow::Scalar>> reductions;
  	std::vector<std::string> agg_output_column_names;
@@ -207,8 +211,15 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		output_columns.emplace_back(std::make_shared<arrow::ChunkedArray>(temp));
          std::cout<<"compute_aggregations_without_groupby 14 "<<i<<std::endl;
  	}
-     std::cout<<"compute_aggregations_without_groupby arrow end"<<std::endl;
-    return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), output_columns));
+  
+  auto new_schema = ral::cpu::utilities::build_arrow_schema(
+        output_columns,
+        agg_output_column_names,
+        table->schema()->metadata());
+  
+  auto tt = arrow::Table::Make(new_schema, output_columns);
+  std::cout << "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n\n\n" << tt->ToString() << "\n\n";
+  return std::make_unique<ral::frame::BlazingArrowTable>(tt);
 }
 
 } // namespace cpu
@@ -316,8 +327,7 @@ std::unique_ptr<ral::frame::BlazingTable> aggregations_with_groupby_functor::ope
     std::vector<std::string> aggregation_column_assigned_aliases,
     std::vector<int> group_column_indices) const
 {
-  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
-  return ral::cpu::compute_aggregations_without_groupby(arrow_table_view, aggregation_input_expressions, aggregation_types, aggregation_column_assigned_aliases);
+  return nullptr;
 }
 
 template <>
@@ -378,6 +388,8 @@ kstatus ComputeAggregateKernel::run() {
 
     std::unique_ptr <ral::cache::CacheData> cache_data = this->input_cache()->pullCacheData();
     RAL_EXPECTS(cache_data != nullptr, "In ComputeAggregateKernel: The input cache data cannot be null");
+
+    std::cout << "parseGroupByExpression input:\n\n" << this->expression << "\n\n";
 
     // in case UNION exists, we want to know the num of columns
     std::tie(this->group_column_indices, this->aggregation_input_expressions, this->aggregation_types,

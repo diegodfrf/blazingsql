@@ -19,6 +19,11 @@
 namespace ral {
 namespace cpu {
 namespace utilities {
+  std::shared_ptr<arrow::Schema> build_arrow_schema(
+    const std::vector<std::shared_ptr<arrow::ChunkedArray>> &columns,
+    const std::vector<std::string> &column_names,
+    std::shared_ptr<const arrow::KeyValueMetadata> metadata = NULLPTR);
+
 	std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<arrow::Table> table, cudf::size_type num_rows, bool front=true);
   template<typename CPPType, typename ArrowScalarType>
   std::unique_ptr<cudf::scalar> to_cudf_numeric_scalar(cudf::data_type cudf_dtype, std::shared_ptr<arrow::Scalar> arrow_scalar);
