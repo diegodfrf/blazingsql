@@ -19,12 +19,17 @@ inline std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
   //  table.view(),boolValues);
   //return std::make_unique<ral::frame::BlazingTable>(std::move(
   //  filteredTable),table.column_names());
+  // TODO percy arrow
+  return std::make_unique<ral::frame::BlazingArrowTable>(table);
 }
 
 inline std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluate_expressions(
     std::shared_ptr<arrow::Table> table,
     const std::vector<std::string> & expressions) {
   std::cout << "FILTERRRRRRRRRRRRRRRRRR ARROWWWWWWWWWWWWWWWWWWWWWWWWWWWWW!!!!!!!\n";
+  
+  // TODO percy arrow
+  return table->columns();
 }
 
 } // namespace cpu
@@ -111,7 +116,12 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::o
   // TODO percy arrow
   //RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression does not evaluate to a boolean mask");
 
-  return ral::cpu::applyBooleanFilter(table_view_ptr->view(), evaluated_table[0]);
+  //return ral::cpu::applyBooleanFilter(table_view_ptr->view(), evaluated_table[0]);
+  // TODO percy arrow
+  
+  std::cout << "ANTTTTTTTTTTTTTTTTTTTTTTTTTT\n\n\n" << table_view_ptr->view()->ToString() << "\n\n";
+  
+  return std::make_unique<ral::frame::BlazingArrowTable>(table_view_ptr->view());
 }
 
 template <>
