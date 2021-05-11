@@ -304,12 +304,9 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
     CodeTimer cacheEventTimer;
     cacheEventTimer.start();
 
-    std::cout<<"CacheMachine::addToCache start"<<std::endl;
-
     // we dont want to add empty tables to a cache, unless we have never added anything
 	if (!this->something_added || table->num_rows() > 0 || always_add){
 		if (table->get_execution_backend().id() == ral::execution::backend_id::CUDF ){
-            std::cout<<"CacheMachine::addToCache cudf backend?"<<std::endl;
             ral::frame::BlazingCudfTable *cudf_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
             for (auto col_ind = 0; col_ind < table->num_columns(); col_ind++){
                 
@@ -329,8 +326,7 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 		num_bytes_added += table->size_in_bytes();
 		size_t cacheIndex = table->get_execution_backend().id() == ral::execution::backend_id::CUDF ? 0 : 1;
 		while(cacheIndex < memory_resources.size()) {
-            std::cout<<"CacheMachine::addToCache while srtat"<<std::endl;
-
+   
 			auto memory_to_use = (this->memory_resources[cacheIndex]->get_memory_used() + table->size_in_bytes());
 
 			if( memory_to_use < this->memory_resources[cacheIndex]->get_memory_limit() || 
@@ -340,7 +336,6 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 					cacheIndex = cache_level_override;
 				}
 				if(cacheIndex == 0 && table->get_execution_backend().id() == ral::execution::backend_id::CUDF) {
-                    std::cout<<"CacheMachine::addToCache while cudf??"<<std::endl;
 					
                     std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
                     // before we put into a cache, we need to make sure we fully own the table
@@ -370,10 +365,8 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
                         // WSM TODO. Here we need to decide if we always want to put into a CPUCacheData or not
                         // I think we want to put it into an ArrowCacheData and only convert to CPUCacheDAta if we are actually going to do this for comms
                         if (table->get_execution_backend().id() == ral::execution::backend_id::CUDF){
-                            std::cout<<"CacheMachine::addToCache while CPU??"<<std::endl;
                             cache_data = std::make_unique<CPUCacheData>(std::move(table), metadata, use_pinned);
                         } else {
-                            std::cout<<"CacheMachine::addToCache while cacheIndex==1 ARROW"<<std::endl;
                             std::unique_ptr<ral::frame::BlazingArrowTable> arrow_table(dynamic_cast<ral::frame::BlazingArrowTable*>(table.release()));
                             cache_data = std::make_unique<ArrowCacheData>(std::move(arrow_table), metadata);
                         }
@@ -868,9 +861,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
                                           "description"_a="In ConcatenatingCacheMachine::pullFromCache Concatenating will overflow strings length");
             }
 		}
-        std::cout<<"ConcatenatingCacheMachine::pullFromCache concatTables "<<std::endl;
         output = ral::utilities::concatTables(table_views);
-        std::cout<<"ConcatenatingCacheMachine::pullFromCache concatTables success"<<std::endl;
 	
 		num_rows = output->num_rows();
 	}

@@ -131,64 +131,46 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		const std::vector<AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases)
 {
   using namespace ral::operators;
-  std::cout<<"compute_aggregations_without_groupby arrow start"<<std::endl;
-
-  std::shared_ptr<arrow::Table> table = table_view->view();
-
-  std::cout << "AFFFFFFFFFFFFFFFFFFFFFFTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n\n" << table->ToString() << "\n\n";
-  for (auto a : aggregation_input_expressions) {
-    std::cout << a << "  \n";
-  }
-   std::cout << "el fin en agg esto .... !\n\n";
+  
+    std::shared_ptr<arrow::Table> table = table_view->view();
 
  	std::vector<std::shared_ptr<arrow::Scalar>> reductions;
  	std::vector<std::string> agg_output_column_names;
  	for (size_t i = 0; i < aggregation_types.size(); i++){
-         std::cout<<"compute_aggregations_without_groupby 0"<<std::endl;
  		if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
-         std::cout<<"compute_aggregations_without_groupby 1"<<std::endl;
-      std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(table->num_rows());
+            std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(table->num_rows());
  			reductions.emplace_back(std::move(scalar));
  		} else {
-             std::cout<<"compute_aggregations_without_groupby 2"<<std::endl;
  			std::vector<std::unique_ptr<ral::frame::BlazingColumn>> aggregation_input_scope_holder;
-       std::shared_ptr<arrow::ChunkedArray> aggregation_input;
+            std::shared_ptr<arrow::ChunkedArray> aggregation_input;
  			if(is_var_column(aggregation_input_expressions[i]) || is_number(aggregation_input_expressions[i])) {
-                 std::cout<<"compute_aggregations_without_groupby 3  "<<aggregation_input_expressions[i]<<"  "<<get_index(aggregation_input_expressions[i])<<"  "<<table->num_columns()<<std::endl;
  				aggregation_input = table->column(get_index(aggregation_input_expressions[i]));
 
-                 std::cout<<"compute_aggregations_without_groupby 3 end"<<std::endl;
  			} else {
-                 std::cout<<"compute_aggregations_without_groupby 4"<<std::endl;
          //TODO percy rommel arrow
  				//aggregation_input_scope_holder = ral::processor::evaluate_expressions(table.view(), {aggregation_input_expressions[i]});
  				//aggregation_input = aggregation_input_scope_holder[0]->view();
  			}
 
  			if( aggregation_types[i] == AggregateKind::COUNT_VALID) {
-                 std::cout<<"compute_aggregations_without_groupby 5"<<std::endl;
- 				std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(aggregation_input->length() - aggregation_input->null_count());
+                std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(aggregation_input->length() - aggregation_input->null_count());
  				reductions.emplace_back(std::move(scalar));
  			} else {
-                 std::cout<<"compute_aggregations_without_groupby 6"<<std::endl;
- 				std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation(aggregation_types[i]);
-         cudf::type_id theinput_type = cudf::detail::arrow_to_cudf_type(*aggregation_input->type()).id();
+                std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation(aggregation_types[i]);
+                cudf::type_id theinput_type = cudf::detail::arrow_to_cudf_type(*aggregation_input->type()).id();
  				cudf::type_id output_type = get_aggregation_output_type(theinput_type, aggregation_types[i], false);
 
  				std::shared_ptr<arrow::Scalar> reduction_out = arrow_reduce(aggregation_input, agg, cudf::data_type(output_type));
 
  				if (aggregation_types[i] == AggregateKind::SUM0 && !reduction_out->is_valid){ // if this aggregation was a SUM0, and it was not valid, we want it to be a valid 0 instead
-                 std::cout<<"compute_aggregations_without_groupby 7"<<std::endl;
-          auto dt = cudf::detail::arrow_to_cudf_type(*reduction_out->type);
+                    auto dt = cudf::detail::arrow_to_cudf_type(*reduction_out->type);
  					std::shared_ptr<arrow::Int64Scalar> zero_scalar = std::make_shared<arrow::Int64Scalar>(0);
  					reductions.emplace_back(std::move(zero_scalar));
  				} else {
-                     std::cout<<"compute_aggregations_without_groupby 8"<<std::endl;
  					reductions.emplace_back(std::move(reduction_out));
  				}
  			}
  		}
-    std::cout<<"compute_aggregations_without_groupby 9"<<std::endl;
  		// if the aggregation was given an alias lets use it, otherwise we'll name it based on the aggregation and input
  		if(aggregation_column_assigned_aliases[i] == "") {
  			if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
@@ -199,17 +181,12 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		} else {
  			agg_output_column_names.push_back(aggregation_column_assigned_aliases[i]);
  		}
-         std::cout<<"compute_aggregations_without_groupby 10"<<std::endl;
  	}
-     std::cout<<"compute_aggregations_without_groupby 11"<<std::endl;
  	// convert scalars into columns
  	std::vector<std::shared_ptr<arrow::ChunkedArray>> output_columns;
  	for (size_t i = 0; i < reductions.size(); i++){
-         std::cout<<"compute_aggregations_without_groupby 12 "<<i<<std::endl;
  		std::shared_ptr<arrow::Array> temp = arrow::MakeArrayFromScalar((*reductions[i].get()), 1).ValueOrDie();
-         std::cout<<"compute_aggregations_without_groupby 13 "<<i<<std::endl;
  		output_columns.emplace_back(std::make_shared<arrow::ChunkedArray>(temp));
-         std::cout<<"compute_aggregations_without_groupby 14 "<<i<<std::endl;
  	}
   
   auto new_schema = ral::cpu::utilities::build_arrow_schema(
@@ -218,7 +195,6 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
         table->schema()->metadata());
   
   auto tt = arrow::Table::Make(new_schema, output_columns);
-  std::cout << "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n\n\n" << tt->ToString() << "\n\n";
   return std::make_unique<ral::frame::BlazingArrowTable>(tt);
 }
 
@@ -288,7 +264,6 @@ std::unique_ptr<ral::frame::BlazingTable> aggregations_without_groupby_functor::
     std::vector<AggregateKind> aggregation_types,
     std::vector<std::string> aggregation_column_assigned_aliases) const
 {
-    std::cout<<"aggregations_without_groupby_functor arrow"<<std::endl;
   auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
   return ral::cpu::compute_aggregations_without_groupby(arrow_table_view, aggregation_input_expressions, aggregation_types, aggregation_column_assigned_aliases);
 }
@@ -300,7 +275,6 @@ std::unique_ptr<ral::frame::BlazingTable> aggregations_without_groupby_functor::
     std::vector<AggregateKind> aggregation_types,
     std::vector<std::string> aggregation_column_assigned_aliases) const
 {
-    std::cout<<"aggregations_without_groupby_functor cudf"<<std::endl;
   auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
   return ral::operators::compute_aggregations_without_groupby(cudf_table_view, aggregation_input_expressions, aggregation_types, aggregation_column_assigned_aliases);
 }
@@ -373,7 +347,6 @@ ral::execution::task_result ComputeAggregateKernel::do_process(std::vector< std:
                         aggregation_column_assigned_aliases,
                         group_column_indices);
         }
-        std::cout<<"ComputeAggregateKernel::do_process output num_columns "<<columns->num_columns()<<std::endl;
         output->addToCache(std::move(columns));
     }catch(const rmm::bad_alloc& e){
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
@@ -389,24 +362,9 @@ kstatus ComputeAggregateKernel::run() {
     std::unique_ptr <ral::cache::CacheData> cache_data = this->input_cache()->pullCacheData();
     RAL_EXPECTS(cache_data != nullptr, "In ComputeAggregateKernel: The input cache data cannot be null");
 
-    std::cout << "parseGroupByExpression input:\n\n" << this->expression << "\n\n";
-
     // in case UNION exists, we want to know the num of columns
     std::tie(this->group_column_indices, this->aggregation_input_expressions, this->aggregation_types,
         aggregation_column_assigned_aliases) = ral::operators::parseGroupByExpression(this->expression, cache_data->num_columns());
-    std::cout<<"ComputeAggregateKernel::run() "<<this->expression<<std::endl;
-    for (int i = 0; i < this->aggregation_input_expressions.size(); ++i){
-        std::cout<<this->aggregation_input_expressions[i]<<std::endl;
-    }
-    std::cout<<"ComputeAggregateKernel::run() aggregation_input_expressions parsed"<<this->expression<<std::endl;
-    for (int i = 0; i < this->group_column_indices.size(); ++i){
-        std::cout<<this->group_column_indices[i]<<std::endl;
-    }
-    std::cout<<"ComputeAggregateKernel::run() group_column_indices parsed"<<this->expression<<std::endl;
-    for (int i = 0; i < this->aggregation_types.size(); ++i){
-        std::cout<<this->aggregation_types[i]<<std::endl;
-    }
-    std::cout<<"ComputeAggregateKernel::run() parsed"<<this->expression<<std::endl;
 
     while(cache_data != nullptr ){
         std::vector<std::unique_ptr <ral::cache::CacheData> > inputs;
@@ -652,8 +610,6 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
     try{
 
-        std::cout<<"MergeAggregateKernel::do_process() input num_columns "<<inputs[0]->num_columns()<<std::endl;
-        
         std::vector<std::shared_ptr<ral::frame::BlazingTableView>> tableViewsToConcat;
         for (std::size_t i = 0; i < inputs.size(); i++){
             tableViewsToConcat.emplace_back(inputs[i]->to_table_view());
@@ -669,11 +625,7 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
                                 "info"_a="In MergeAggregateKernel::run Concatenating Strings will overflow strings length");
             }
         }
-        std::cout<<"MergeAggregateKernel::do_process before concat"<<std::endl;
         auto concatenated = ral::utilities::concatTables(tableViewsToConcat);
-        std::cout<<"MergeAggregateKernel::do_process after concat"<<std::endl;
-
-        std::cout<<"MergeAggregateKernel::do_process() after concat input num_columns "<<concatenated->num_columns()<<std::endl;
 
         auto log_input_num_rows = concatenated ? concatenated->num_rows() : 0;
         auto log_input_num_bytes = concatenated ? concatenated->size_in_bytes() : 0;
@@ -749,8 +701,6 @@ kstatus MergeAggregateKernel::run() {
 
         while(this->input_cache()->wait_for_next()){
             std::unique_ptr <ral::cache::CacheData> cache_data = this->input_cache()->pullCacheData();
-
-            std::cout<<"MergeAggregateKernel::run() input num_columns "<<cache_data->num_columns()<<std::endl;
 
             if(cache_data != nullptr){
                 inputs.push_back(std::move(cache_data));

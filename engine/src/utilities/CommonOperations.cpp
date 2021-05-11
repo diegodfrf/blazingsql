@@ -243,10 +243,8 @@ std::unique_ptr<ral::frame::BlazingTable> concatTables(const std::vector<std::sh
     }
   }
   
-  std::cout<<"concatTables before dispatcher"<<std::endl;
   auto out = ral::execution::backend_dispatcher(common_backend, concat_functor(),
       table_views_to_concat, empty_count, names);
-	  std::cout<<"concatTables after dispatcher"<<std::endl;
 	  return out;
 }
 

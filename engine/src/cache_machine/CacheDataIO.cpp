@@ -23,9 +23,7 @@ size_t CacheDataIO::size_in_bytes() const{
 }
 
 std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execution_backend backend){
-	std::cout<<"CacheDataIO::decache"<<std::endl;
 	if (backend.id() == ral::execution::backend_id::CUDF) {
-		std::cout<<"CacheDataIO::decache CUDF"<<std::endl;
 		if (schema.all_in_file()){
 			std::unique_ptr<ral::frame::BlazingTable> loaded_table = parser->parse_batch(handle, file_schema, projections, row_group_ids);
 			return loaded_table;
@@ -43,7 +41,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execut
 			cudf::size_type num_rows;
 			if (column_indices_in_file.size() > 0){
 				std::unique_ptr<ral::frame::BlazingTable> current_blazing_table = parser->parse_batch(handle, file_schema, column_indices_in_file, row_group_ids);
-		ral::frame::BlazingCudfTable* current_blazing_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(current_blazing_table.get());
+				ral::frame::BlazingCudfTable* current_blazing_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(current_blazing_table.get());
 				names = current_blazing_table->column_names();
 				std::unique_ptr<cudf::table> current_table = current_blazing_table_ptr->releaseCudfTable();
 				num_rows = current_table->num_rows();
@@ -74,12 +72,9 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execut
 			return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), names);
 		}
 	} else {
-		std::cout<<"CacheDataIO::decache not CUDF"<<std::endl;
 		// WSM TODO need to implement this
 		if (this->parser->type() == io::DataType::ARROW){
-			std::cout<<"CacheDataIO::decache not CUDF arrow parser"<<std::endl;
 			std::unique_ptr<ral::frame::BlazingTable> loaded_table = parser->parse_batch(handle, file_schema, projections, row_group_ids);
-			std::cout<<"CacheDataIO::decache not CUDF arrow parser done"<<std::endl;
 			return loaded_table;
 		}
 	}

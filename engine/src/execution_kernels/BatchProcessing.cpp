@@ -278,16 +278,12 @@ ral::execution::task_result BindableTableScan::do_process(std::vector< std::uniq
     auto & input = inputs[0];
     std::unique_ptr<ral::frame::BlazingTable> filtered_input;
 
-    std::cout<<"BindableTableScan::do_process() "<<std::endl;
-      
     try{
         if(this->filterable && !this->predicate_pushdown_done) {
-            std::cout<<"BindableTableScan::do_process() filterable"<<std::endl;
             filtered_input = ral::processor::process_filter(input->to_table_view(), expression, this->context.get());
             filtered_input->set_column_names(fix_column_aliases(filtered_input->column_names(), expression));
             output->addToCache(std::move(filtered_input));
         } else {
-            std::cout<<"BindableTableScan::do_process() not filterable"<<std::endl;
             input->set_column_names(fix_column_aliases(input->column_names(), expression));
             output->addToCache(std::move(input));
         }
@@ -322,9 +318,7 @@ kstatus BindableTableScan::run() {
             auto row_group_ids = schema.get_rowgroup_ids(file_index);
             //this is the part where we make the task now
 
-            std::cout<<"BindableTableScan::run() std::unique_ptr<ral::cache::CacheData> input = std::make_unique<ral::cache::CacheDataIO>"<<std::endl;
             std::unique_ptr<ral::cache::CacheData> input = std::make_unique<ral::cache::CacheDataIO>(handle, parser, schema, file_schema, row_group_ids, projections);
-            std::cout<<"BindableTableScan::run() std::unique_ptr<ral::cache::CacheData> input = std::make_unique<ral::cache::CacheDataIO> done"<<std::endl;
             
             std::vector<std::unique_ptr<ral::cache::CacheData>> inputs;
             inputs.push_back(std::move(input));

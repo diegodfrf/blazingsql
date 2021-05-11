@@ -15,7 +15,6 @@ std::unique_ptr<ral::frame::BlazingTable> arrow_parser::parse_batch(
 		std::vector<int> column_indices,
 		std::vector<cudf::size_type> /*row_groups*/)
 {
-  std::cout << "ES NULLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\n";
   if(schema.get_num_columns() == 0) {
 		return nullptr;
 	}
@@ -33,14 +32,10 @@ std::unique_ptr<ral::frame::BlazingTable> arrow_parser::parse_batch(
     }
   }
 
-  std::cout << "SAMEEEEEEEEEEEEEEEEEEEE????\n" << is_the_same << "\n";
-
   if (is_the_same) {
     return std::make_unique<ral::frame::BlazingArrowTable>(data_handle.arrow_table);
   }
 
-  std::cout << "NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n";
-  
   std::vector<std::shared_ptr<arrow::ChunkedArray>> cols;
   std::vector<std::shared_ptr<arrow::Field>> fields;
   for (auto c : column_indices) {
@@ -50,8 +45,6 @@ std::unique_ptr<ral::frame::BlazingTable> arrow_parser::parse_batch(
 
   auto new_schema = std::make_shared<arrow::Schema>(fields, data_handle.arrow_table->schema()->metadata());
 	auto aa = std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(new_schema, cols, data_handle.arrow_table->num_rows()));
-
-  std::cout << "QQQQQQQQQQQQQQQQQQ????????????\n";
   
   return aa;
 }

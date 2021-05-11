@@ -65,9 +65,6 @@ public:
   BlazingArrowTable(std::shared_ptr<arrow::Table> arrow_table);
   BlazingArrowTable(std::unique_ptr<BlazingCudfTable> blazing_cudf_table);
   BlazingArrowTable(BlazingArrowTable &&other) = default;
-  ~BlazingArrowTable(){
-    std::cout<<"BlazingArrowTable destroy"<<std::endl;
-  }
 
   size_t num_columns() const override { return BlazingArrowTableView::num_columns(); }
   size_t num_rows() const override { return BlazingArrowTableView::num_rows(); }
