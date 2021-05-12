@@ -232,22 +232,16 @@ BlazingCudfTable::BlazingCudfTable(std::unique_ptr<cudf::table> table, const std
 BlazingCudfTable::BlazingCudfTable(const cudf::table_view & table, const std::vector<std::string> & columnNames)
   : BlazingTable(execution::backend_id::CUDF, true)
 {
-  std::cout << "BlazingCudfTable::BlazingCudfTable BEGIN\n";
-  std::cout << "BlazingCudfTable::BlazingCudfTable: " << table.num_rows() << "  -  " << table.num_columns() << "\n";
 	for (int i = 0; i < table.num_columns(); i++){
 		columns.emplace_back(std::make_unique<BlazingColumnView>(table.column(i)));
 	}
 	this->columnNames = columnNames;
-  std::cout << "BlazingCudfTable::BlazingCudfTable END\n";
 }
 
 void BlazingCudfTable::ensureOwnership(){
-  std::cout << "BlazingCudfTable::ensureOwnership BEGIN\n";
 	for (size_t i = 0; i < columns.size(); i++){
-    std::cout << "BlazingCudfTable::ensureOwnership: " << i << "\n";
 		columns[i] = std::make_unique<BlazingColumnOwner>(columns[i]->release());
 	}
-  std::cout << "BlazingCudfTable::ensureOwnership END\n";
 }
 
 size_t BlazingCudfTable::num_columns() const {
