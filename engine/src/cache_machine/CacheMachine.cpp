@@ -4,6 +4,7 @@
 #include "ArrowCacheData.h"
 #include "ConcatCacheData.h"
 #include "CacheDataLocalFile.h"
+#include "execution_graph/backend_dispatcher.h"
 
 #include <sys/stat.h>
 #include <random>
@@ -19,6 +20,27 @@
 
 namespace ral {
 namespace cache {
+
+
+struct make_cachedata_functor {
+	template <typename T>
+	std::unique_ptr<CacheData> operator()(std::unique_ptr<ral::frame::BlazingTable> table){
+		// TODO percy arrow thrown error
+    	return nullptr;
+	}
+};
+
+template<>
+std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::BlazingArrowTable>(std::unique_ptr<ral::frame::BlazingTable> table){
+	std::unique_ptr<ral::frame::BlazingArrowTable> arrow_table(dynamic_cast<ral::frame::BlazingArrowTable*>(table.release()));
+	return std::make_unique<ArrowCacheData>(std::move(arrow_table));
+}
+
+template<>
+std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::BlazingCudfTable>(std::unique_ptr<ral::frame::BlazingTable> table){
+	std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
+	return std::make_unique<GPUCacheData>(std::move(cudf_table));
+}
 
 std::size_t CacheMachine::cache_count(900000000);
 
@@ -306,6 +328,7 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 
     // we dont want to add empty tables to a cache, unless we have never added anything
 	if (!this->something_added || table->num_rows() > 0 || always_add){
+        // WSM TODO do we want to use the backend_dispatcher here too? This is more business logic, not data transformation
 		if (table->get_execution_backend().id() == ral::execution::backend_id::CUDF ){
             ral::frame::BlazingCudfTable *cudf_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
             for (auto col_ind = 0; col_ind < table->num_columns(); col_ind++){
@@ -324,6 +347,7 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 
 		num_rows_added += table->num_rows();
 		num_bytes_added += table->size_in_bytes();
+        // WSM TODO do we want to use the backend_dispatcher here too? This is more business logic, not data transformation
 		size_t cacheIndex = table->get_execution_backend().id() == ral::execution::backend_id::CUDF ? 0 : 1;
 		while(cacheIndex < memory_resources.size()) {
    
@@ -815,9 +839,10 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 			if (!concat_all && 
                 backend.id() == ral::execution::backend_id::CUDF &&
                 ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views)){
-
-                std::unique_ptr<CacheData> cache_data = CacheData::MakeCacheData(std::move(tables_holder.back()));
-				tables_holder.pop_back();
+                
+                std::unique_ptr<CacheData> cache_data = ral::execution::backend_dispatcher(tables_holder.back()->get_execution_backend(), 
+                                                    make_cachedata_functor(), std::move(tables_holder.back()));
+                tables_holder.pop_back();
 				table_views.pop_back();
 				collected_messages[i] =	std::make_unique<message>(std::move(cache_data), collected_messages[i]->get_message_id());
 				for (; i < collected_messages.size(); i++){

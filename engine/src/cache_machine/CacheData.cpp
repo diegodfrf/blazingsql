@@ -79,16 +79,5 @@ std::unique_ptr<CacheData> CacheData::downgradeGPUCacheData(std::unique_ptr<Cach
 	}
 }
 
-std::unique_ptr<CacheData> CacheData::MakeCacheData(std::unique_ptr<ral::frame::BlazingTable> table){
-
-	if (table->get_execution_backend().id() == ral::execution::backend_id::CUDF ){
-		std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
-		return std::make_unique<GPUCacheData>(std::move(cudf_table));
-	} else {
-		std::unique_ptr<ral::frame::BlazingArrowTable> arrow_table(dynamic_cast<ral::frame::BlazingArrowTable*>(table.release()));
-		return std::make_unique<ArrowCacheData>(std::move(arrow_table));
-	}
-}
-
 } // namespace cache
 } // namespace ral
