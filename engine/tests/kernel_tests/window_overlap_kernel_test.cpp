@@ -413,7 +413,7 @@ TEST_F(WindowOverlapAccumulatorTest, BasicSingleNode) {
 	auto batches_pulled = outputCacheMachine->pull_all_cache_data();
 	EXPECT_EQ(batches_pulled.size(), expected_out.size());
 	for (std::size_t i = 0; i < batches_pulled.size(); i++) {
-		auto table_out = batches_pulled[i]->decache();
+		auto table_out = batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		// ral::utilities::print_blazing_table_view(expected_out[i]->to_table_view(), "expected" + std::to_string(i));
 		// ral::utilities::print_blazing_table_view(table_out->to_table_view(), "got" + std::to_string(i));
 		cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
@@ -535,7 +535,7 @@ TEST_F(WindowOverlapAccumulatorTest, BasicMultiNode_FirstNode) {
 	auto batches_pulled = outputCacheMachine->pull_all_cache_data();
 	EXPECT_EQ(batches_pulled.size(), expected_out.size());
 	for (std::size_t i = 0; i < batches_pulled.size(); i++) {
-		auto table_out = batches_pulled[i]->decache();
+		auto table_out = batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		// ral::utilities::print_blazing_table_view(expected_out[i]->to_table_view(), "expected" + std::to_string(i));
 		// ral::utilities::print_blazing_table_view(table_out->to_table_view(), "got" + std::to_string(i));
 		cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
@@ -550,7 +550,7 @@ TEST_F(WindowOverlapAccumulatorTest, BasicMultiNode_FirstNode) {
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_NODE_INDEX), sender_node_id);
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_BATCH_INDEX), std::to_string(0));
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_STATUS), ral::batch::DONE_OVERLAP_STATUS);
-	std::unique_ptr<BlazingTable> request_response_table = request_response->decache();
+	std::unique_ptr<BlazingTable> request_response_table = request_response->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 	cudf::test::expect_tables_equivalent(expected_request_response_table->view(), request_response_table->view());
 }
 
@@ -669,7 +669,7 @@ TEST_F(WindowOverlapAccumulatorTest, BasicMultiNode_LastNode) {
 	auto batches_pulled = outputCacheMachine->pull_all_cache_data();
 	EXPECT_EQ(batches_pulled.size(), expected_out.size());
 	for (std::size_t i = 0; i < batches_pulled.size(); i++) {
-		auto table_out = batches_pulled[i]->decache();
+		auto table_out = batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		// ral::utilities::print_blazing_table_view(expected_out[i]->to_table_view(), "expected" + std::to_string(i));
 		// ral::utilities::print_blazing_table_view(table_out->to_table_view(), "got" + std::to_string(i));
 		cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
@@ -684,7 +684,7 @@ TEST_F(WindowOverlapAccumulatorTest, BasicMultiNode_LastNode) {
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_NODE_INDEX), sender_node_id);
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_BATCH_INDEX), std::to_string(batches.size() - 1));
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_STATUS), ral::batch::DONE_OVERLAP_STATUS);
-	std::unique_ptr<BlazingTable> request_response_table = request_response->decache();
+	std::unique_ptr<BlazingTable> request_response_table = request_response->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 	cudf::test::expect_tables_equivalent(expected_request_response_table->view(), request_response_table->view());
 }
 
@@ -827,7 +827,7 @@ TEST_F(WindowOverlapAccumulatorTest, BasicMultiNode_MiddleNode) {
 	auto batches_pulled = outputCacheMachine->pull_all_cache_data();
 	EXPECT_EQ(batches_pulled.size(), expected_out.size());
 	for (std::size_t i = 0; i < batches_pulled.size(); i++) {
-		auto table_out = batches_pulled[i]->decache();
+		auto table_out = batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		// ral::utilities::print_blazing_table_view(expected_out[i]->to_table_view(), "expected" + std::to_string(i));
 		// ral::utilities::print_blazing_table_view(table_out->to_table_view(), "got" + std::to_string(i));
 		cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
@@ -854,7 +854,7 @@ TEST_F(WindowOverlapAccumulatorTest, BasicMultiNode_MiddleNode) {
 	EXPECT_EQ(preceding_request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_NODE_INDEX), previous_node_id);
 	EXPECT_EQ(preceding_request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_BATCH_INDEX), std::to_string(0));
 	EXPECT_EQ(preceding_request_response_metadata.get_value(ral::cache::OVERLAP_STATUS), ral::batch::DONE_OVERLAP_STATUS);
-	std::unique_ptr<BlazingTable> preceding_request_response_table = preceding_request_response->decache();
+	std::unique_ptr<BlazingTable> preceding_request_response_table = preceding_request_response->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 	cudf::test::expect_tables_equivalent(expected_preceding_request_response_table->view(), preceding_request_response_table->view());
 
 	EXPECT_EQ(following_request_response_metadata.get_value(ral::cache::OVERLAP_MESSAGE_TYPE), ral::batch::FOLLOWING_RESPONSE);
@@ -862,7 +862,7 @@ TEST_F(WindowOverlapAccumulatorTest, BasicMultiNode_MiddleNode) {
 	EXPECT_EQ(following_request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_NODE_INDEX), next_node_id);
 	EXPECT_EQ(following_request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_BATCH_INDEX), std::to_string(batches.size() - 1));
 	EXPECT_EQ(following_request_response_metadata.get_value(ral::cache::OVERLAP_STATUS), ral::batch::DONE_OVERLAP_STATUS);
-	std::unique_ptr<BlazingTable> following_request_response_table = following_request_response->decache();
+	std::unique_ptr<BlazingTable> following_request_response_table = following_request_response->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 	cudf::test::expect_tables_equivalent(expected_following_request_response_table->view(), following_request_response_table->view());
 
 }
@@ -983,7 +983,7 @@ TEST_F(WindowOverlapAccumulatorTest, BigWindowMultiNode_FirstNode) {
 	auto batches_pulled = outputCacheMachine->pull_all_cache_data();
 	EXPECT_EQ(batches_pulled.size(), expected_out.size());
 	for (std::size_t i = 0; i < batches_pulled.size(); i++) {
-		auto table_out = batches_pulled[i]->decache();
+		auto table_out = batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		// ral::utilities::print_blazing_table_view(expected_out[i]->to_table_view(), "expected" + std::to_string(i));
 		// ral::utilities::print_blazing_table_view(table_out->to_table_view(), "got" + std::to_string(i));
 		cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
@@ -998,7 +998,7 @@ TEST_F(WindowOverlapAccumulatorTest, BigWindowMultiNode_FirstNode) {
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_NODE_INDEX), sender_node_id);
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_BATCH_INDEX), std::to_string(0));
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_STATUS), ral::batch::DONE_OVERLAP_STATUS);
-	std::unique_ptr<BlazingTable> request_response_table = request_response->decache();
+	std::unique_ptr<BlazingTable> request_response_table = request_response->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 	cudf::test::expect_tables_equivalent(expected_request_response_table->view(), request_response_table->view());
 }
 
@@ -1118,7 +1118,7 @@ TEST_F(WindowOverlapAccumulatorTest, BigWindowMultiNode_LastNode) {
 	auto batches_pulled = outputCacheMachine->pull_all_cache_data();
 	EXPECT_EQ(batches_pulled.size(), expected_out.size());
 	for (std::size_t i = 0; i < batches_pulled.size(); i++) {
-		auto table_out = batches_pulled[i]->decache();
+		auto table_out = batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		// ral::utilities::print_blazing_table_view(expected_out[i]->to_table_view(), "expected" + std::to_string(i));
 		// ral::utilities::print_blazing_table_view(table_out->to_table_view(), "got" + std::to_string(i));
 		cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
@@ -1136,7 +1136,7 @@ TEST_F(WindowOverlapAccumulatorTest, BigWindowMultiNode_LastNode) {
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_NODE_INDEX), sender_node_id);
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_BATCH_INDEX), std::to_string(batches.size() - 1));
 	EXPECT_EQ(request_response_metadata.get_value(ral::cache::OVERLAP_STATUS), ral::batch::DONE_OVERLAP_STATUS);
-	std::unique_ptr<BlazingTable> request_response_table = request_response->decache();
+	std::unique_ptr<BlazingTable> request_response_table = request_response->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 	cudf::test::expect_tables_equivalent(expected_request_response_table->view(), request_response_table->view());
 }
 
@@ -1281,7 +1281,7 @@ TEST_F(WindowOverlapAccumulatorTest, BigWindowMultiNode_MiddleNode) {
 	auto batches_pulled = outputCacheMachine->pull_all_cache_data();
 	EXPECT_EQ(batches_pulled.size(), expected_out.size());
 	for (std::size_t i = 0; i < batches_pulled.size(); i++) {
-		auto table_out = batches_pulled[i]->decache();
+		auto table_out = batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		// ral::utilities::print_blazing_table_view(expected_out[i]->to_table_view(), "expected" + std::to_string(i));
 		// ral::utilities::print_blazing_table_view(table_out->to_table_view(), "got" + std::to_string(i));
 		cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
@@ -1310,7 +1310,7 @@ TEST_F(WindowOverlapAccumulatorTest, BigWindowMultiNode_MiddleNode) {
 	EXPECT_EQ(preceding_request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_NODE_INDEX), previous_node_id);
 	EXPECT_EQ(preceding_request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_BATCH_INDEX), std::to_string(0));
 	EXPECT_EQ(preceding_request_response_metadata.get_value(ral::cache::OVERLAP_STATUS), ral::batch::DONE_OVERLAP_STATUS);
-	std::unique_ptr<BlazingTable> preceding_request_response_table = preceding_request_response->decache();
+	std::unique_ptr<BlazingTable> preceding_request_response_table = preceding_request_response->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 	cudf::test::expect_tables_equivalent(expected_preceding_request_response_table->view(), preceding_request_response_table->view());
 
 	EXPECT_EQ(following_request_response_metadata.get_value(ral::cache::OVERLAP_MESSAGE_TYPE), ral::batch::FOLLOWING_RESPONSE);
@@ -1318,7 +1318,7 @@ TEST_F(WindowOverlapAccumulatorTest, BigWindowMultiNode_MiddleNode) {
 	EXPECT_EQ(following_request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_NODE_INDEX), next_node_id);
 	EXPECT_EQ(following_request_response_metadata.get_value(ral::cache::OVERLAP_TARGET_BATCH_INDEX), std::to_string(batches.size() - 1));
 	EXPECT_EQ(following_request_response_metadata.get_value(ral::cache::OVERLAP_STATUS), ral::batch::DONE_OVERLAP_STATUS);
-	std::unique_ptr<BlazingTable> following_request_response_table = following_request_response->decache();
+	std::unique_ptr<BlazingTable> following_request_response_table = following_request_response->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 	cudf::test::expect_tables_equivalent(expected_following_request_response_table->view(), following_request_response_table->view());
 
 }
@@ -1413,7 +1413,7 @@ TEST_F(WindowOverlapAccumulatorTest, BigWindowSingleNode) {
 	auto batches_pulled = outputCacheMachine->pull_all_cache_data();
 	EXPECT_EQ(batches_pulled.size(), expected_out.size());
 	for (std::size_t i = 0; i < batches_pulled.size(); i++) {
-		auto table_out = batches_pulled[i]->decache();
+		auto table_out = batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 		// ral::utilities::print_blazing_table_view(expected_out[i]->to_table_view(), "expected" + std::to_string(i));
 		// ral::utilities::print_blazing_table_view(table_out->to_table_view(), "got" + std::to_string(i));
 		cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
@@ -1585,20 +1585,20 @@ TEST_F(WindowOverlapGeneratorTest, BasicSingleNode) {
     //Validate the data
     for (std::size_t i = 0; i < batches_pulled.size(); i++) {
         if (i < batches_preceding_pulled.size()) {
-            auto table_out_preceding    = batches_preceding_pulled[i]->decache();
-            auto expected_out_preceding = preceding_overlaps[i]->decache();
+            auto table_out_preceding    = batches_preceding_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
+            auto expected_out_preceding = preceding_overlaps[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 
             cudf::test::expect_tables_equivalent(expected_out_preceding->view(), table_out_preceding->view());
         }
 
         if (i < batches_following_pulled.size()) {
-            auto table_out_following    = batches_following_pulled[i]->decache();
-            auto expected_out_following = following_overlaps[i]->decache();
+            auto table_out_following    = batches_following_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
+            auto expected_out_following = following_overlaps[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 
             cudf::test::expect_tables_equivalent(expected_out_following->view(), table_out_following->view());
         }
 
-        auto table_out_batches = batches_pulled[i]->decache();
+        auto table_out_batches = batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
         cudf::test::expect_tables_equivalent(expected_batch_out[i]->view(), table_out_batches->view());
     }
 }
@@ -1680,20 +1680,20 @@ TEST_F(WindowOverlapGeneratorTest, BigWindowSingleNode) {
     //Validate the data
     for (std::size_t i = 0; i < batches_pulled.size(); i++) {
         if (i < batches_preceding_pulled.size()) {
-            auto table_out_preceding    = batches_preceding_pulled[i]->decache();
-            auto expected_out_preceding = preceding_overlaps[i]->decache();
+            auto table_out_preceding    = batches_preceding_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
+            auto expected_out_preceding = preceding_overlaps[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 
             cudf::test::expect_tables_equivalent(expected_out_preceding->view(), table_out_preceding->view());
         }
 
         if (i < batches_following_pulled.size()) {
-            auto table_out_following    = batches_following_pulled[i]->decache();
-            auto expected_out_following = following_overlaps[i]->decache();
+            auto table_out_following    = batches_following_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
+            auto expected_out_following = following_overlaps[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 
             cudf::test::expect_tables_equivalent(expected_out_following->view(), table_out_following->view());
         }
 
-        auto table_out_batches = batches_pulled[i]->decache();
+        auto table_out_batches = batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
         cudf::test::expect_tables_equivalent(expected_batch_out[i]->view(), table_out_batches->view());
     }
 }
@@ -1759,7 +1759,7 @@ TEST_F(WindowOverlapTest, BasicSingleNode) {
     EXPECT_EQ(last_batches_pulled.size(), expected_out.size());
 
     for (std::size_t i = 0; i < last_batches_pulled.size(); i++) {
-        auto table_out = last_batches_pulled[i]->decache();
+        auto table_out = last_batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
         cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
     }
 }
@@ -1826,7 +1826,7 @@ TEST_F(WindowOverlapTest, BigWindowSingleNode) {
     EXPECT_EQ(last_batches_pulled.size(), expected_out.size());
 
     for (std::size_t i = 0; i < last_batches_pulled.size(); i++) {
-        auto table_out = last_batches_pulled[i]->decache();
+        auto table_out = last_batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
         cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
     }
 }
@@ -1938,7 +1938,7 @@ TEST_F(WindowOverlapTest, BasicSingleNode2) {
     EXPECT_EQ(last_batches_pulled.size(), expected_out.size());
 
     for (std::size_t i = 0; i < last_batches_pulled.size(); i++) {
-        auto table_out = last_batches_pulled[i]->decache();
+        auto table_out = last_batches_pulled[i]->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
         cudf::test::expect_tables_equivalent(expected_out[i]->view(), table_out->view());
     }
 }

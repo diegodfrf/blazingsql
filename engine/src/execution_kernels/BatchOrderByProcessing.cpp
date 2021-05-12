@@ -61,8 +61,8 @@ ral::execution::task_result PartitionSingleNodeKernel::do_process(std::vector< s
 kstatus PartitionSingleNodeKernel::run() {
     CodeTimer timer;
 
-    BatchSequence input_partitionPlan(this->input_.get_cache("input_b"), this);
-    partitionPlan = std::move(input_partitionPlan.next());
+    // WSM TODO. We should not be materializing this here in the run function
+    // partitionPlan = this->input_.get_cache("input_b").pullFromCache();
 
     while(this->input_.get_cache("input_a")->wait_for_next()){
         std::unique_ptr <ral::cache::CacheData> cache_data = this->input_.get_cache("input_a")->pullCacheData();
@@ -131,7 +131,8 @@ void SortAndSampleKernel::make_partition_plan_task(){
     std::vector<std::unique_ptr <ral::cache::CacheData> > sampleCacheDatas;
     // first lets take the local samples and convert them to CacheData to make a task
     for (std::size_t i = 0; i < samplesTables.size(); ++i) {
-        std::unique_ptr <ral::cache::CacheData> cache_data = std::make_unique<ral::cache::GPUCacheData>(std::move(samplesTables[i]));
+        // WSM TODO need generic function that can put a BlazingTable into a CacheData
+        std::unique_ptr <ral::cache::CacheData> cache_data;// = std::make_unique<ral::cache::GPUCacheData>(std::move(samplesTables[i]));
         sampleCacheDatas.push_back(std::move(cache_data));
     }
 
@@ -401,9 +402,9 @@ ral::execution::task_result PartitionKernel::do_process(std::vector< std::unique
 kstatus PartitionKernel::run() {
     CodeTimer timer;
 
-    BatchSequence input_partitionPlan(this->input_.get_cache("input_b"), this);
-    partitionPlan = input_partitionPlan.next();
-    assert(partitionPlan != nullptr);
+    // WSM TODO. We should not be materializing this here in the run() function
+    // partitionPlan = this->input_.get_cache("input_b").pullFromCache();
+    // assert(partitionPlan != nullptr);
 
     context->incrementQuerySubstep();
 

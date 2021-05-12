@@ -1,35 +1,48 @@
 #include "CPUCacheData.h"
+#include "execution_graph/backend_dispatcher.h"
 
 namespace ral {
 namespace cache {
 
-CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingTable> gpu_table, bool use_pinned)
-	: CacheData(CacheDataType::CPU, gpu_table->column_names(), gpu_table->column_types(), gpu_table->num_rows())
-{
-	ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(gpu_table.get());
-	bool is_arrow = (arrow_table_ptr != nullptr);
+struct make_blazinghosttable_functor {
+	template <typename T>
+	std::unique_ptr<ral::frame::BlazingHostTable> operator()(std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
+		// TODO percy arrow thrown error
+    	return nullptr;
+	}
+};
 
-  if (is_arrow) {
-    this->host_table = std::make_unique<ral::frame::BlazingHostTable>(arrow_table_ptr->view());
-  } else {
-		ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(gpu_table.get());
-    this->host_table = ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
-  }
+template<>
+std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::operator()<ral::frame::BlazingArrowTable>(
+	std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
+
+	// WSM TODO. Need to make BlazingHostTable arrow based constructor
+    // ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
+    // return std::make_unique<ral::frame::BlazingHostTable>(arrow_table_ptr->view());
 }
 
-CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingTable> gpu_table,const MetadataDictionary & metadata, bool use_pinned)
-	: CacheData(CacheDataType::CPU, gpu_table->column_names(), gpu_table->column_types(), gpu_table->num_rows())
-{
-	ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(gpu_table.get());
-	bool is_arrow = (arrow_table_ptr != nullptr);
+template<>
+std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::operator()<ral::frame::BlazingCudfTable>(
+	std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
 
-  if (is_arrow) {
-    this->host_table = std::make_unique<ral::frame::BlazingHostTable>(arrow_table_ptr->view());
-  } else {
-		ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(gpu_table.get());
-    this->host_table = ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
-  }
-	this->metadata = metadata;
+	ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+    return ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
+}
+
+CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned)
+	: CacheData(CacheDataType::CPU, table->column_names(), table->column_types(), table->num_rows())
+{
+
+	this->host_table = ral::execution::backend_dispatcher(table->get_execution_backend(), 
+                                                    make_blazinghosttable_functor(), std::move(table), use_pinned);
+}
+
+CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingTable> table,const MetadataDictionary & metadata, bool use_pinned)
+	: CacheData(CacheDataType::CPU, table->column_names(), table->column_types(), table->num_rows())
+{
+  this->host_table = ral::execution::backend_dispatcher(table->get_execution_backend(), 
+                                                    make_blazinghosttable_functor(), std::move(table), use_pinned);
+  this->metadata = metadata;
 }
 
 CPUCacheData::CPUCacheData(const std::vector<blazingdb::transport::ColumnTransport> & column_transports,
@@ -51,7 +64,7 @@ CPUCacheData::CPUCacheData(const std::vector<blazingdb::transport::ColumnTranspo
 }
 
 CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingHostTable> host_table)
-	: CacheData(CacheDataType::CPU, host_table->column_names(), host_table->get_schema(), host_table->num_rows()), host_table{std::move(host_table)}
+	: CacheData(CacheDataType::CPU, host_table->column_names(), host_table->column_types(), host_table->num_rows()), host_table{std::move(host_table)}
 {
 }
 

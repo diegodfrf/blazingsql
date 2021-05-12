@@ -32,8 +32,8 @@ public:
 
 	DataType type() const override { return DataType::ARROW; }
 
-private:
-	//std::shared_ptr< arrow::Table > table;
+
+	
 };
 
 } /* namespace io */

@@ -2,6 +2,7 @@
 #include <random>
 #include "cudf/types.hpp" //cudf::io::metadata
 #include <cudf/io/orc.hpp>
+#include "execution_graph/backend_dispatcher.h"
 
 namespace ral {
 namespace cache {
@@ -23,6 +24,49 @@ std::string randomString(std::size_t length) {
 	return random_string;
 }
 
+//////////////////////////////////// write_orc_functor
+
+struct write_orc_functor {
+  template <typename T>
+  void operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_view,
+      std::string file_path) const
+  {
+    // TODO percy arrow thrown error
+    
+  }
+};
+
+template <>
+inline void write_orc_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::string file_path) const
+{
+  // TODO WSM arrow
+  
+}
+
+template <>
+inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::string file_path) const
+{
+	auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
+
+	cudf::io::table_metadata metadata;
+	for(auto name : cudf_table_view->column_names()) {
+		metadata.column_names.emplace_back(name);
+	}
+
+	cudf::io::orc_writer_options out_opts = cudf::io::orc_writer_options::builder(cudf::io::sink_info{file_path}, cudf_table_view->view())
+		.metadata(&metadata);
+
+	cudf::io::write_orc(out_opts);
+}
+
+
+
+
 CacheDataLocalFile::CacheDataLocalFile(std::unique_ptr<ral::frame::BlazingTable> table, std::string orc_files_path, std::string ctx_token)
 	: CacheData(CacheDataType::LOCAL_FILE, table->column_names(), table->column_types(), table->num_rows())
 {
@@ -36,18 +80,12 @@ CacheDataLocalFile::CacheDataLocalFile(std::unique_ptr<ral::frame::BlazingTable>
 
 	int attempts = 0;
 	int attempts_limit = 10;
-	ral::frame::BlazingCudfTable *table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+	std::shared_ptr<ral::frame::BlazingTableView> table_view = table->to_table_view();
 	while(attempts <= attempts_limit){
 		try {
-			cudf::io::table_metadata metadata;
-			for(auto name : table->column_names()) {
-				metadata.column_names.emplace_back(name);
-			}
+			ral::execution::backend_dispatcher(table_view->get_execution_backend(), write_orc_functor(), table_view, this->filePath_);
 
-			cudf::io::orc_writer_options out_opts = cudf::io::orc_writer_options::builder(cudf::io::sink_info{this->filePath_}, table_ptr->view())
-				.metadata(&metadata);
-
-			cudf::io::write_orc(out_opts);
+			
 		} catch (cudf::logic_error & err){
 			std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
 			if(logger) {
@@ -77,15 +115,19 @@ size_t CacheDataLocalFile::size_in_bytes() const {
 	return size_in_bytes_;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> CacheDataLocalFile::decache() {
+std::unique_ptr<ral::frame::BlazingTable> CacheDataLocalFile::decache(execution::execution_backend backend) {
 
-	cudf::io::orc_reader_options read_opts = cudf::io::orc_reader_options::builder(cudf::io::source_info{this->filePath_});
-	auto result = cudf::io::read_orc(read_opts);
+	if (backend.id() == ral::execution::backend_id::CUDF) {
+		cudf::io::orc_reader_options read_opts = cudf::io::orc_reader_options::builder(cudf::io::source_info{this->filePath_});
+		auto result = cudf::io::read_orc(read_opts);
 
-	// Remove temp orc files
-	const char *orc_path_file = this->filePath_.c_str();
-	remove(orc_path_file);
-	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result.tbl), this->col_names);
+		// Remove temp orc files
+		const char *orc_path_file = this->filePath_.c_str();
+		remove(orc_path_file);
+		return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result.tbl), this->col_names);
+	} else {
+		// WSM TODO need to implement this
+	}
 }
 
 } // namespace cache

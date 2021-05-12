@@ -249,6 +249,7 @@ std::string getDataTypeName(DataType dataType) {
 	case DataType::JSON: return "json"; break;
 	case DataType::CUDF: return "cudf"; break;
 	case DataType::DASK_CUDF: return "dask_cudf"; break;
+	case DataType::ARROW: return "arrow"; break;
 	case DataType::MYSQL: return "mysql"; break;
 	case DataType::POSTGRESQL: return "postgresql"; break;
 	case DataType::SQLITE: return "sqlite"; break;

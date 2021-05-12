@@ -1,5 +1,6 @@
 #include "executor.h"
 #include "cache_machine/GPUCacheData.h"
+#include "cache_machine/CacheDataIO.h"
 
 using namespace fmt::literals;
 
@@ -71,9 +72,9 @@ std::size_t task::task_memory_needed() {
     return bytes_to_decache + kernel->estimate_output_bytes(inputs) + kernel->estimate_operating_bytes(inputs);
 }
 
-
 void task::run(cudaStream_t stream, executor * executor){
-    std::vector< std::unique_ptr<ral::frame::BlazingTable> > input_gpu;
+
+    std::vector< std::unique_ptr<ral::frame::BlazingTable> > input_tables;
     CodeTimer decachingEventTimer;
 
     int last_input_decached = 0;
@@ -82,20 +83,36 @@ void task::run(cudaStream_t stream, executor * executor){
     ///////////////////////////////
     try{
         for(auto & input : inputs){
-                    //if its in gpu this wont fail
-                    //if its cpu and it fails the buffers arent deleted
-                    //if its disk and fails the file isnt deleted
-                    //so this should be safe
-                    last_input_decached++;
-                    input_gpu.push_back(std::move(input->decache()));
+            //if its in gpu this wont fail
+            //if its cpu or arrow and it fails the buffers arent deleted
+            //if its disk and fails the file isnt deleted
+            //so this should be safe
+            last_input_decached++;
+
+            // WSM TODO this execution paradigm needs to be made more intelligent
+            if (input->get_type() == ral::cache::CacheDataType::ARROW){
+                input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::ARROW))));
+            } else if (input->get_type() == ral::cache::CacheDataType::GPU) {
+                input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
+            } else if (input->get_type() == ral::cache::CacheDataType::IO_FILE){
+                ral::cache::CacheDataIO* cache_data_io_ptr = dynamic_cast<ral::cache::CacheDataIO*>(input.get());
+                if (cache_data_io_ptr->GetParserType() == ral::io::ARROW){
+                    input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::ARROW))));
+                } else {
+                    input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
+                }
+            } else {
+                input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
             }
+        }
     }catch(const rmm::bad_alloc& e){
         int i = 0;
         for(auto & input : inputs){
             if (i < last_input_decached && input->get_type() == ral::cache::CacheDataType::GPU ){
                 //this was a gpu cachedata so now its not valid
                 
-                static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(input_gpu[i]));
+                std::unique_ptr<ral::frame::BlazingCudfTable> temp_cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(input_tables[i].release()));
+                static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(temp_cudf_table));
             }
             i++;
         }
@@ -126,13 +143,13 @@ void task::run(cudaStream_t stream, executor * executor){
 
     std::size_t log_input_rows = 0;
     std::size_t log_input_bytes = 0;
-    for (std::size_t i = 0; i < input_gpu.size(); ++i) {
-        log_input_rows += input_gpu.at(i)->num_rows();
-        log_input_bytes += input_gpu.at(i)->size_in_bytes();
+    for (std::size_t i = 0; i < input_tables.size(); ++i) {
+        log_input_rows += input_tables.at(i)->num_rows();
+        log_input_bytes += input_tables.at(i)->size_in_bytes();
     }
     
     CodeTimer executionEventTimer;
-    auto task_result = kernel->process(std::move(input_gpu),output,stream, args);
+    auto task_result = kernel->process(std::move(input_tables),output,stream, args);
 
     if(task_logger) {
         task_logger->info("{time_started}|{ral_id}|{query_id}|{kernel_id}|{duration_decaching}|{duration_execution}|{input_num_rows}|{input_num_bytes}",
@@ -155,7 +172,8 @@ void task::run(cudaStream_t stream, executor * executor){
                 if  (input->get_type() == ral::cache::CacheDataType::GPU){
                     //this was a gpu cachedata so now its not valid
                     if(task_result.inputs.size() > 0 && i <= task_result.inputs.size() && task_result.inputs[i] != nullptr && task_result.inputs[i]->is_valid()){ 
-                        static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(task_result.inputs[i]));
+                        std::unique_ptr<ral::frame::BlazingCudfTable> temp_cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(task_result.inputs[i].release()));
+                        static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(temp_cudf_table));                        
                     }else{
                         //the input was lost and it was a gpu dataframe which is not recoverable
                         throw rmm::bad_alloc(task_result.what.c_str());

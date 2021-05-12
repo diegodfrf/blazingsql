@@ -140,56 +140,6 @@ std::unique_ptr<cudf::scalar> to_cudf_scalar(std::shared_ptr<arrow::Scalar> arro
 }
 
 
-bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<ral::frame::BlazingArrowTableView>> & tables) {
-//    if( tables.size() == 0 ) {
-//      return false;
-//    }
-
-//    // Lets only look at tables that not empty
-//    std::vector<size_t> non_empty_index;
-//    for(size_t table_idx = 0; table_idx < tables.size(); table_idx++) {
-//      if (tables[table_idx]->num_columns() > 0){
-//        non_empty_index.push_back(table_idx);
-//      }
-//    }
-//    if( non_empty_index.size() == 0 ) {
-//      return false;
-//    }
-
-//    for(size_t col_idx = 0; col_idx < tables[non_empty_index[0]]->column_types().size(); col_idx++) {
-//      if(tables[non_empty_index[0]]->column_types()[col_idx] == cudf::type_id::STRING) {
-//        std::size_t total_bytes_size = 0;
-//        std::size_t total_offset_count = 0;
-
-//        for(size_t i = 0; i < non_empty_index.size(); i++) {
-//          size_t table_idx = non_empty_index[i];
-
-//          // Column i-th from the next tables are expected to have the same string data type
-//          assert( tables[table_idx].column_types()[col_idx] == cudf::type_id::STRING );
-
-//          auto & column = tables[table_idx].column(col_idx);
-//          auto num_children = column.num_children();
-//          if(num_children == 2) {
-
-//            auto offsets_column = column.child(0);
-//            auto chars_column = column.child(1);
-
-//            // Similarly to cudf, we focus only on the byte number of chars and the offsets count
-//            total_bytes_size += chars_column.size();
-//            total_offset_count += offsets_column.size() + 1;
-
-//            if( total_bytes_size > static_cast<std::size_t>(std::numeric_limits<cudf::size_type>::max()) ||
-//              total_offset_count > static_cast<std::size_t>(std::numeric_limits<cudf::size_type>::max())) {
-//              return true;
-//            }
-//          }
-//        }
-//      }
-//    }
-  // TODO percy arrow
-  return false;
-}
-
 void normalize_types(std::unique_ptr<ral::frame::BlazingArrowTable> & table,  const std::vector<cudf::data_type> & types,
                      std::vector<cudf::size_type> column_indices) {
   // TODO percy
@@ -266,15 +216,19 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<r
 
 // TODO percy arrow here we need to think about how we want to manage hybrid tables
 // for now we will concat either cudf tables or arrow tables
+// for now we are just validating that they are all the same type
 std::unique_ptr<ral::frame::BlazingTable> concatTables(const std::vector<std::shared_ptr<BlazingTableView>> & tables) {
 	assert(tables.size() >= 0);
 
 	std::vector<std::string> names;
 	std::vector<std::shared_ptr<BlazingTableView>> table_views_to_concat;
+	execution::execution_backend common_backend = tables.size() > 0 ? tables[0]->get_execution_backend() : execution::execution_backend(execution::backend_id::NONE);
 	for(size_t i = 0; i < tables.size(); i++) {
 		if (tables[i]->column_names().size() > 0){ // lets make sure we get the names from a table that is not empty
 			names = tables[i]->column_names();
-      table_views_to_concat.push_back(tables[i]);
+      		table_views_to_concat.push_back(tables[i]);
+
+			RAL_EXPECTS(tables[i]->get_execution_backend() == common_backend, "Concatenating tables have different backends");
 		}
 	}
 	// TODO want to integrate data type normalization.
@@ -289,15 +243,16 @@ std::unique_ptr<ral::frame::BlazingTable> concatTables(const std::vector<std::sh
     }
   }
   
-  return ral::execution::backend_dispatcher(table_views_to_concat[0]->get_execution_backend(), concat_functor(),
+  auto out = ral::execution::backend_dispatcher(common_backend, concat_functor(),
       table_views_to_concat, empty_count, names);
+	  return out;
 }
 
 std::unique_ptr<BlazingTable> getLimitedRows(std::shared_ptr<BlazingTableView> table, cudf::size_type num_rows, bool front){
 	if (num_rows == 0) {
     return ral::execution::backend_dispatcher(
           table->get_execution_backend(),
-          create_empty_table_functor(),
+          create_empty_table_like_functor(),
           table);
 	} else if (num_rows < table->num_rows()) {
 		std::unique_ptr<ral::frame::BlazingTable> cudf_table;
@@ -345,7 +300,7 @@ std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<cudf::typ
 std::unique_ptr<ral::frame::BlazingTable> create_empty_table(std::shared_ptr<BlazingTableView> table) {
   return ral::execution::backend_dispatcher(
            table->get_execution_backend(),
-           create_empty_table_functor(),
+           create_empty_table_like_functor(),
            table);
 }
 

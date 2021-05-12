@@ -38,15 +38,17 @@ public:
 	CPUCacheData(std::unique_ptr<ral::frame::BlazingHostTable> host_table);
 
 	/**
-	* Decache from a BlazingHostTable to BlazingTable and return the BlazingTable.
-	* @return A unique_ptr to a BlazingTable
+	* @brief Remove the payload from this CacheData.
+	* This removes the payload for the CacheData. After this the CacheData will
+	* almost always go out of scope and be destroyed.
+	* @param backend the execution backend
+	* @return a BlazingTable generated from the source of data for this CacheData. The type of BlazingTable returned will depend on the backend
 	*/
-	std::unique_ptr<ral::frame::BlazingTable> decache() override {
-    // percy arrow
-    if (host_table->is_arrow()) {
+	std::unique_ptr<ral::frame::BlazingTable> decache(execution::execution_backend backend) override {
+    if (backend.id() == ral::execution::backend_id::ARROW) {
       return std::move(host_table->get_arrow_table());
     }
-		return std::move(host_table->get_cudf_table());
+	  return std::move(host_table->get_cudf_table());
 	}
 
 	/**
@@ -75,7 +77,7 @@ public:
 	*/
 	void set_names(const std::vector<std::string> & names) override
 	{
-		host_table->set_names(names);
+		host_table->set_column_names(names);
 	}
 
 	/**

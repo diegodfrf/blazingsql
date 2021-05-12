@@ -18,10 +18,6 @@ BlazingHostTable::BlazingHostTable(const std::vector<ColumnTransport> &columns_o
 
 }
 
-BlazingHostTable::BlazingHostTable(std::shared_ptr<arrow::Table> arrow_table)
-  : arrow_table(arrow_table) {
-}
-
 BlazingHostTable::~BlazingHostTable() {
     auto size = size_in_bytes();
     blazing_host_memory_resource::getInstance().deallocate(size); // this only decrements the memory usage counter for the host memory. This does not actually allocate
@@ -31,7 +27,7 @@ BlazingHostTable::~BlazingHostTable() {
     }
 }
 
-std::vector<cudf::data_type> BlazingHostTable::get_schema() const {
+std::vector<cudf::data_type> BlazingHostTable::column_types() const {
     std::vector<cudf::data_type> data_types(this->num_columns());
     std::transform(columns_offsets.begin(), columns_offsets.end(), data_types.begin(), [](auto &col) {
         int32_t dtype = col.metadata.dtype;
@@ -47,30 +43,21 @@ std::vector<std::string> BlazingHostTable::column_names() const {
     return col_names;
 }
 
-void BlazingHostTable::set_names(std::vector<std::string> names) {
+void BlazingHostTable::set_column_names(std::vector<std::string> names) {
     for(size_t i = 0; i < names.size(); i++){
         strcpy(columns_offsets[i].metadata.col_name, names[i].c_str());
     }
 }
 
 cudf::size_type BlazingHostTable::num_rows() const {
-  if (this->arrow_table != nullptr) {
-    return this->arrow_table->num_rows();
-  }
-
-    return columns_offsets.empty() ? 0 : columns_offsets.front().metadata.size;
+  return columns_offsets.empty() ? 0 : columns_offsets.front().metadata.size;
 }
 
 cudf::size_type BlazingHostTable::num_columns() const {
-  if (this->is_arrow()) {
-    int a = this->arrow_table->num_columns();
-    return a;
-  }
-
     return columns_offsets.size();
 }
 
-std::size_t BlazingHostTable::size_in_bytes() {
+std::size_t BlazingHostTable::size_in_bytes() const {
     std::size_t total_size = 0L;
     for (auto &col : columns_offsets) {
         total_size += col.size_in_bytes;
@@ -91,38 +78,38 @@ const std::vector<ColumnTransport> &BlazingHostTable::get_columns_offsets() cons
 }
 
 std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
-  assert(this->is_arrow());
-  return std::make_unique<ral::frame::BlazingArrowTable>(this->arrow_table);
+    // WSM TODO
+//   assert(this->is_arrow());
+//   return std::make_unique<ral::frame::BlazingArrowTable>(this->arrow_table);
 }
 
 std::unique_ptr<BlazingCudfTable> BlazingHostTable::get_cudf_table() const {
     std::vector<rmm::device_buffer> gpu_raw_buffers(chunked_column_infos.size());
-  // TODO percy arrow
-//    try{
-//        int buffer_index = 0;
-//        for(auto & chunked_column_info : chunked_column_infos){
-//            gpu_raw_buffers[buffer_index].resize(chunked_column_info.use_size);
-//            size_t position = 0;
-//            for(size_t i = 0; i < chunked_column_info.chunk_index.size(); i++){
-//                size_t chunk_index = chunked_column_info.chunk_index[i];
-//                size_t offset = chunked_column_info.offset[i];
-//                size_t chunk_size = chunked_column_info.size[i];
-//                cudaMemcpyAsync((void *) (gpu_raw_buffers[buffer_index].data() + position), allocations[chunk_index]->data + offset, chunk_size, cudaMemcpyHostToDevice,0);
-//                position += chunk_size;
-//            }
-//            buffer_index++;
-//        }
-//        cudaStreamSynchronize(0);
-//    }catch(std::exception & e){
-//        auto logger = spdlog::get("batch_logger");
-//        if (logger){
-//            logger->error("|||{info}|||||",
-//                    "info"_a="ERROR in BlazingHostTable::get_gpu_table(). What: {}"_format(e.what()));
-//        }
-//        throw;
-//    }
+   try{
+       int buffer_index = 0;
+       for(auto & chunked_column_info : chunked_column_infos){
+           gpu_raw_buffers[buffer_index].resize(chunked_column_info.use_size);
+           size_t position = 0;
+           for(size_t i = 0; i < chunked_column_info.chunk_index.size(); i++){
+               size_t chunk_index = chunked_column_info.chunk_index[i];
+               size_t offset = chunked_column_info.offset[i];
+               size_t chunk_size = chunked_column_info.size[i];
+               cudaMemcpyAsync((void *) (gpu_raw_buffers[buffer_index].data() + position), allocations[chunk_index]->data + offset, chunk_size, cudaMemcpyHostToDevice,0);
+               position += chunk_size;
+           }
+           buffer_index++;
+       }
+       cudaStreamSynchronize(0);
+   }catch(std::exception & e){
+       auto logger = spdlog::get("batch_logger");
+       if (logger){
+           logger->error("|||{info}|||||",
+                   "info"_a="ERROR in BlazingHostTable::get_gpu_table(). What: {}"_format(e.what()));
+       }
+       throw;
+   }
 
-//    return std::move(comm::deserialize_from_gpu_raw_buffers(columns_offsets, gpu_raw_buffers));
+   return std::move(comm::deserialize_from_gpu_raw_buffers(columns_offsets, gpu_raw_buffers));
 }
 
 std::vector<ral::memory::blazing_allocation_chunk> BlazingHostTable::get_raw_buffers() const {

@@ -130,9 +130,9 @@ cdef extern from "../include/io/io.h" nogil:
         string adcJsonFile
 
     cdef struct FolderPartitionMetadata:
-        string name;
-        set[string] values;
-        type_id data_type;
+        string name
+        set[string] values
+        type_id data_type
 
     pair[bool, string] registerFileSystemHDFS(HDFS hdfs, string root, string authority) except +raiseRegisterFileSystemHDFSError
     pair[bool, string] registerFileSystemGCS( GCS gcs, string root, string authority) except +raiseRegisterFileSystemGCSError

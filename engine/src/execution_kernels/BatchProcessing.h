@@ -29,51 +29,6 @@ using namespace fmt::literals;
 using frame_type = std::vector<std::unique_ptr<ral::frame::BlazingTable>>;
 using Context = blazingdb::manager::Context;
 
-/**
- * @brief This is the standard data sequencer that just pulls data from an input cache one batch at a time.
- */
-class BatchSequence {
-public:
-    /**
-     * Constructor for the BatchSequence
-     * @param cache The input cache from where the data will be pulled.
-     * @param kernel The kernel that will actually receive the pulled data.
-     * @param ordered Indicates whether the order should be kept at data pulling.
-     */
-    BatchSequence(std::shared_ptr<ral::cache::CacheMachine> cache = nullptr, const ral::cache::kernel * kernel = nullptr, bool ordered = true);
-
-    /**
-     * Updates the input cache machine.
-     * @param cache The pointer to the new input cache.
-     */
-    void set_source(std::shared_ptr<ral::cache::CacheMachine> cache);
-
-    /**
-     * Get the next message as a unique pointer to a BlazingTable.
-     * If there are no more messages on the queue we get a nullptr.
-     * @return Unique pointer to a BlazingTable containing the next decached message.
-     */
-    std::unique_ptr<ral::frame::BlazingTable> next();
-
-    /**
-     * Blocks executing thread until a new message is ready or when the message queue is empty.
-     * @return true A new message is ready.
-     * @return false There are no more messages on the cache.
-     */
-    bool wait_for_next();
-
-    /**
-     * Indicates if the message queue is not empty at this point on time.
-     * @return true There is at least one message in the queue.
-     * @return false Message queue is empty.
-     */
-    bool has_next_now();
-
-private:
-    std::shared_ptr<ral::cache::CacheMachine> cache; /**< Cache machine from which the data will be pulled. */
-    const ral::cache::kernel * kernel; /**< Pointer to the kernel that will receive the cache data. */
-    bool ordered; /**< Indicates whether the order should be kept when pulling data from the cache. */
-};
 
 /**
  * @brief This data sequencer works as a bypass to take data from one input to an output without decacheing.
