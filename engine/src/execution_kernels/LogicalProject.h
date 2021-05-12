@@ -162,8 +162,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::o
 {
     auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
     std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluated_table = evaluate_expressions(cudf_table_view->view(), expressions);
-    //Must be applied only for filters
-    //RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression does not evaluate to a boolean mask");
+    RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression does not evaluate to a boolean mask");
     return applyBooleanFilter(cudf_table_view, evaluated_table[0]->view());
 }
 
