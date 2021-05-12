@@ -134,6 +134,12 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 
   std::shared_ptr<arrow::Table> table = table_view->view();
 
+  std::cout << "AFFFFFFFFFFFFFFFFFFFFFFTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n\n" << table->ToString() << "\n\n";
+  for (auto a : aggregation_input_expressions) {
+    std::cout << a << "  \n";
+  }
+   std::cout << "el fin en agg esto .... !\n\n";
+
  	std::vector<std::shared_ptr<arrow::Scalar>> reductions;
  	std::vector<std::string> agg_output_column_names;
  	for (size_t i = 0; i < aggregation_types.size(); i++){
@@ -188,7 +194,15 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		std::shared_ptr<arrow::Array> temp = arrow::MakeArrayFromScalar((*reductions[i].get()), 1).ValueOrDie();
  		output_columns.emplace_back(std::make_shared<arrow::ChunkedArray>(temp));
  	}
-    return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), output_columns));
+  
+  auto new_schema = ral::cpu::utilities::build_arrow_schema(
+        output_columns,
+        agg_output_column_names,
+        table->schema()->metadata());
+  
+  auto tt = arrow::Table::Make(new_schema, output_columns);
+  std::cout << "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n\n\n" << tt->ToString() << "\n\n";
+  return std::make_unique<ral::frame::BlazingArrowTable>(tt);
 }
 
 } // namespace cpu
@@ -294,8 +308,7 @@ std::unique_ptr<ral::frame::BlazingTable> aggregations_with_groupby_functor::ope
     std::vector<std::string> aggregation_column_assigned_aliases,
     std::vector<int> group_column_indices) const
 {
-  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
-  return ral::cpu::compute_aggregations_without_groupby(arrow_table_view, aggregation_input_expressions, aggregation_types, aggregation_column_assigned_aliases);
+  return nullptr;
 }
 
 template <>

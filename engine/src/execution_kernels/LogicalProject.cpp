@@ -977,7 +977,10 @@ std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ra
     const std::vector<std::string> & expressions,
     const std::vector<std::string> & out_column_names) const
 {
-  return nullptr;
+  return ral::execution::backend_dispatcher(
+    blazing_table_in->get_execution_backend(),
+    evaluate_expressions_functor(),
+    blazing_table_in->to_table_view(), expressions);
 }
 
 template <>
