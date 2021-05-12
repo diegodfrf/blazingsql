@@ -616,7 +616,6 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
     try{
-        
         std::vector<std::shared_ptr<ral::frame::BlazingTableView>> tableViewsToConcat;
         for (std::size_t i = 0; i < inputs.size(); i++){
             tableViewsToConcat.emplace_back(inputs[i]->to_table_view());
