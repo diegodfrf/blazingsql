@@ -369,8 +369,6 @@ kstatus ComputeAggregateKernel::run() {
     std::unique_ptr <ral::cache::CacheData> cache_data = this->input_cache()->pullCacheData();
     RAL_EXPECTS(cache_data != nullptr, "In ComputeAggregateKernel: The input cache data cannot be null");
 
-    std::cout << "parseGroupByExpression input:\n\n" << this->expression << "\n\n";
-
     // in case UNION exists, we want to know the num of columns
     std::tie(this->group_column_indices, aggregation_input_expressions, this->aggregation_types,
         aggregation_column_assigned_aliases) = ral::operators::parseGroupByExpression(this->expression, cache_data->num_columns());

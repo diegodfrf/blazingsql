@@ -96,6 +96,38 @@ inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<r
 
 /////////////////////////////////// evaluate_expression begin
 
+struct evaluate_expressions_wo_filter_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(const cudf::table_view & table,
+  const std::vector<std::string> & expressions, 
+  const std::vector<std::string> column_names) const
+  {
+    // TODO percy arrow thrown error
+    return nullptr;
+  }
+};
+
+template <>
+inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_wo_filter_functor::operator()<ral::frame::BlazingArrowTable>(
+  const cudf::table_view & table, const std::vector<std::string> & expressions,
+  const std::vector<std::string> column_names) const
+{
+  //ral::frame::BlazingArrowTableView *table_view_ptr = dynamic_cast<ral::frame::BlazingArrowTableView*>(table_view.get());
+  //std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluated_table = ral::cpu::evaluate_expressions(table_view_ptr->view(), expressions);
+
+  // TODO percy arrow
+  return nullptr;
+}
+
+template <>
+inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_wo_filter_functor::operator()<ral::frame::BlazingCudfTable>(
+  const cudf::table_view & table, const std::vector<std::string> & expressions,
+  const std::vector<std::string> column_names) const
+{
+    return std::make_unique<ral::frame::BlazingCudfTable>(evaluate_expressions(table, expressions), column_names);
+}
+
+
 struct evaluate_expressions_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view,
@@ -133,7 +165,6 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::o
     RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression does not evaluate to a boolean mask");
     return applyBooleanFilter(cudf_table_view, evaluated_table[0]->view());
 }
-
 
 
 

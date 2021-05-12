@@ -113,7 +113,7 @@ BlazingCudfTableView::BlazingCudfTableView(
 	cudf::table_view table,
 	std::vector<std::string> columnNames)
 	: BlazingTableView(execution::backend_id::CUDF),
-	columnNames(std::move(columnNames)), table(std::move(table)){
+	columnNames(columnNames), table(table){
 
 }
 
@@ -240,7 +240,7 @@ BlazingCudfTable::BlazingCudfTable(const cudf::table_view & table, const std::ve
 
 void BlazingCudfTable::ensureOwnership(){
 	for (size_t i = 0; i < columns.size(); i++){
-		columns[i] = std::make_unique<BlazingColumnOwner>(std::move(columns[i]->release()));
+		columns[i] = std::make_unique<BlazingColumnOwner>(columns[i]->release());
 	}
 }
 

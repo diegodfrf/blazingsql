@@ -117,15 +117,15 @@ std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partiti
 	int32_t step = outputRowSize / number_partitions;
 
 	std::vector<int32_t> sequence(pivotsSize);
-    std::iota(sequence.begin(), sequence.end(), 1);
-    std::transform(sequence.begin(), sequence.end(), sequence.begin(), [step](int32_t i){ return i*step;});
+	std::iota(sequence.begin(), sequence.end(), 1);
+	std::transform(sequence.begin(), sequence.end(), sequence.begin(), [step](int32_t i){ return i*step;});
 
 	auto gather_map = ral::utilities::vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
 
-  // TODO percy rommel arrow
-//	std::unique_ptr<ral::frame::BlazingTable> pivots = ral::execution::backend_dispatcher(table_view->get_execution_backend(), gather_functor(),
-//															sortedSamples->view(), gather_map->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
-//	return std::move(pivots);
+	// TODO percy rommel arrow
+	std::unique_ptr<ral::frame::BlazingTable> pivots = ral::execution::backend_dispatcher(sortedSamples->get_execution_backend(), gather_functor(),
+													sortedSamples, std::move(gather_map), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED);
+	return std::move(pivots);
 }
 
 
