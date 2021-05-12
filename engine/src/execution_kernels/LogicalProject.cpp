@@ -963,7 +963,7 @@ std::string get_current_date_or_timestamp(std::string expression, blazingdb::man
 struct process_project_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> table_view,
+      std::unique_ptr<ral::frame::BlazingTable> blazing_table_in,
       const std::vector<std::string> & expressions,
       const std::vector<std::string> & out_column_names) const {
     // TODO percy arrow thrown error
@@ -973,7 +973,7 @@ struct process_project_functor {
 
 template <>
 std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::unique_ptr<ral::frame::BlazingTable> blazing_table_in,
     const std::vector<std::string> & expressions,
     const std::vector<std::string> & out_column_names) const
 {
@@ -982,20 +982,19 @@ std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ra
 
 template <>
 std::unique_ptr<ral::frame::BlazingTable> process_project_functor::operator()<ral::frame::BlazingCudfTable>(
-  std::shared_ptr<ral::frame::BlazingTableView> table_view,
+  std::unique_ptr<ral::frame::BlazingTable> blazing_table_in,
   const std::vector<std::string> & expressions,
   const std::vector<std::string> & out_column_names) const
 {
-  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
-  
+  auto blazing_table_in_cudf = dynamic_cast<ral::frame::BlazingCudfTable*>(blazing_table_in.get());
   std::unique_ptr<ral::frame::BlazingTable> evaluated_table = ral::execution::backend_dispatcher(
-    table_view->get_execution_backend(),
+    blazing_table_in->get_execution_backend(),
     evaluate_expressions_wo_filter_functor(),
-    table_view, expressions);
+    blazing_table_in_cudf->view(), expressions, out_column_names);
   
-  auto evaluated_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(evaluated_table.get());
-  
-  return std::make_unique<ral::frame::BlazingCudfTable>(evaluated_table_ptr->view(), out_column_names);
+  //auto evaluated_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(evaluated_table.get());
+  //return std::make_unique<ral::frame::BlazingCudfTable>(evaluated_table_ptr->view(), out_column_names);
+  return evaluated_table;
 }
 
 
@@ -1024,7 +1023,7 @@ std::unique_ptr<ral::frame::BlazingTable> process_project(
     return ral::execution::backend_dispatcher(
       blazing_table_in->get_execution_backend(),
       process_project_functor(),
-      blazing_table_in->to_table_view(), expressions, out_column_names);
+      std::move(blazing_table_in), expressions, out_column_names);
 }
 
 } // namespace processor

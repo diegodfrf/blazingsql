@@ -93,8 +93,9 @@ inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<r
 
 struct evaluate_expressions_wo_filter_functor {
   template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view,
-  const std::vector<std::string> & expressions) const
+  std::unique_ptr<ral::frame::BlazingTable> operator()(const cudf::table_view & table,
+  const std::vector<std::string> & expressions, 
+  const std::vector<std::string> column_names) const
   {
     // TODO percy arrow thrown error
     return nullptr;
@@ -103,10 +104,11 @@ struct evaluate_expressions_wo_filter_functor {
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_wo_filter_functor::operator()<ral::frame::BlazingArrowTable>(
-  std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::vector<std::string> & expressions) const
+  const cudf::table_view & table, const std::vector<std::string> & expressions,
+  const std::vector<std::string> column_names) const
 {
-  ral::frame::BlazingArrowTableView *table_view_ptr = dynamic_cast<ral::frame::BlazingArrowTableView*>(table_view.get());
-  std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluated_table = ral::cpu::evaluate_expressions(table_view_ptr->view(), expressions);
+  //ral::frame::BlazingArrowTableView *table_view_ptr = dynamic_cast<ral::frame::BlazingArrowTableView*>(table_view.get());
+  //std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluated_table = ral::cpu::evaluate_expressions(table_view_ptr->view(), expressions);
 
   // TODO percy arrow
   return nullptr;
@@ -114,11 +116,10 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_wo_filter_
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_wo_filter_functor::operator()<ral::frame::BlazingCudfTable>(
-  std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::vector<std::string> & expressions) const
+  const cudf::table_view & table, const std::vector<std::string> & expressions,
+  const std::vector<std::string> column_names) const
 {
-    auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
-    std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluated_table = evaluate_expressions(cudf_table_view->view(), expressions);
-    return std::make_unique<ral::frame::BlazingCudfTable>(std::move(evaluated_table), table_view->column_names());
+    return std::make_unique<ral::frame::BlazingCudfTable>(evaluate_expressions(table, expressions), column_names);
 }
 
 
