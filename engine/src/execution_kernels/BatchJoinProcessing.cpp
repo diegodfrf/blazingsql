@@ -387,9 +387,7 @@ std::unique_ptr<ral::frame::BlazingTable> cross_join_functor::operator()<ral::fr
 {
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  std::vector<std::string> names; //TODO Rommel Check this name assign
-//   std::vector<std::string> names(table_left->column_names());
-//   names.insert(names.end(), table_right->column_names().begin(), table_right->column_names().end());
+  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
   return std::make_unique<ral::frame::BlazingCudfTable>(cudf::cross_join(table_left->view(), table_right->view()), names);
 }
 
@@ -460,9 +458,7 @@ std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<ral::fr
 {
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  std::vector<std::string> names; //TODO Rommel Check this name assign
-  //std::vector<std::string> names(table_left->column_names());
-  //names.insert(names.end(), table_right->column_names().begin(), table_right->column_names().end());
+  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
   auto tb = cudf::inner_join(
               table_left->view(),
               table_right->view(),
@@ -538,9 +534,7 @@ std::unique_ptr<ral::frame::BlazingTable> left_join_functor::operator()<ral::fra
 {
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-    std::vector<std::string> names; //TODO Rommel Check this name assign
-//   std::vector<std::string> names(table_left->column_names());
-//   names.insert(names.end(), table_right->column_names().begin(), table_right->column_names().end());
+  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
   auto tb = cudf::left_join(
               table_left->view(),
               table_right->view(),
@@ -594,9 +588,7 @@ std::unique_ptr<ral::frame::BlazingTable> full_join_functor::operator()<ral::fra
 {
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  std::vector<std::string> names; //TODO Rommel Check this name assign
-//   std::vector<std::string> names(table_left->column_names());
-//   names.insert(names.end(), table_right->column_names().begin(), table_right->column_names().end());
+  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
   auto tb = cudf::full_join(
               table_left->view(),
               table_right->view(),
