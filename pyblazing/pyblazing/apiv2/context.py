@@ -936,6 +936,7 @@ def kwargs_validation(kwargs, bc_api_str):
             "table_batch_size",
             "dsn",
             "schema",
+            "server",
         ]
         params_info = "https://docs.blazingdb.com/docs/create_table"
 

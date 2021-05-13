@@ -31,9 +31,10 @@ HELP="$0 [-v] [-g] [-n] [-h] [-t]
    algebra              - build the algebra Python package
    disable-aws-s3       - flag to disable AWS S3 support for libengine
    disable-google-gs    - flag to disable Google Cloud Storage support for libengine
-   disable-mysql        - flag to enable MySQL support for libengine
-   disable-sqlite       - flag to enable SQLite support for libengine
-   disable-postgresql   - flag to enable PostgreSQL support for libengine
+   disable-mysql        - flag to disable MySQL support for libengine
+   disable-sqlite       - flag to disable SQLite support for libengine
+   disable-postgresql   - flag to disable PostgreSQL support for libengine
+   disable-snowflake    - flag to disable Snowflake support for libengine
    -t                   - skip tests
    -v                   - verbose build mode
    -g                   - build for debug
@@ -232,6 +233,12 @@ if buildAll || hasArg libengine; then
         echo "PostgreSQL database support disabled for engine"
     fi
 
+    disable_snowflake_flag=""
+    if hasArg disable-snowflake; then
+        disable_snowflake_flag="-DSNOWFLAKE_SUPPORT=OFF"
+        echo "Snowflake support disabled for engine"
+    fi
+
     echo "Building libengine"
     mkdir -p ${LIBENGINE_BUILD_DIR}
     cd ${LIBENGINE_BUILD_DIR}
@@ -245,7 +252,8 @@ if buildAll || hasArg libengine; then
           $disabled_google_gs_flag \
           $disable_mysql_flag \
           $disable_sqlite_flag \
-          $disable_postgresql_flag ..
+          $disable_postgresql_flag \
+          $disable_snowflake_flag ..
 
     echo "Building libengine: make step"
     if [[ ${TESTS} == "ON" ]]; then

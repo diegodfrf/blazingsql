@@ -56,6 +56,7 @@ requirements:
         - dask-cuda {{ minor_version }}.*
         - ucx-py {{ minor_version }}.*
         - ucx-proc=*=gpu
+        - unixodbc
         - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
         - tqdm
         - ipywidgets

@@ -305,6 +305,9 @@ sql_info getSqlInfo(std::map<std::string, std::string> &args_map) {
   if (args_map.find("dsn") != args_map.end()) {
     sql.dsn = args_map.at("dsn");
   }
+  if (args_map.find("server") != args_map.end()) {
+    sql.server = args_map.at("server");
+  }
   if (args_map.find("schema") != args_map.end()) {
     // TODO (cristhian): move sub_schema to replace schema member
     // and move schema to replace database member simultaneously
