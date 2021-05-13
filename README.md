@@ -79,8 +79,8 @@ You can find our full documentation at [docs.blazingdb.com](https://docs.blazing
   * Pascal or Better
   * Compute Capability >= 6.0
 * CUDA Support
-  * 10.1.2
-  * 10.2
+  * 11.0
+  * 11.2
 * Python Support
   * 3.7
   * 3.8
@@ -190,7 +190,7 @@ To build without the storage plugins (AWS S3, Google Cloud Storage) use the next
 NOTE: By disabling the storage plugins you don't need to install previously AWS SDK C++ or Google Cloud Storage (neither any of its dependencies).
 
 #### SQL providers
-To build without the SQL providers (MySQL, PostgreSQL, SQLite) use the next arguments:
+To build without the SQL providers (MySQL, PostgreSQL, SQLite, Snowflake) use the next arguments:
 ```bash
 # Disable all SQL providers
 ./build.sh disable-mysql disable-sqlite disable-postgresql
@@ -198,14 +198,39 @@ To build without the SQL providers (MySQL, PostgreSQL, SQLite) use the next argu
 # Disable MySQL provider
 ./build.sh disable-mysql
 
+# Disable Snoflake provider
+./build.sh disable-snowflake
 ...
 ```
 NOTES:
 - By disabling the storage plugins you don't need to install mysql-connector-cpp=8.0.23 libpq=13 sqlite=3 (neither any of its dependencies).
-- Currenlty we support only MySQL. but PostgreSQL and SQLite will be ready for the next version!
+- Currenlty we support only MySQL and Snowflake but PostgreSQL and SQLite will be ready for the next version!
 
-##### SnowFlake
-SnowFlake works with [unixODBC](http://www.unixodbc.com/). To use your DSN you need to create the ini files for driver and dsn:
+#### SnowFlake
+SnowFlake works with [unixODBC](http://www.unixodbc.com/). There are two options to connect to snowflake which are the following:
+
+##### Option 1
+Execute the script `./snowflake_odbc_setup.sh` which will install and configure [snowflake driver for odbc 2.23.2](https://sfc-repo.snowflakecomputing.com/odbc/linux/2.23.2/index.html)
+
+After the installation now you can start using snowflake without creating an odbc.ini file, an example is shown below.
+
+```python
+from blazingsql import BlazingContext
+bc = BlazingContext()
+bc.create_table('MY_TABLE', 'MY_SNOWFLAKE_TABLE',
+        from_sql='snowflake',
+        server='MY_SNOWFLAKE_SERVER.snowflakecomputing.com',
+        database='MY_SNOWFLAKE_DATABASE_NAME',
+        schema='PUBLIC',
+        username='MY_USER',
+        password='MY_PASSWORD',
+        table_batch_size=3000)
+df = bc.sql("SELECT * FROM MY_TABLE")
+print(df)
+```
+##### Option 2
+Download the [snowflake driver for odbc 2.23.2](https://sfc-repo.snowflakecomputing.com/odbc/linux/2.23.2/index.html) and unpack it in the /opt directory
+Create the odbc.ini and odbcinst.ini files in the /etc directory in order to register a DSN (Datasource provider)
 
 ```ini
 # /etc/odbcinst.ini
@@ -227,8 +252,23 @@ PORT=443
 SSL=on
 ACCOUNT=myaccount
 ```
+NOTE: Don't forget to update the odbc.ini and odbcinst.ini shown above with snowflake connection parameters
 
-Finally, we are working with the [snowflake driver for odbc 2.23.2](https://sfc-repo.snowflakecomputing.com/odbc/linux/2.23.2/index.html).
+After this configuration you can now connect to snowflake. You can use this code snippet as an example
+```python
+from blazingsql import BlazingContext
+bc = BlazingContext()
+bc.create_table('MY_TABLE', 'MY_SNOWFLAKE_TABLE',
+        from_sql='snowflake',
+        dsn='MyDSN',
+        database='MY_SNOWFLAKE_DATABASE_NAME',
+        schema='PUBLIC',
+        username='MY_USER',
+        password='MY_PASSWORD',
+        table_batch_size=3000)
+df = bc.sql("SELECT * FROM MY_TABLE")
+print(df)
+```
 
 # Documentation
 User guides and public APIs documentation can be found at [here](https://docs.blazingdb.com/docs)

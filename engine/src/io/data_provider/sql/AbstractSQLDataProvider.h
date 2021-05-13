@@ -23,6 +23,7 @@ struct sql_info {
   std::size_t table_batch_size;
   std::string dsn;
   std::string sub_schema;
+  std::string server;
 };
 
 /**
