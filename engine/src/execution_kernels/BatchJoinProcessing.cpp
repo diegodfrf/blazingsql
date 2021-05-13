@@ -387,8 +387,7 @@ std::unique_ptr<ral::frame::BlazingTable> cross_join_functor::operator()<ral::fr
 {
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  std::vector<std::string> names(table_left->column_names());
-  names.insert(names.end(), table_right->column_names().begin(), table_right->column_names().end());
+  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
   return std::make_unique<ral::frame::BlazingCudfTable>(cudf::cross_join(table_left->view(), table_right->view()), names);
 }
 
@@ -417,7 +416,7 @@ bool check_if_has_nulls_functor::operator()<ral::frame::BlazingCudfTable>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view, std::vector<cudf::size_type> const& keys) const
 {
   auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
-  //return ral::processor::check_if_has_nulls(cudf_table_view->view(), keys);
+  return ral::processor::check_if_has_nulls(cudf_table_view->view(), keys);
 }
 
 //////////////////// inner join functor
@@ -459,8 +458,7 @@ std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<ral::fr
 {
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  std::vector<std::string> names(table_left->column_names());
-  names.insert(names.end(), table_right->column_names().begin(), table_right->column_names().end());
+  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
   auto tb = cudf::inner_join(
               table_left->view(),
               table_right->view(),
@@ -508,8 +506,6 @@ struct left_join_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> left,
       std::shared_ptr<ral::frame::BlazingTableView> right,
-      std::shared_ptr<ral::frame::BlazingTableView> right_dropna,
-      bool has_nulls_right,
       std::vector<cudf::size_type> const& left_column_indices,
       std::vector<cudf::size_type> const& right_column_indices) const
   {
@@ -522,8 +518,6 @@ template <>
 std::unique_ptr<ral::frame::BlazingTable> left_join_functor::operator()<ral::frame::BlazingArrowTable>(    
     std::shared_ptr<ral::frame::BlazingTableView> left,
     std::shared_ptr<ral::frame::BlazingTableView> right,
-    std::shared_ptr<ral::frame::BlazingTableView> right_dropna,
-    bool has_nulls_right,
     std::vector<cudf::size_type> const& left_column_indices,
     std::vector<cudf::size_type> const& right_column_indices) const
 {
@@ -535,19 +529,15 @@ template <>
 std::unique_ptr<ral::frame::BlazingTable> left_join_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> left,
     std::shared_ptr<ral::frame::BlazingTableView> right,
-    std::shared_ptr<ral::frame::BlazingTableView> right_dropna,
-    bool has_nulls_right,
     std::vector<cudf::size_type> const& left_column_indices,
     std::vector<cudf::size_type> const& right_column_indices) const
 {
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  auto table_right_dropna = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right_dropna);
-  std::vector<std::string> names(table_left->column_names());
-  names.insert(names.end(), table_right->column_names().begin(), table_right->column_names().end());
+  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
   auto tb = cudf::left_join(
               table_left->view(),
-              has_nulls_right ? table_right_dropna->view() : table_right->view(),
+              table_right->view(),
               left_column_indices,
               right_column_indices);
   return std::make_unique<ral::frame::BlazingCudfTable>(std::move(tb), names);
@@ -598,8 +588,7 @@ std::unique_ptr<ral::frame::BlazingTable> full_join_functor::operator()<ral::fra
 {
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  std::vector<std::string> names(table_left->column_names());
-  names.insert(names.end(), table_right->column_names().begin(), table_right->column_names().end());
+  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
   auto tb = cudf::full_join(
               table_left->view(),
               table_right->view(),
@@ -619,13 +608,13 @@ std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 	std::unique_ptr<ral::frame::BlazingTable> result_table;
 
 	if (this->join_type == CROSS_JOIN) {
-    result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), cross_join_functor(), table_left, table_right);
+		result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), cross_join_functor(), table_left, table_right);
 	} else {
-    bool has_nulls_left = ral::execution::backend_dispatcher(table_left->get_execution_backend(), check_if_has_nulls_functor(), table_left, left_column_indices);
-    bool has_nulls_right = ral::execution::backend_dispatcher(table_right->get_execution_backend(), check_if_has_nulls_functor(), table_right, right_column_indices);
+		bool has_nulls_left = ral::execution::backend_dispatcher(table_left->get_execution_backend(), check_if_has_nulls_functor(), table_left, left_column_indices);
+		bool has_nulls_right = ral::execution::backend_dispatcher(table_right->get_execution_backend(), check_if_has_nulls_functor(), table_right, right_column_indices);
 		if(this->join_type == INNER_JOIN) {
 			cudf::null_equality equalityType = parseJoinConditionToEqualityTypes(this->condition);
-      result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), inner_join_functor(), 
+			result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), inner_join_functor(), 
 				table_left,
 				table_right,
 				this->left_column_indices,
@@ -634,22 +623,20 @@ std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 		} else if(this->join_type == LEFT_JOIN) {
 			//Removing nulls on right key columns before joining
 			std::unique_ptr<ral::frame::BlazingTable> table_right_dropna;
-      bool has_nulls_right = ral::execution::backend_dispatcher(table_right->get_execution_backend(), check_if_has_nulls_functor(), table_right, right_column_indices);
+			bool has_nulls_right = ral::execution::backend_dispatcher(table_right->get_execution_backend(), check_if_has_nulls_functor(), table_right, right_column_indices);
 			if(has_nulls_right){
-        table_right_dropna = ral::execution::backend_dispatcher(table_right->get_execution_backend(), drop_nulls_functor(), table_right, right_column_indices);
+				table_right_dropna = ral::execution::backend_dispatcher(table_right->get_execution_backend(), drop_nulls_functor(), table_right, right_column_indices);
 			}
-      result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), left_join_functor(), 
+				result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), left_join_functor(), 
 				table_left,
-				table_right,
-        table_right_dropna->to_table_view(),
-        has_nulls_right,
+				has_nulls_right ? table_right_dropna->to_table_view() : table_right,
 				this->left_column_indices,
 				this->right_column_indices);
 		} else if(this->join_type == OUTER_JOIN) {
-      result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), full_join_functor(), 
-        table_left,
+				result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), full_join_functor(), 
+				table_left,
 				table_right,
-        has_nulls_left, has_nulls_right,
+				has_nulls_left, has_nulls_right,
 				this->left_column_indices,
 				this->right_column_indices);
 		} else {

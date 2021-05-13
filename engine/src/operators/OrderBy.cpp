@@ -268,10 +268,10 @@ std::unique_ptr<ral::frame::BlazingTable> sample(std::shared_ptr<ral::frame::Bla
 	else {
 		std::tie(sortColIndices, sortOrderTypes, std::ignore) = get_sort_vars(query_part);
 	}
-	
+
 	auto tableNames = table_view->column_names();
 	std::vector<std::string> sortColNames(sortColIndices.size());
-	std::transform(sortColIndices.begin(), sortColIndices.end(), sortColNames.begin(), [&](auto index) { return tableNames[index]; });
+	std::transform(sortColIndices.begin(), sortColIndices.end(), sortColNames.begin(), [&](auto index) { return tableNames.size() > index ? tableNames[index] : "" ; });
 
 	std::size_t num_samples = compute_total_samples(table_view->num_rows());
 	auto samples = ral::execution::backend_dispatcher(
