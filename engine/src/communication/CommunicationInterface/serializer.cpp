@@ -7,7 +7,7 @@
 
 namespace comm {
 
-std::unique_ptr<ral::frame::BlazingTable> deserialize_from_gpu_raw_buffers(
+std::unique_ptr<ral::frame::BlazingCudfTable> deserialize_from_gpu_raw_buffers(
 	const std::vector<blazingdb::transport::ColumnTransport> & columns_offsets,
 	const std::vector<rmm::device_buffer> & raw_buffers,
 	cudaStream_t stream) {

@@ -16,10 +16,11 @@ public:
 	ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_datas, const std::vector<std::string>& col_names, const std::vector<cudf::data_type>& schema);
 
 	/**
-	* Decaches all caches datas and concatenates them into one BlazingTable
-	* @return The BlazingTable that results from concatenating all cache datas.
+	* @brief Decaches all caches datas and concatenates them into one BlazingTable
+	* @param backend the execution backend
+	* @return a BlazingTable that results from concatenating all cache datas. The type of BlazingTable returned will depend on the backend
 	*/
-	std::unique_ptr<ral::frame::BlazingTable> decache() override;
+	std::unique_ptr<ral::frame::BlazingTable> decache(execution::execution_backend backend) override;
 
 	/**
 	* Get the amount of GPU memory consumed by this CacheData

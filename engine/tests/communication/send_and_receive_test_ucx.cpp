@@ -166,7 +166,7 @@ void ReceiverCall(const UcpWorkerAddress &peerUcpWorkerAddress,
     receive_threads.push_back(std::thread([input_cache, &table_for_comparison,i]{
 
       cudaSetDevice(0);
-      auto received_table = input_cache->pullFromCache();
+      auto received_table = input_cache->pullFromCache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
       std::cout<<"input_cache->pullFromCache() "<<i<<std::endl;
 
   

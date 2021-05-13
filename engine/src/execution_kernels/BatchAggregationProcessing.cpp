@@ -131,26 +131,21 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		const std::vector<AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases)
 {
   using namespace ral::operators;
-
-  std::shared_ptr<arrow::Table> table = table_view->view();
-
-  std::cout << "AFFFFFFFFFFFFFFFFFFFFFFTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n\n" << table->ToString() << "\n\n";
-  for (auto a : aggregation_input_expressions) {
-    std::cout << a << "  \n";
-  }
-   std::cout << "el fin en agg esto .... !\n\n";
+  
+    std::shared_ptr<arrow::Table> table = table_view->view();
 
  	std::vector<std::shared_ptr<arrow::Scalar>> reductions;
  	std::vector<std::string> agg_output_column_names;
  	for (size_t i = 0; i < aggregation_types.size(); i++){
  		if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
-      std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(table->num_rows());
+            std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(table->num_rows());
  			reductions.emplace_back(std::move(scalar));
  		} else {
  			std::vector<std::unique_ptr<ral::frame::BlazingColumn>> aggregation_input_scope_holder;
-       std::shared_ptr<arrow::ChunkedArray> aggregation_input;
+            std::shared_ptr<arrow::ChunkedArray> aggregation_input;
  			if(is_var_column(aggregation_input_expressions[i]) || is_number(aggregation_input_expressions[i])) {
  				aggregation_input = table->column(get_index(aggregation_input_expressions[i]));
+
  			} else {
          //TODO percy rommel arrow
  				//aggregation_input_scope_holder = ral::processor::evaluate_expressions(table.view(), {aggregation_input_expressions[i]});
@@ -158,17 +153,17 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  			}
 
  			if( aggregation_types[i] == AggregateKind::COUNT_VALID) {
- 				std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(aggregation_input->length() - aggregation_input->null_count());
+                std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(aggregation_input->length() - aggregation_input->null_count());
  				reductions.emplace_back(std::move(scalar));
  			} else {
- 				std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation(aggregation_types[i]);
-         cudf::type_id theinput_type = cudf::detail::arrow_to_cudf_type(*aggregation_input->type()).id();
+                std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation(aggregation_types[i]);
+                cudf::type_id theinput_type = cudf::detail::arrow_to_cudf_type(*aggregation_input->type()).id();
  				cudf::type_id output_type = get_aggregation_output_type(theinput_type, aggregation_types[i], false);
 
  				std::shared_ptr<arrow::Scalar> reduction_out = arrow_reduce(aggregation_input, agg, cudf::data_type(output_type));
 
  				if (aggregation_types[i] == AggregateKind::SUM0 && !reduction_out->is_valid){ // if this aggregation was a SUM0, and it was not valid, we want it to be a valid 0 instead
-          auto dt = cudf::detail::arrow_to_cudf_type(*reduction_out->type);
+                    auto dt = cudf::detail::arrow_to_cudf_type(*reduction_out->type);
  					std::shared_ptr<arrow::Int64Scalar> zero_scalar = std::make_shared<arrow::Int64Scalar>(0);
  					reductions.emplace_back(std::move(zero_scalar));
  				} else {
@@ -176,7 +171,6 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  				}
  			}
  		}
-
  		// if the aggregation was given an alias lets use it, otherwise we'll name it based on the aggregation and input
  		if(aggregation_column_assigned_aliases[i] == "") {
  			if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
@@ -201,7 +195,6 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
         table->schema()->metadata());
   
   auto tt = arrow::Table::Make(new_schema, output_columns);
-  std::cout << "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n\n\n" << tt->ToString() << "\n\n";
   return std::make_unique<ral::frame::BlazingArrowTable>(tt);
 }
 
@@ -341,7 +334,7 @@ ral::execution::task_result ComputeAggregateKernel::do_process(std::vector< std:
                         input->get_execution_backend(),
                         aggregations_without_groupby_functor(),
                         input->to_table_view(),
-                        aggregation_input_expressions,
+                        this->aggregation_input_expressions,
                         this->aggregation_types,
                         aggregation_column_assigned_aliases);
         } else {
@@ -349,7 +342,7 @@ ral::execution::task_result ComputeAggregateKernel::do_process(std::vector< std:
                         input->get_execution_backend(),
                         aggregations_with_groupby_functor(),
                         input->to_table_view(),
-                        aggregation_input_expressions,
+                        this->aggregation_input_expressions,
                         this->aggregation_types,
                         aggregation_column_assigned_aliases,
                         group_column_indices);
@@ -370,7 +363,7 @@ kstatus ComputeAggregateKernel::run() {
     RAL_EXPECTS(cache_data != nullptr, "In ComputeAggregateKernel: The input cache data cannot be null");
 
     // in case UNION exists, we want to know the num of columns
-    std::tie(this->group_column_indices, aggregation_input_expressions, this->aggregation_types,
+    std::tie(this->group_column_indices, this->aggregation_input_expressions, this->aggregation_types,
         aggregation_column_assigned_aliases) = ral::operators::parseGroupByExpression(this->expression, cache_data->num_columns());
 
     while(cache_data != nullptr ){
@@ -497,7 +490,7 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
 
                     std::unique_ptr<ral::frame::BlazingTable> empty = ral::execution::backend_dispatcher(
                                                                         input->get_execution_backend(),
-                                                                        create_empty_table_functor(),
+                                                                        create_empty_table_like_functor(),
                                                                         input->to_table_view());
 
                     bool added = this->add_to_output_cache(std::move(empty), "", true);

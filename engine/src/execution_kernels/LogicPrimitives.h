@@ -11,6 +11,7 @@ namespace ral {
 namespace frame {
 
 class BlazingTable;
+class BlazingCudfTable;
 
 class BlazingTableView : public execution::BlazingDispatchable {
 public:
@@ -55,13 +56,14 @@ public:
   std::unique_ptr<BlazingTable> clone() const override;
   std::shared_ptr<arrow::Table> view() const { return this->arrow_table; };
 
-private:
+protected:
   std::shared_ptr<arrow::Table> arrow_table;
 };
 
 class BlazingArrowTable : public BlazingTable, public BlazingArrowTableView {
 public:
   BlazingArrowTable(std::shared_ptr<arrow::Table> arrow_table);
+  BlazingArrowTable(std::unique_ptr<BlazingCudfTable> blazing_cudf_table);
   BlazingArrowTable(BlazingArrowTable &&other) = default;
 
   size_t num_columns() const override { return BlazingArrowTableView::num_columns(); }
@@ -109,6 +111,7 @@ public:
 	BlazingCudfTable(std::vector<std::unique_ptr<BlazingColumn>> columns, const std::vector<std::string> & columnNames);
 	BlazingCudfTable(std::unique_ptr<cudf::table> table, const std::vector<std::string> & columnNames);
 	BlazingCudfTable(const cudf::table_view & table, const std::vector<std::string> & columnNames);
+  BlazingCudfTable(std::unique_ptr<BlazingArrowTable> blazing_arrow_table);
 	BlazingCudfTable(BlazingCudfTable &&other);
 
 	BlazingCudfTable & operator=(BlazingCudfTable const &) = delete;

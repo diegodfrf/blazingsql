@@ -171,12 +171,13 @@ public:
 	}
 
 	/**
-	* Remove the payload from this CacheData. A pure virtual function.
+	* @brief Remove the payload from this CacheData. A pure virtual function.
 	* This removes the payload for the CacheData. After this the CacheData will
 	* almost always go out of scope and be destroyed.
-	* @return a BlazingTable generated from the source of data for this CacheData
+	* @param backend the execution backend
+	* @return a BlazingTable generated from the source of data for this CacheData. The type of BlazingTable returned will depend on the backend
 	*/
-	virtual std::unique_ptr<ral::frame::BlazingTable> decache() = 0;
+	virtual std::unique_ptr<ral::frame::BlazingTable> decache(execution::execution_backend backend) = 0;
 
 	/**
 	* . A pure virtual function.
@@ -254,7 +255,15 @@ public:
 	 * Utility function which can take a CacheData and if its a standard GPU cache data, it will downgrade it to CPU or Disk
 	 * @return If the input CacheData is not of a type that can be downgraded, it will just return the original input, otherwise it will return the downgraded CacheData.
 	 */
-	static std::unique_ptr<CacheData> downgradeCacheData(std::unique_ptr<CacheData> cacheData, std::string id, std::shared_ptr<Context> ctx);
+	static std::unique_ptr<CacheData> downgradeGPUCacheData(std::unique_ptr<CacheData> cacheData, std::string id, std::shared_ptr<Context> ctx);
+
+
+	/**
+	 * @brief Factory function that can take a BlazingTable of any type, and convert it to a CacheData of the correct type for its backend without data conversion
+	 * @param table is a BlazingTable of any type
+	 * @return  a CacheData of the correct type for its backend without data conversion
+	 */
+	static std::unique_ptr<CacheData> MakeCacheData(std::unique_ptr<ral::frame::BlazingTable> table);
 
 protected:
 	CacheDataType cache_type; /**< The CacheDataType that is used to store the dataframe representation. */

@@ -220,7 +220,7 @@ limit_table(std::shared_ptr<ral::frame::BlazingTableView> table_view, int64_t nu
 	if (num_rows_limit <= 0) {
     std::unique_ptr<ral::frame::BlazingTable> empty = ral::execution::backend_dispatcher(
                                                         table_view->get_execution_backend(),
-                                                        create_empty_table_functor(),
+                                                        create_empty_table_like_functor(),
                                                         table_view);
 		return std::make_tuple(std::move(empty), false, 0);
 	} else if (num_rows_limit >= table_rows) {

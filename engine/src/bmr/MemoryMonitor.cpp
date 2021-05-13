@@ -52,7 +52,7 @@ namespace ral {
                             }
                             std::vector<std::unique_ptr<ral::cache::CacheData > > inputs = task->release_inputs();
                             for (std::size_t i = 0; i < inputs.size(); i++){
-                                inputs[i] = std::move(inputs[i]->downgradeCacheData(std::move(inputs[i]), "", tree->context));
+                                inputs[i] = std::move(inputs[i]->downgradeGPUCacheData(std::move(inputs[i]), "", tree->context));
                             }
                             task->set_inputs(std::move(inputs));
                             tasks.push_back(std::move(task));
@@ -86,7 +86,7 @@ namespace ral {
                     iter != starting_node->kernel_unit->output_.cache_machines_.end(); iter++) {
                 size_t amount_downgraded = 0;
                 do {
-                    amount_downgraded = iter->second->downgradeCacheData();
+                    amount_downgraded = iter->second->downgradeGPUCacheData();
                 } while (amount_downgraded > 0 && need_to_free_memory()); // if amount_downgraded is 0 then there is was nothing left to downgrade
             }
         }

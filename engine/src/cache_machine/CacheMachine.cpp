@@ -1,8 +1,10 @@
 #include "CacheMachine.h"
 #include "CPUCacheData.h"
 #include "GPUCacheData.h"
+#include "ArrowCacheData.h"
 #include "ConcatCacheData.h"
 #include "CacheDataLocalFile.h"
+#include "execution_graph/backend_dispatcher.h"
 
 #include <sys/stat.h>
 #include <random>
@@ -18,6 +20,27 @@
 
 namespace ral {
 namespace cache {
+
+
+struct make_cachedata_functor {
+	template <typename T>
+	std::unique_ptr<CacheData> operator()(std::unique_ptr<ral::frame::BlazingTable> table){
+		// TODO percy arrow thrown error
+    	return nullptr;
+	}
+};
+
+template<>
+std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::BlazingArrowTable>(std::unique_ptr<ral::frame::BlazingTable> table){
+	std::unique_ptr<ral::frame::BlazingArrowTable> arrow_table(dynamic_cast<ral::frame::BlazingArrowTable*>(table.release()));
+	return std::make_unique<ArrowCacheData>(std::move(arrow_table));
+}
+
+template<>
+std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::BlazingCudfTable>(std::unique_ptr<ral::frame::BlazingTable> table){
+	std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
+	return std::make_unique<GPUCacheData>(std::move(cudf_table));
+}
 
 std::size_t CacheMachine::cache_count(900000000);
 
@@ -305,18 +328,18 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 
     // we dont want to add empty tables to a cache, unless we have never added anything
 	if (!this->something_added || table->num_rows() > 0 || always_add){
-		for (auto col_ind = 0; col_ind < table->num_columns(); col_ind++){
-            // TODO percy arrow
-            ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
-	        bool is_arrow = (arrow_table_ptr != nullptr);
-            if (is_arrow) continue;
+        // WSM TODO do we want to use the backend_dispatcher here too? This is more business logic, not data transformation
+		if (table->get_execution_backend().id() == ral::execution::backend_id::CUDF ){
             ral::frame::BlazingCudfTable *cudf_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
-			if (cudf_table_ptr->view().column(col_ind).offset() > 0){
-				cudf_table_ptr->ensureOwnership();
-				break;
-			}
+            for (auto col_ind = 0; col_ind < table->num_columns(); col_ind++){
+                
+                if (cudf_table_ptr->view().column(col_ind).offset() > 0){
+                    cudf_table_ptr->ensureOwnership();
+                    break;
+                }
 
-		}
+            }
+        }
 
 		if (message_id == ""){
 			message_id = this->cache_machine_name;
@@ -324,9 +347,10 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 
 		num_rows_added += table->num_rows();
 		num_bytes_added += table->size_in_bytes();
-		size_t cacheIndex = 0;
+        // WSM TODO do we want to use the backend_dispatcher here too? This is more business logic, not data transformation
+		size_t cacheIndex = table->get_execution_backend().id() == ral::execution::backend_id::CUDF ? 0 : 1;
 		while(cacheIndex < memory_resources.size()) {
-
+   
 			auto memory_to_use = (this->memory_resources[cacheIndex]->get_memory_used() + table->size_in_bytes());
 
 			if( memory_to_use < this->memory_resources[cacheIndex]->get_memory_limit() || 
@@ -335,11 +359,12 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 				if(cache_level_override != -1){
 					cacheIndex = cache_level_override;
 				}
-				if(cacheIndex == 0) {
-					// before we put into a cache, we need to make sure we fully own the table
-					table->ensureOwnership();
-					std::unique_ptr<CacheData> cache_data;
-					cache_data = std::make_unique<GPUCacheData>(std::move(table),metadata);
+				if(cacheIndex == 0 && table->get_execution_backend().id() == ral::execution::backend_id::CUDF) {
+					
+                    std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
+                    // before we put into a cache, we need to make sure we fully own the table
+                    cudf_table->ensureOwnership();
+					std::unique_ptr<CacheData> cache_data = std::make_unique<GPUCacheData>(std::move(cudf_table),metadata);
 					auto item =	std::make_unique<message>(std::move(cache_data), message_id);
 					this->waitingCache->put(std::move(item));
 
@@ -360,33 +385,40 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 
 				} else {
 					if(cacheIndex == 1) {
-						std::unique_ptr<CacheData> cache_data;
-						cache_data = std::make_unique<CPUCacheData>(std::move(table), metadata, use_pinned);
-							
-						auto item =	std::make_unique<message>(std::move(cache_data), message_id);
-						this->waitingCache->put(std::move(item));
+                        std::unique_ptr<CacheData> cache_data;
+                        // WSM TODO. Here we need to decide if we always want to put into a CPUCacheData or not
+                        // I think we want to put it into an ArrowCacheData and only convert to CPUCacheDAta if we are actually going to do this for comms
+                        if (table->get_execution_backend().id() == ral::execution::backend_id::CUDF){
+                            cache_data = std::make_unique<CPUCacheData>(std::move(table), metadata, use_pinned);
+                        } else {
+                            std::unique_ptr<ral::frame::BlazingArrowTable> arrow_table(dynamic_cast<ral::frame::BlazingArrowTable*>(table.release()));
+                            cache_data = std::make_unique<ArrowCacheData>(std::move(arrow_table), metadata);
+                        }
+                                                        
+                        auto item =	std::make_unique<message>(std::move(cache_data), message_id);
+                        this->waitingCache->put(std::move(item));
 
                         cacheEventTimer.stop();
                         if(cache_events_logger) {
                             cache_events_logger->info("{ral_id}|{query_id}|{message_id}|{cache_id}|{num_rows}|{num_bytes}|{event_type}|{timestamp_begin}|{timestamp_end}|{description}",
-                                                      "ral_id"_a=(ctx ? ctx->getNodeIndex(ral::communication::CommunicationData::getInstance().getSelfNode()) : -1),
-                                                      "query_id"_a=(ctx ? ctx->getContextToken() : -1),
-                                                      "message_id"_a=message_id,
-                                                      "cache_id"_a=cache_id,
-                                                      "num_rows"_a=num_rows_added,
-                                                      "num_bytes"_a=num_bytes_added,
-                                                      "event_type"_a="AddToCache",
-                                                      "timestamp_begin"_a=cacheEventTimer.start_time(),
-                                                      "timestamp_end"_a=cacheEventTimer.end_time(),
-                                                      "description"_a="Add to CacheMachine into CPU cache");
+                                                    "ral_id"_a=(ctx ? ctx->getNodeIndex(ral::communication::CommunicationData::getInstance().getSelfNode()) : -1),
+                                                    "query_id"_a=(ctx ? ctx->getContextToken() : -1),
+                                                    "message_id"_a=message_id,
+                                                    "cache_id"_a=cache_id,
+                                                    "num_rows"_a=num_rows_added,
+                                                    "num_bytes"_a=num_bytes_added,
+                                                    "event_type"_a="AddToCache",
+                                                    "timestamp_begin"_a=cacheEventTimer.start_time(),
+                                                    "timestamp_end"_a=cacheEventTimer.end_time(),
+                                                    "description"_a="Add to CacheMachine into CPU cache");
                         }
-
+                        
 					} else if(cacheIndex == 2) {
 						// BlazingMutableThread t([table = std::move(table), this, cacheIndex, message_id]() mutable {
 						// want to get only cache directory where orc files should be saved
 						std::string orc_files_path = ral::communication::CommunicationData::getInstance().get_cache_directory();
-						// WSM TODO add metadata to CacheDataLocalFile
 						auto cache_data = std::make_unique<CacheDataLocalFile>(std::move(table), orc_files_path, (ctx ? std::to_string(ctx->getContextToken()) : "none"));
+                        cache_data->setMetadata(metadata);
 						auto item =	std::make_unique<message>(std::move(cache_data), message_id);
 						this->waitingCache->put(std::move(item));
 						// NOTE: Wait don't kill the main process until the last thread is finished!
@@ -425,7 +457,7 @@ void CacheMachine::wait_until_finished() {
 }
 
 
-std::unique_ptr<ral::frame::BlazingTable> CacheMachine::get_or_wait(size_t index) {
+std::unique_ptr<ral::frame::BlazingTable> CacheMachine::get_or_wait(execution::execution_backend backend, size_t index) {
     CodeTimer cacheEventTimer;
     cacheEventTimer.start();
 
@@ -436,7 +468,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::get_or_wait(size_t index
     std::string message_id = message_data->get_message_id();
     size_t num_rows = message_data->get_data().num_rows();
     size_t num_bytes = message_data->get_data().size_in_bytes();
-    std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache();
+    std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache(backend);
 
     cacheEventTimer.stop();
     if(cache_events_logger) {
@@ -487,7 +519,7 @@ std::unique_ptr<ral::cache::CacheData>  CacheMachine::get_or_wait_CacheData(size
 	return output;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullFromCache() {
+std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullFromCache(execution::execution_backend backend) {
     CodeTimer cacheEventTimer;
     cacheEventTimer.start();
 
@@ -509,7 +541,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullFromCache() {
     size_t num_rows = message_data->get_data().num_rows();
     size_t num_bytes = message_data->get_data().size_in_bytes();
     int dataType = static_cast<int>(message_data->get_data().get_type());
-	std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache();
+	std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache(backend);
 
     cacheEventTimer.stop();
     if(cache_events_logger) {
@@ -560,9 +592,9 @@ std::unique_ptr<ral::cache::CacheData> CacheMachine::pullCacheData(std::string m
 	return output;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullUnorderedFromCache() {
+std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullUnorderedFromCache(execution::execution_backend backend) {
     if (is_array_access) {
-        return this->pullFromCache();
+        return this->pullFromCache(backend);
     }
 
     CodeTimer cacheEventTimer;
@@ -587,7 +619,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullUnorderedFromCache()
         size_t num_rows = message_data->get_data().num_rows();
         size_t num_bytes = message_data->get_data().size_in_bytes();
         int dataType = static_cast<int>(message_data->get_data().get_type());
-        std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache();
+        std::unique_ptr<ral::frame::BlazingTable> output = message_data->get_data().decache(backend);
 
         cacheEventTimer.stop();
         if(cache_events_logger) {
@@ -606,7 +638,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullUnorderedFromCache()
 
 		return output;
 	} else {
-		return pullFromCache();
+		return pullFromCache(backend);
 	}
 }
 
@@ -654,7 +686,7 @@ std::unique_ptr<ral::cache::CacheData> CacheMachine::pullCacheData() {
 
 // take the first cacheData in this CacheMachine that it can find (looking in reverse order) that is in the GPU put it in RAM or Disk as oppropriate
 // this function does not change the order of the caches
-size_t CacheMachine::downgradeCacheData() {
+size_t CacheMachine::downgradeGPUCacheData() {
 	size_t bytes_downgraded = 0;
 	std::unique_lock<std::mutex> lock = this->waitingCache->lock();
 	std::vector<std::unique_ptr<message>> all_messages = this->waitingCache->get_all_unsafe();
@@ -664,7 +696,7 @@ size_t CacheMachine::downgradeCacheData() {
 			std::string message_id = all_messages[i]->get_message_id();
 			auto current_cache_data = all_messages[i]->release_data();
 			bytes_downgraded += current_cache_data->size_in_bytes();
-			auto new_cache_data = CacheData::downgradeCacheData(std::move(current_cache_data), message_id, ctx);
+			auto new_cache_data = CacheData::downgradeGPUCacheData(std::move(current_cache_data), message_id, ctx);
 
 			auto new_message =	std::make_unique<message>(std::move(new_cache_data), message_id);
 			all_messages[i] = std::move(new_message);
@@ -752,7 +784,8 @@ ConcatenatingCacheMachine::ConcatenatingCacheMachine(std::shared_ptr<Context> co
 	}
 
 // This method does not guarantee the relative order of the messages to be preserved
-std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCache() {
+// WSM TODO refactor this to duse pullCacheData and convert that to a ConcatCacheData
+std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCache(execution::execution_backend backend) {
     CodeTimer cacheEventTimerGeneral;
     cacheEventTimerGeneral.start();
 
@@ -789,7 +822,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 		output = nullptr;
 	} else if (collected_messages.size() == 1) {
 		auto data = collected_messages[0]->release_data();
-		output = data->decache();
+		output = data->decache(backend);
 		num_rows = output->num_rows();
 	}	else {
 		std::vector<std::unique_ptr<ral::frame::BlazingTable>> tables_holder;
@@ -799,13 +832,17 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 		    cacheEventTimer.start();
 
 			auto data = collected_messages[i]->release_data();
-			tables_holder.push_back(data->decache());
+			tables_holder.push_back(data->decache(backend));
 			table_views.push_back(tables_holder[i]->to_table_view());
 
 			// if we dont have to concatenate all, lets make sure we are not overflowing, and if we are, lets put one back
-			if (!concat_all && ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views)){
-				auto cache_data = std::make_unique<GPUCacheData>(std::move(tables_holder.back()));
-				tables_holder.pop_back();
+			if (!concat_all && 
+                backend.id() == ral::execution::backend_id::CUDF &&
+                ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views)){
+                
+                std::unique_ptr<CacheData> cache_data = ral::execution::backend_dispatcher(tables_holder.back()->get_execution_backend(), 
+                                                    make_cachedata_functor(), std::move(tables_holder.back()));
+                tables_holder.pop_back();
 				table_views.pop_back();
 				collected_messages[i] =	std::make_unique<message>(std::move(cache_data), collected_messages[i]->get_message_id());
 				for (; i < collected_messages.size(); i++){
@@ -849,7 +886,8 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
                                           "description"_a="In ConcatenatingCacheMachine::pullFromCache Concatenating will overflow strings length");
             }
 		}
-		output = ral::utilities::concatTables(table_views);
+        output = ral::utilities::concatTables(table_views);
+	
 		num_rows = output->num_rows();
 	}
 

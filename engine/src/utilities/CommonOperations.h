@@ -30,8 +30,6 @@ namespace utilities {
   std::unique_ptr<cudf::scalar> to_cudf_scalar(std::shared_ptr<arrow::Scalar> arrow_scalar);
   
   
-  bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<ral::frame::BlazingArrowTableView>> & tables);
-
   void normalize_types(std::unique_ptr<ral::frame::BlazingArrowTable> & table,  const std::vector<cudf::data_type> & types,
                        std::vector<cudf::size_type> column_indices = std::vector<cudf::size_type>() );
 
@@ -125,8 +123,8 @@ std::vector<T> column_to_vector(cudf::column_view column){
 
 
 
-///////////////// create_empty_table_functor / empty_like functor
-struct create_empty_table_functor {
+///////////////// create_empty_table_like_functor / empty_like functor
+struct create_empty_table_like_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view) const
@@ -137,15 +135,16 @@ struct create_empty_table_functor {
 };
 
 template <>
-inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  // TODO percy
   return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
 }
 
 template <>
-inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
+inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
@@ -153,6 +152,34 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::ope
   return std::make_unique<ral::frame::BlazingCudfTable>(std::move(empty), cudf_table_view->column_names());
 }
 
+
+struct create_empty_table_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(
+      const std::vector<std::string> &column_names,
+	    const std::vector<cudf::data_type> &dtypes) const
+  {
+    // TODO percy arrow thrown error
+    return nullptr;
+  }
+};
+
+template <>
+inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
+    const std::vector<std::string> &column_names,
+	  const std::vector<cudf::data_type> &dtypes) const
+{
+  // TODO percy
+  return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
+}
+
+template <>
+inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
+    const std::vector<std::string> &column_names,
+	  const std::vector<cudf::data_type> &dtypes) const
+{
+  return ral::utilities::create_empty_cudf_table(column_names, dtypes);
+}
 
 
 //////////// from_table_view_to_table functor
@@ -172,6 +199,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> from_table_view_to_table_functo
     std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  // TODO percy
   return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
 }
 
@@ -268,11 +296,8 @@ template <>
 inline bool checkIfConcatenatingStringsWillOverflow_functor::operator()<ral::frame::BlazingArrowTable>(
     const std::vector<std::shared_ptr<ral::frame::BlazingTableView>> & tables) const
 {
-  std::vector<std::shared_ptr<ral::frame::BlazingArrowTableView>> in;
-  for (auto tv : tables) {
-    in.push_back(std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(tv));
-  }
-  return ral::cpu::utilities::checkIfConcatenatingStringsWillOverflow(in);
+  // this check is only relevant to Cudf
+  return false;
 }
 
 template <>
