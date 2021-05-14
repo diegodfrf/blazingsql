@@ -79,6 +79,14 @@ bool checkIfConcatenatingStringsWillOverflow(const std::vector<BlazingTableView>
 
 // TODO percy arrow here we need to think about how we want to manage hybrid tables
 // for now we will concat either cudf tables or arrow tables
+std::unique_ptr<BlazingTable> concatTables(std::vector<std::unique_ptr<BlazingTable>> tables){
+	std::vector<BlazingTableView> tables_views(tables.size());
+	for (std::size_t i = 0; i < tables.size(); i++){
+		tables_views[i] = tables[i]->toBlazingTableView();
+	}
+	return concatTables(tables_views);
+}
+
 std::unique_ptr<BlazingTable> concatTables(const std::vector<BlazingTableView> & tables) {
 	assert(tables.size() >= 0);
 

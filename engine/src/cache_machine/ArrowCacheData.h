@@ -19,6 +19,7 @@ public:
 		std::vector<int> projections
 	);
 
+
 // 	/**
 // 	* Constructor
 // 	* @param table The BlazingTable that is moved into the CacheData.

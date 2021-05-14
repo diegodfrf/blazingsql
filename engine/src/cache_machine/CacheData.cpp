@@ -26,6 +26,7 @@ std::unique_ptr<CacheData> CacheData::downgradeCacheData(std::unique_ptr<CacheDa
 		cacheEventTimer.start();
 
 		std::unique_ptr<ral::frame::BlazingTable> table = cacheData->decache();
+
 		std::shared_ptr<spdlog::logger> cache_events_logger = spdlog::get("cache_events_logger");
 
 		// lets first try to put it into CPU

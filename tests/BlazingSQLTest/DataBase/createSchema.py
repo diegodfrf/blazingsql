@@ -23,6 +23,7 @@ SQLEngineStringDataTypeMap = {
     DataType.MYSQL: "mysql",
     DataType.SQLITE: "sqlite",
     DataType.POSTGRESQL: "postgresql",
+    DataType.SNOWFLAKE: "snowflake",
     # TODO percy c.gonzales support for more db engines
 }
 
@@ -46,6 +47,8 @@ smilesTables = ["docked", "dcoids", "smiles", "split"]
 
 
 class sql_connection:
+    """Used to create a engine sql connection to create and populate tables
+    for e2e testing."""
     def __init__(self, **kwargs):
         hostname = kwargs.get("hostname", "")
         port = kwargs.get("port", 0)
@@ -60,6 +63,20 @@ class sql_connection:
         self.schema = schema
 
 
+class snowflake_connection(sql_connection):
+    """Based sql connection with additional snowflake parameters for odbc
+    connection and python connector. see snowflakeSchema.py."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        database = kwargs.get("database", "")
+        dsn = kwargs.get("dsn", "")
+        account = kwargs.get("account", "")
+
+        self.database = database
+        self.dsn = dsn
+        self.account = account
+
+
 def get_sql_connection(fileSchemaType: DataType):
     if fileSchemaType is DataType.SQLITE:
         return get_sqlite_connection()
@@ -69,6 +86,9 @@ def get_sql_connection(fileSchemaType: DataType):
 
     if fileSchemaType is DataType.POSTGRESQL:
         return get_postgresql_connection()
+
+    if fileSchemaType is DataType.SNOWFLAKE:
+        return get_snowflake_connection()
 
     raise ValueError('Unsupported data type {fileSchemaType}')
 
@@ -129,6 +149,24 @@ def get_sqlite_connection() -> sql_connection:
                           username='',
                           password='',
                           schema=sql_schema)
+
+
+def get_snowflake_connection() -> sql_connection:
+    try:
+        dsn = os.environ['BLAZINGSQL_E2E_SNOWFLAKE_DSN']
+        username = os.environ['BLAZINGSQL_E2E_SNOWFLAKE_USERNAME']
+        password = os.environ['BLAZINGSQL_E2E_SNOWFLAKE_PASSWORD']
+        database = os.environ['BLAZINGSQL_E2E_SNOWFLAKE_DATABASE']
+        schema = os.environ['BLAZINGSQL_E2E_SNOWFLAKE_SCHEMA']
+        account = os.environ['BLAZINGSQL_E2E_SNOWFLAKE_ACCOUNT']
+    except KeyError:
+        return None
+    return snowflake_connection(username=username,
+                                password=password,
+                                dsn=dsn,
+                                database=database,
+                                schema=schema,
+                                account=account)
 
 
 def getFiles_to_tmp(tpch_dir, n_files, ext):
@@ -1280,6 +1318,7 @@ def get_extension(fileSchemaType):
         DataType.MYSQL: "mysql",
         DataType.POSTGRESQL: "postgresql",
         DataType.SQLITE: "sqlite",
+        DataType.SNOWFLAKE: "snowflake",
     }
     return switcher.get(fileSchemaType)
 
@@ -1363,6 +1402,35 @@ def create_tables(bc, dir_data_lc, fileSchemaType, **kwargs):
                 username = sql_username,
                 password = sql_password,
                 database = sql_schema,
+                table_filter = sql_table_filter,
+                table_batch_size = sql_table_batch_size)
+        elif fileSchemaType in [DataType.SNOWFLAKE]:
+            # this is not part of above sql block because there is some uncommon fields
+            sql_table_filter_map = kwargs.get("sql_table_filter_map", {})
+            sql_table_batch_size_map = kwargs.get("sql_table_batch_size_map", {})
+            sql = kwargs.get("sql_connection", None)
+
+            from_sql = SQLEngineStringDataTypeMap[fileSchemaType]
+            sql_dsn = sql.dsn
+            sql_database = sql.database
+            sql_schema = sql.schema
+            sql_username = sql.username
+            sql_password = sql.password
+            sql_table_filter = ""
+            sql_table_batch_size = 1000
+
+            if table in sql_table_filter_map:
+                sql_table_filter = sql_table_filter_map[table]
+            if table in sql_table_batch_size_map:
+                sql_table_batch_size = sql_table_batch_size_map[table]
+
+            bc.create_table(table_names[i], table.upper(),
+                from_sql = from_sql,
+                dsn = sql_dsn,
+                database = sql_database,
+                schema = sql_schema,
+                username = sql_username,
+                password = sql_password,
                 table_filter = sql_table_filter,
                 table_batch_size = sql_table_batch_size)
         else:

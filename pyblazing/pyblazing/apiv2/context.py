@@ -935,6 +935,9 @@ def kwargs_validation(kwargs, bc_api_str):
             "database",
             "table_filter",
             "table_batch_size",
+            "dsn",
+            "schema",
+            "server",
         ]
         params_info = "https://docs.blazingdb.com/docs/create_table"
 
@@ -2711,6 +2714,7 @@ class BlazingContext(object):
                     "mysql",
                     "postgresql",
                     "sqlite",
+                    "snowflake"
                 ]:
                     raise Exception(
                         "ERROR: The file pattern specified did not match any files"
@@ -3224,6 +3228,7 @@ class BlazingContext(object):
                 query_table.fileType == DataType.MYSQL
                 or query_table.fileType == DataType.SQLITE
                 or query_table.fileType == DataType.POSTGRESQL
+                or query_table.fileType == DataType.SNOWFLAKE
             ):
                 if query_table.has_metadata():
                     currentTableNodes = self._optimize_skip_data_getSlices(

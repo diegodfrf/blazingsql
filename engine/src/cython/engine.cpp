@@ -36,6 +36,11 @@
 #include "../io/data_provider/sql/SQLiteDataProvider.h"
 #endif
 
+#ifdef SNOWFLAKE_SUPPORT
+#include "../io/data_parser/sql/SnowFlakeParser.h"
+#include "../io/data_provider/sql/SnowFlakeDataProvider.h"
+#endif
+
 using namespace fmt::literals;
 
 std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_loaders_and_schemas(
@@ -115,11 +120,11 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 #ifdef POSTGRESQL_SUPPORT
 		parser = std::make_shared<ral::io::postgresql_parser>();
     auto sql = ral::io::getSqlInfo(args_map);
-    provider = std::make_shared<ral::io::postgresql_data_provider>(sql, 0, 0);
+    provider = std::make_shared<ral::io::postgresql_data_provider>(sql, total_number_of_nodes, self_node_idx);
+	isSqlProvider = true;
 #else
       throw std::runtime_error("ERROR: This BlazingSQL version doesn't support PostgreSQL integration");
 #endif
-    isSqlProvider = true;
 	} else if(fileType == ral::io::DataType::SQLITE) {
 #ifdef SQLITE_SUPPORT
   		parser = std::make_shared<ral::io::sqlite_parser>();
@@ -129,7 +134,20 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 #else
       throw std::runtime_error("ERROR: This BlazingSQL version doesn't support SQLite integration");
 #endif
-    }
+
+  } else if (fileType == ral::io::DataType::SNOWFLAKE) {
+#ifdef SNOWFLAKE_SUPPORT
+    parser = std::make_shared<ral::io::snowflake_parser>();
+    auto sql = ral::io::getSqlInfo(args_map);
+    provider = std::make_shared<ral::io::snowflake_data_provider>(
+        sql, total_number_of_nodes, self_node_idx);
+    isSqlProvider = true;
+#else
+    throw std::runtime_error("ERROR: This BlazingSQL version doesn't support SnowFlake integration");
+#endif
+  }
+
+
 		std::vector<Uri> uris;
 		for(size_t fileIndex = 0; fileIndex < filesAll[i].size(); fileIndex++) {
 			uris.push_back(Uri{filesAll[i][fileIndex]});
@@ -222,7 +240,7 @@ std::shared_ptr<ral::cache::graph> runGenerateGraph(uint32_t masterIndex,
 {
   using blazingdb::manager::Context;
   using blazingdb::transport::Node;
-  
+
   auto& communicationData = ral::communication::CommunicationData::getInstance();
 
   std::vector<Node> contextNodes;

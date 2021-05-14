@@ -481,6 +481,9 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         }
         break;
     }
+    case operator_type::BLZ_CAST_TIMESTAMP_SECONDS:
+    case operator_type::BLZ_CAST_TIMESTAMP_MILLISECONDS:
+    case operator_type::BLZ_CAST_TIMESTAMP_MICROSECONDS:
     case operator_type::BLZ_CAST_TIMESTAMP:
     {
         assert(arg_tokens.size() == 1);
@@ -492,7 +495,15 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
         if (is_type_string(column.type().id())) {
-            computed_col = cudf::strings::to_timestamps(column, cudf::data_type{cudf::type_id::TIMESTAMP_NANOSECONDS}, "%Y-%m-%d %H:%M:%S");
+            if (op == operator_type::BLZ_CAST_TIMESTAMP_SECONDS) {
+                computed_col = cudf::strings::to_timestamps(column, cudf::data_type{cudf::type_id::TIMESTAMP_SECONDS}, "%Y-%m-%d %H:%M:%S");
+            } else if (op == operator_type::BLZ_CAST_TIMESTAMP_MILLISECONDS) {
+                computed_col = cudf::strings::to_timestamps(column, cudf::data_type{cudf::type_id::TIMESTAMP_MILLISECONDS}, "%Y-%m-%d %H:%M:%S");
+            } else if (op == operator_type::BLZ_CAST_TIMESTAMP_MICROSECONDS) {
+                computed_col = cudf::strings::to_timestamps(column, cudf::data_type{cudf::type_id::TIMESTAMP_MICROSECONDS}, "%Y-%m-%d %H:%M:%S");
+            } else {
+                computed_col = cudf::strings::to_timestamps(column, cudf::data_type{cudf::type_id::TIMESTAMP_NANOSECONDS}, "%Y-%m-%d %H:%M:%S");
+            }
         }
         break;
     }
@@ -787,11 +798,7 @@ std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
     const std::vector<std::string> & expressions) {
     using interops::column_index_type;
 
-    // Let's clean all the expressions that contains Window functions (if exists)
-    // as they should be updated with new indices
-    std::vector<std::string> new_expressions = clean_window_function_expressions(expressions, table.num_columns());
-
-    std::vector<std::unique_ptr<ral::frame::BlazingColumn>> out_columns(new_expressions.size());
+    std::vector<std::unique_ptr<ral::frame::BlazingColumn>> out_columns(expressions.size());
 
     std::vector<bool> column_used(table.num_columns(), false);
     std::vector<std::pair<int, int>> out_idx_computed_idx_pair;
@@ -800,8 +807,8 @@ std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
     std::vector<cudf::mutable_column_view> interpreter_out_column_views;
 
     function_evaluator_transformer evaluator{table};
-    for(size_t i = 0; i < new_expressions.size(); i++){
-        std::string expression = replace_calcite_regex(new_expressions[i]);
+    for(size_t i = 0; i < expressions.size(); i++){
+        std::string expression = replace_calcite_regex(expressions[i]);
         expression = expand_if_logical_op(expression);
 
         parser::parse_tree tree;
@@ -904,9 +911,9 @@ std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
         out_columns.clear();
         computed_columns.clear();
 
-        size_t const half_size = new_expressions.size() / 2;
-        std::vector<std::string> split_lo(new_expressions.begin(), new_expressions.begin() + half_size);
-        std::vector<std::string> split_hi(new_expressions.begin() + half_size, new_expressions.end());
+        size_t const half_size = expressions.size() / 2;
+        std::vector<std::string> split_lo(expressions.begin(), expressions.begin() + half_size);
+        std::vector<std::string> split_hi(expressions.begin() + half_size, expressions.end());
         auto out_cols_lo = evaluate_expressions(table, split_lo);
         auto out_cols_hi = evaluate_expressions(table, split_hi);
 
@@ -977,10 +984,16 @@ std::unique_ptr<ral::frame::BlazingTable> process_project(
         expression = fill_minus_op_with_zero(expression);
         expression = convert_concat_expression_into_multiple_binary_concat_ops(expression);
         expression = get_current_date_or_timestamp(expression, context);
+        expression = convert_ms_to_ns_units(expression);
+        expression = reinterpret_timestamp(expression, blazing_table_in->get_schema());
 
         expressions[i] = expression;
         out_column_names[i] = name;
     }
+
+    // Let's clean all the expressions that contains Window functions (if exists)
+    // as they should be updated with new indices
+    expressions = clean_window_function_expressions(expressions, blazing_table_in->num_columns());
 
     return std::make_unique<ral::frame::BlazingTable>(evaluate_expressions(blazing_table_in->view(), expressions), out_column_names);
 }

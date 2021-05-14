@@ -6,6 +6,7 @@
 #include "parser/expression_utils.hpp"
 #include "utilities/error.hpp"
 
+
 // TODO percy arrow move code
 
 namespace ral {
@@ -28,6 +29,7 @@ std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluate_expressions(
 
 } // namespace cpu
 } // namespace ral
+
 
 namespace ral {
 namespace processor {
