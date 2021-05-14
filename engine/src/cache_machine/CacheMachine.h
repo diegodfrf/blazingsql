@@ -105,6 +105,8 @@ public:
 
 	virtual std::unique_ptr<ral::cache::CacheData> pullCacheData();
 
+	virtual std::unique_ptr<ral::cache::CacheData> pullCacheDataCopy();
+
 	std::vector<size_t> get_all_indexes();
 
 	void wait_for_count(int count){

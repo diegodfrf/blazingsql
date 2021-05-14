@@ -382,8 +382,9 @@ ral::execution::task_result PartitionKernel::do_process(std::vector< std::unique
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
     try{
         auto & input = inputs[0];
+        auto & partition_plan_input = inputs[1];
 
-        std::vector<ral::distribution::NodeColumnView> partitions = ral::distribution::partitionData(this->context.get(), input->to_table_view(), partitionPlan->to_table_view(), sortColIndices, sortOrderTypes);
+        std::vector<ral::distribution::NodeColumnView> partitions = ral::distribution::partitionData(this->context.get(), input->to_table_view(), partition_plan_input->to_table_view(), sortColIndices, sortOrderTypes);
         std::vector<int32_t> part_ids(partitions.size());
         std::generate(part_ids.begin(), part_ids.end(), [count=0, num_partitions_per_node = num_partitions_per_node] () mutable { return (count++) % (num_partitions_per_node); });
 
@@ -412,21 +413,24 @@ kstatus PartitionKernel::run() {
 
     auto nodes = context->getAllNodes();
 
-    // If we have no partitionPlan, its because we have no data, therefore its one partition per node
-    num_partitions_per_node = partitionPlan->num_rows() == 0 ? 1 : (partitionPlan->num_rows() + 1) / this->context->getTotalNodes();
+    std::unique_ptr <ral::cache::CacheData> cache_data = this->input_.get_cache("input_a")->pullCacheData();
+    std::unique_ptr <ral::cache::CacheData> partition_plan_cache_data = this->input_.get_cache("input_b")->pullCacheDataCopy();
 
-    std::map<int32_t, int> temp_partitions_map;
+    // If we have no partitionPlan, its because we have no data, therefore its one partition per node
+    num_partitions_per_node = partition_plan_cache_data->num_rows() == 0 ? 1 : (partition_plan_cache_data->num_rows() + 1) / this->context->getTotalNodes();
+
+    /*std::map<int32_t, int> temp_partitions_map;
     for (int i = 0; i < num_partitions_per_node; i++) {
         temp_partitions_map[i] = 0;
     }
     for (auto &&node : nodes) {
         node_count.emplace(node.id(), temp_partitions_map);
-    }
+    }*/
 
-    std::unique_ptr <ral::cache::CacheData> cache_data = this->input_.get_cache("input_a")->pullCacheData();
-    while(cache_data != nullptr){
+    while(cache_data != nullptr && partition_plan_cache_data != nullptr){
         std::vector<std::unique_ptr <ral::cache::CacheData> > inputs;
         inputs.push_back(std::move(cache_data));
+        inputs.push_back(std::move(partition_plan_cache_data));
 
         ral::execution::executor::get_instance()->add_task(
                 std::move(inputs),
@@ -434,6 +438,7 @@ kstatus PartitionKernel::run() {
                 this);
 
         cache_data = this->input_.get_cache("input_a")->pullCacheData();
+        partition_plan_cache_data = this->input_.get_cache("input_b")->pullCacheDataCopy();
     }
 
     if(logger) {

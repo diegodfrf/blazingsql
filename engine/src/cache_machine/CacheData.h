@@ -198,6 +198,8 @@ public:
 	*/
 	virtual ~CacheData() {}
 
+	virtual std::unique_ptr<CacheData> clone();
+
 	/**
 	* Get the names of the columns.
 	* @return a vector of the column names
@@ -294,6 +296,8 @@ public:
 	CacheData& get_data() const { return *data; }
 
 	std::unique_ptr<CacheData> release_data() { return std::move(data); }
+
+	std::unique_ptr<CacheData> clone() { return data->clone(); }
 
 protected:
 	std::unique_ptr<CacheData> data;

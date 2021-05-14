@@ -13,6 +13,9 @@ namespace cache {
 */
 class GPUCacheData : public CacheData {
 public:
+	GPUCacheData(const GPUCacheData& other) : data_(std::make_unique<ral::frame::BlazingCudfTable>(*other.data_)){
+	}
+
 	/**
 	* Constructor
 	* @param table The BlazingTable that is moved into the CacheData.
@@ -48,6 +51,8 @@ public:
 	* @param names a vector of the column names.
 	*/
 	void set_names(const std::vector<std::string> & names) override;
+
+	std::unique_ptr<CacheData> clone() override;
 
 	/**
 	* Destructor

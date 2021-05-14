@@ -85,7 +85,7 @@ public:
 	kstatus run() override;
 
 private:
-	std::unique_ptr<ral::frame::BlazingTable> partitionPlan;
+	//std::unique_ptr<ral::frame::BlazingTable> partitionPlan;
 	std::vector<cudf::order> sortOrderTypes;
 	std::vector<int> sortColIndices;
 	int num_partitions_per_node;
