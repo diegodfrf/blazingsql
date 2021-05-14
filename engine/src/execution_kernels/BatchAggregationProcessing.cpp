@@ -4,8 +4,6 @@
 #include <cudf/partitioning.hpp>
 #include <arrow/compute/api.h>
 
-// TODO percy arrow move code
-#include "utilities/CudfArrowUtils.h"
 #include "parser/expression_utils.hpp"
 #include "execution_kernels/LogicalProject.h"
 #include "operators/GroupBy.h"
@@ -13,6 +11,8 @@
 #include <cudf/aggregation.hpp>
 #include <cudf/reduction.hpp>
 #include <cudf/detail/interop.hpp>
+#include "utilities/CommonOperations.h"
+
 namespace ral {
 namespace cpu {
 
@@ -48,7 +48,7 @@ std::unique_ptr<cudf::scalar> arrow_reduce(std::shared_ptr<arrow::ChunkedArray> 
       auto result = arrow::compute::Sum(col);
       // TODO percy arrow error
       std::shared_ptr<arrow::Scalar> result_val = result.ValueOrDie().scalar();
-      return to_cudf_scalar(result_val);
+      return ral::cpu::utilities::to_cudf_scalar(result_val);
     } break;
     case cudf::aggregation::PRODUCT: {
       

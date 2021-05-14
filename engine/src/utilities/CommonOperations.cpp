@@ -13,6 +13,7 @@
 #include <cudf/strings/strings_column_view.hpp>
 #include <numeric>
 #include "blazing_table/BlazingColumnOwner.h"
+#include <cudf/detail/interop.hpp>
 
 namespace ral {
 
