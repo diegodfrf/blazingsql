@@ -29,17 +29,24 @@ DataType inferDataType(std::string file_format_hint) {
 		return DataType::POSTGRESQL;
 	if(file_format_hint == "sqlite")
 		return DataType::SQLITE;
+	if(file_format_hint == "snowflake")
+		return DataType::SNOWFLAKE;
 	// NOTE if you need more options the user can pass file_format in the create table
 
 	return DataType::UNDEFINED;
 }
 
-DataType inferFileType(std::vector<std::string> files, DataType data_type_hint, bool ignore_missing_paths) {
-	if(data_type_hint == DataType::PARQUET || data_type_hint == DataType::CSV || data_type_hint == DataType::JSON ||
-		data_type_hint == DataType::ORC || data_type_hint == DataType::MYSQL ||
-    data_type_hint == DataType::POSTGRESQL || data_type_hint == DataType::SQLITE) {
-		return data_type_hint;
-	}
+DataType inferFileType(std::vector<std::string> files,
+                       DataType data_type_hint,
+                       bool ignore_missing_paths) {
+  if (data_type_hint == DataType::PARQUET || data_type_hint == DataType::CSV ||
+      data_type_hint == DataType::JSON || data_type_hint == DataType::ORC ||
+      data_type_hint == DataType::MYSQL ||
+      data_type_hint == DataType::POSTGRESQL ||
+      data_type_hint == DataType::SQLITE ||
+      data_type_hint == DataType::SNOWFLAKE) {
+    return data_type_hint;
+  }
 
 	std::vector<Uri> uris;
 	std::transform(
@@ -253,6 +260,7 @@ std::string getDataTypeName(DataType dataType) {
 	case DataType::MYSQL: return "mysql"; break;
 	case DataType::POSTGRESQL: return "postgresql"; break;
 	case DataType::SQLITE: return "sqlite"; break;
+	case DataType::SNOWFLAKE: return "snowflake"; break;
 	default: break;
 	}
 
@@ -294,6 +302,17 @@ sql_info getSqlInfo(std::map<std::string, std::string> &args_map) {
     }
   } else {
     sql.table_batch_size = DETAULT_TABLE_BATCH_SIZE;
+  }
+  if (args_map.find("dsn") != args_map.end()) {
+    sql.dsn = args_map.at("dsn");
+  }
+  if (args_map.find("server") != args_map.end()) {
+    sql.server = args_map.at("server");
+  }
+  if (args_map.find("schema") != args_map.end()) {
+    // TODO (cristhian): move sub_schema to replace schema member
+    // and move schema to replace database member simultaneously
+    sql.sub_schema = args_map.at("schema");
   }
   return sql;
 }

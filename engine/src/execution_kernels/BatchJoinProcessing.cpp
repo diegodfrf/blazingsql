@@ -133,6 +133,11 @@ join_statement = LogicalJoin(condition=[AND(=($7, $0), OR(AND($8, $9, $2, $3), A
 new_join_statement = LogicalJoin(condition=[=($7, $0)], joinType=[inner])
 filter_statement = LogicalFilter(condition=[OR(AND($8, $9, $2, $3), AND($8, $9, $4, $5), AND($8, $9, $6, $5))])
 
+IS NOT DISTINCT FROM case:
+join_statement = LogicalJoin(condition=[AND(=($0, $3), IS_NOT_DISTINCT_FROM($1, $3))], joinType=[inner])
+new_join_statement = LogicalJoin(condition=[=($0, $3)], joinType=[inner])
+filter_statement = LogicalFilter(condition=[OR(AND(IS NULL($1), IS NULL($3)), IS TRUE(=($1 , $3)))])
+
 Error case:
 join_statement = LogicalJoin(condition=[OR(=($7, $0), AND($8, $9, $2, $3), AND($8, $9, $4, $5), AND($8, $9, $6, $5))], joinType=[inner])
 Should throw an error
@@ -163,14 +168,22 @@ void split_inequality_join_into_join_and_filter(const std::string & join_stateme
 		filter_statement_expression = "";					   // no filter out
 	} else if (tree.root().value == "AND") {
 		size_t num_equalities = 0;
+		size_t num_equal_due_is_not_dist = 0;
 		for (auto&& c : tree.root().children) {
-			if (c->value == "=" || c->value == "IS_NOT_DISTINCT_FROM") {
+			if (c->value == "=") {
 				num_equalities++;
+			} else if (c->value == "IS_NOT_DISTINCT_FROM") {
+				num_equalities++;
+				num_equal_due_is_not_dist++;
 			}
 		}
 		if (num_equalities == tree.root().children.size()) {  // all are equalities. this would be a regular multiple equality join
-			new_join_statement_expression = condition;  // the join_out is the same as the original input
-			filter_statement_expression = "";					   // no filter out
+			if (num_equal_due_is_not_dist > 0) {
+				std::tie(new_join_statement_expression, filter_statement_expression) = update_join_and_filter_expressions_from_is_not_distinct_expr(condition);
+			} else {
+				new_join_statement_expression = condition;
+				filter_statement_expression = "";
+			}
 		} else if (num_equalities > 0) {			   // i can split this into an equality join and a filter
 			if (num_equalities == 1) {  // if there is only one equality, then the root_ for join_out wont be an AND,
 				// and we will just have this equality as the root_
@@ -205,6 +218,11 @@ void split_inequality_join_into_join_and_filter(const std::string & join_stateme
 					}
 				}
 				new_join_statement_expression = ral::parser::detail::rebuild_helper(join_out_root.get());
+
+				// Now that we support IS_NOT_DISTINCT_FROM for join let's update if it is needed
+				if (new_join_statement_expression.find("IS_NOT_DISTINCT_FROM") != new_join_statement_expression.npos) {
+					std::tie(new_join_statement_expression, filter_statement_expression) = update_join_and_filter_expressions_from_is_not_distinct_expr(condition);
+				}
 			} else {
 				auto join_out_root = std::make_unique<ral::parser::operator_node>("AND");
 				auto filter_root = std::make_unique<ral::parser::operator_node>("AND");
@@ -343,7 +361,7 @@ std::tuple<int, int> PartwiseJoin::check_for_set_that_has_not_been_completed(){
 }
 
 // this function makes sure that the columns being joined are of the same type so that we can join them properly
-void PartwiseJoin::computeNormalizationData(const	std::vector<cudf::data_type> & left_types, const std::vector<cudf::data_type> & right_types){
+void PartwiseJoin::computeNormalizationData(const std::vector<cudf::data_type> & left_types, const std::vector<cudf::data_type> & right_types){
 	std::vector<cudf::data_type> left_join_types, right_join_types;
 	for (size_t i = 0; i < this->left_column_indices.size(); i++){
 		left_join_types.push_back(left_types[this->left_column_indices[i]]);
@@ -357,6 +375,22 @@ void PartwiseJoin::computeNormalizationData(const	std::vector<cudf::data_type> &
 												right_join_types.cbegin(), right_join_types.cend());
 }
 
+std::unique_ptr<cudf::table> reordering_columns_due_to_right_join(std::unique_ptr<cudf::table> table_ptr, size_t right_columns) {
+	std::vector<std::unique_ptr<cudf::column>> columns_ptr = table_ptr->release();
+	std::vector<std::unique_ptr<cudf::column>> columns_right_pos;
+
+	// First let's put all the left columns
+	for (size_t index = right_columns; index < columns_ptr.size(); ++index) {
+		columns_right_pos.push_back(std::move(columns_ptr[index]));
+	}
+
+	// Now let's append right columns
+	for (size_t index = 0; index < right_columns; ++index) {
+		columns_right_pos.push_back(std::move(columns_ptr[index]));
+	}
+
+	return std::make_unique<cudf::table>(std::move(columns_right_pos));
+}
 
 ///////////////////// cross_join
 
@@ -601,6 +635,35 @@ std::unique_ptr<ral::frame::BlazingTable> full_join_functor::operator()<ral::fra
 
 
 
+/////////////////////////////////// reordering_columns_due_to_right_join functor
+
+
+struct reordering_columns_due_to_right_join_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(std::unique_ptr<ral::frame::BlazingTable> table_ptr, size_t right_columns) const
+  {
+    // TODO percy arrow thrown error
+    return nullptr;
+  }
+};
+
+template<>
+std::unique_ptr<ral::frame::BlazingTable> reordering_columns_due_to_right_join_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::unique_ptr<ral::frame::BlazingTable> table_ptr, size_t right_columns) const
+{
+  // TODO percy arrow
+  return nullptr;
+}
+
+template<>
+std::unique_ptr<ral::frame::BlazingTable> reordering_columns_due_to_right_join_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::unique_ptr<ral::frame::BlazingTable> table_ptr, size_t right_columns) const
+{
+  ral::frame::BlazingCudfTable* result_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table_ptr.get());
+  return std::make_unique<ral::frame::BlazingCudfTable>(reordering_columns_due_to_right_join(result_table_ptr->releaseCudfTable(), right_columns), 
+                                                        table_ptr->column_names());
+}
+
 std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 	std::shared_ptr<ral::frame::BlazingTableView> table_left,
 	std::shared_ptr<ral::frame::BlazingTableView> table_right)
@@ -632,6 +695,24 @@ std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 				has_nulls_right ? table_right_dropna->to_table_view() : table_right,
 				this->left_column_indices,
 				this->right_column_indices);
+		} else if(this->join_type == RIGHT_JOIN) {
+			//Removing nulls on left key columns before joining
+			std::unique_ptr<ral::frame::BlazingTable> table_left_dropna;
+			bool has_nulls_left = ral::execution::backend_dispatcher(table_left->get_execution_backend(), check_if_has_nulls_functor(), table_left, left_column_indices);
+			if(has_nulls_left){
+				table_left_dropna = ral::execution::backend_dispatcher(table_left->get_execution_backend(), drop_nulls_functor(), table_left, left_column_indices);
+			}
+
+			result_table = ral::execution::backend_dispatcher(table_right->get_execution_backend(), left_join_functor(), 
+                                                        table_right,
+                                                        has_nulls_left ? table_left_dropna->to_table_view() : table_left,
+                                                        this->right_column_indices,
+                                                        this->left_column_indices);
+
+			// After a right join is performed, we want to make sure the left column keep on the left side of result_table
+			result_table = ral::execution::backend_dispatcher(result_table->get_execution_backend(), reordering_columns_due_to_right_join_functor(), 
+                                                              std::move(result_table), table_right->num_columns());
+
 		} else if(this->join_type == OUTER_JOIN) {
 				result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), full_join_functor(), 
 				table_left,

@@ -16,6 +16,10 @@
 #include "io/data_provider/sql/SQLiteDataProvider.h"
 #endif
 
+#ifdef SNOWFLAKE_SUPPORT
+#include "io/data_provider/sql/SnowFlakeDataProvider.h"
+#endif
+
 #include "parser/expression_utils.hpp"
 #include "execution_graph/executor.h"
 #include <cudf/types.hpp>
@@ -45,6 +49,39 @@ return projections;
   }
   return projections;
 }
+
+// BEGIN BatchSequence
+
+BatchSequence::BatchSequence(std::shared_ptr<ral::cache::CacheMachine> cache, const ral::cache::kernel * kernel, bool ordered)
+: cache{cache}, kernel{kernel}, ordered{ordered}
+{}
+
+void BatchSequence::set_source(std::shared_ptr<ral::cache::CacheMachine> cache) {
+    this->cache = cache;
+}
+
+std::unique_ptr<ral::cache::CacheData> BatchSequence::next() {
+    if (ordered) {
+        return cache->pullCacheData();
+    } else {
+      // TODO percy arrow william
+        //return cache->pullUnorderedFromCache();
+    }
+}
+
+bool BatchSequence::wait_for_next() {
+    if (kernel) {
+        std::string message_id = std::to_string((int)kernel->get_type_id()) + "_" + std::to_string(kernel->get_id());
+    }
+
+    return cache->wait_for_next();
+}
+
+bool BatchSequence::has_next_now() {
+    return cache->has_next_now();
+}
+
+// END BatchSequence
 
 // BEGIN BatchSequenceBypass
 
@@ -114,6 +151,12 @@ TableScan::TableScan(std::size_t kernel_id, const std::string & queryString, std
       ral::io::set_sql_projections<ral::io::sqlite_data_provider>(provider.get(), get_projections_wrapper(schema.get_num_columns()));
 #else
       throw std::runtime_error("ERROR: This BlazingSQL version doesn't support SQLite integration");
+#endif
+    } else if (parser->type() == ral::io::DataType::SNOWFLAKE)	{
+#ifdef SNOWFLAKE_SUPPORT
+      ral::io::set_sql_projections<ral::io::snowflake_data_provider>(provider.get(), get_projections_wrapper(schema.get_num_columns()));
+#else
+      throw std::runtime_error("ERROR: This BlazingSQL version doesn't support SnowFlake integration");
 #endif
     } else {
         num_batches = provider->get_num_handles();
@@ -266,6 +309,12 @@ BindableTableScan::BindableTableScan(std::size_t kernel_id, const std::string & 
       ral::io::set_sql_projections<ral::io::sqlite_data_provider>(provider.get(), get_projections_wrapper(schema.get_num_columns(), queryString));
 #else
       throw std::runtime_error("ERROR: This BlazingSQL version doesn't support SQLite integration");
+#endif
+    } else if (parser->type() == ral::io::DataType::SNOWFLAKE)	{
+#ifdef SNOWFLAKE_SUPPORT
+      ral::io::set_sql_projections<ral::io::snowflake_data_provider>(provider.get(), get_projections_wrapper(schema.get_num_columns(), queryString));
+#else
+      throw std::runtime_error("ERROR: This BlazingSQL version doesn't support SnowFlake integration");
 #endif
     } else {
         num_batches = provider->get_num_handles();
