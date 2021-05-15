@@ -868,7 +868,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 			}
 		}
 
-		if( concat_all && ral::utilities::checkIfConcatenatingStringsWillOverflow(tables) ) { // if we have to concatenate all, then lets throw a warning if it will overflow strings
+		if( concat_all && ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views) ) { // if we have to concatenate all, then lets throw a warning if it will overflow strings
             CodeTimer cacheEventTimer;
             cacheEventTimer.start();
             cacheEventTimer.stop();

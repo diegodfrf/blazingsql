@@ -91,7 +91,7 @@ std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(int offset) 
             }
 		}
 
-		return ral::utilities::concatTables(std::move(metadata_batches));
+		return ral::utilities::concatTables(metadata_batches_views);
 	}
 }
 
