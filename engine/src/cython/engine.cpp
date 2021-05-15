@@ -120,7 +120,6 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 #else
       throw std::runtime_error("ERROR: This BlazingSQL version doesn't support PostgreSQL integration");
 #endif
-    isSqlProvider = true;
 	} else if(fileType == ral::io::DataType::SQLITE) {
 #ifdef SQLITE_SUPPORT
   		parser = std::make_shared<ral::io::sqlite_parser>();
@@ -236,7 +235,7 @@ std::shared_ptr<ral::cache::graph> runGenerateGraph(uint32_t masterIndex,
 {
   using blazingdb::manager::Context;
   using blazingdb::transport::Node;
-  
+
   auto& communicationData = ral::communication::CommunicationData::getInstance();
 
   std::vector<Node> contextNodes;

@@ -48,7 +48,7 @@ DataType inferFileType(std::vector<std::string> files,
     return data_type_hint;
   }
 
-	std::vector<Uri> uris;
+  std::vector<Uri> uris;
 	std::transform(
 		files.begin(), files.end(), std::back_inserter(uris), [](std::string uri) -> Uri { return Uri(uri); });
 	ral::io::uri_data_provider udp(uris, ignore_missing_paths);
@@ -298,7 +298,7 @@ sql_info getSqlInfo(std::map<std::string, std::string> &args_map) {
     if (args_map.at("table_batch_size").empty()) {
       sql.table_batch_size = DETAULT_TABLE_BATCH_SIZE;
     } else {
-      sql.table_batch_size = static_cast<std::size_t>(std::atoll(args_map.at("table_batch_size").data())); 
+      sql.table_batch_size = static_cast<std::size_t>(std::atoll(args_map.at("table_batch_size").data()));
     }
   } else {
     sql.table_batch_size = DETAULT_TABLE_BATCH_SIZE;

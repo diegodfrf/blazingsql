@@ -35,7 +35,7 @@ void parseJoinConditionToColumnIndices(const std::string & condition, std::vecto
 	// since this is all that is implemented at the time
 
 	// TODO: for this to work properly we can only do multi column join
-	// when we have ands, when we have hors we hvae to perform the joisn seperately then
+	// when we have `ands`, when we have `ors` we have to perform the join seperately then
 	// do a unique merge of the indices
 
 	// right now with pred push down the join codnition takes the filters as the second argument to condition
@@ -100,10 +100,9 @@ cudf::null_equality parseJoinConditionToEqualityTypes(const std::string & condit
 	}
 
 	// TODO: There may be cases where there is a mixture of
-	// equality operators. We do not support it for now,
+	// equality operators (not for IS NOT DISTINCT FROM). We do not support it for now,
 	// since that is not supported in cudf.
 	// We only rely on the first equality type found.
-	// Related issue: https://github.com/BlazingDB/blazingsql/issues/1421
 
 	bool all_types_are_equal = std::all_of(joinEqualityTypes.begin(), joinEqualityTypes.end(), [&](const cudf::null_equality & elem) {return elem == joinEqualityTypes.front();});
 	if(!all_types_are_equal){
@@ -277,9 +276,6 @@ PartwiseJoin::PartwiseJoin(std::size_t kernel_id, const std::string & queryStrin
 
 	if (this->filter_statement != "" && this->join_type != INNER_JOIN){
 		throw std::runtime_error("Outer joins with inequalities are not currently supported");
-	}
-	if (this->join_type == RIGHT_JOIN) {
-		throw std::runtime_error("Right Outer Joins are not currently supported");
 	}
 }
 
@@ -736,7 +732,6 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 	auto & left_batch = inputs[0];
 	auto & right_batch = inputs[1];
 
-
 	try{
 		if (this->normalize_left){
 			ral::utilities::normalize_types(left_batch, this->join_column_common_types, this->left_column_indices);
@@ -931,7 +926,7 @@ JoinPartitionKernel::JoinPartitionKernel(std::size_t kernel_id, const std::strin
 }
 
 // this function makes sure that the columns being joined are of the same type so that we can join them properly
-void JoinPartitionKernel::computeNormalizationData(const	std::vector<cudf::data_type> & left_types, const	std::vector<cudf::data_type> & right_types){
+void JoinPartitionKernel::computeNormalizationData(const std::vector<cudf::data_type> & left_types, const std::vector<cudf::data_type> & right_types){
 	std::vector<cudf::data_type> left_join_types, right_join_types;
 	for (size_t i = 0; i < this->left_column_indices.size(); i++){
 		left_join_types.push_back(left_types[this->left_column_indices[i]]);

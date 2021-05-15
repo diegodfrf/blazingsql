@@ -83,7 +83,7 @@ std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(int offset) 
 	if (metadata_batches.size() == 1){
 		return std::move(metadata_batches[0]);
 	} else {
-		if(ral::utilities::checkIfConcatenatingStringsWillOverflow(metadata_batches_views)) {
+		if(ral::utilities::checkIfConcatenatingStringsWillOverflow(metadata_batches)) {
             std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
             if(logger){
                 logger->warn("|||{info}|||||",
@@ -91,7 +91,7 @@ std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(int offset) 
             }
 		}
 
-		return ral::utilities::concatTables(metadata_batches_views);
+		return ral::utilities::concatTables(std::move(metadata_batches));
 	}
 }
 

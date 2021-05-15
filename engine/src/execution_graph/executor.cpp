@@ -120,7 +120,7 @@ void task::run(cudaStream_t stream, executor * executor){
     }catch(const rmm::bad_alloc& e){
         int i = 0;
         for(auto & input : inputs){
-            if (i < last_input_decached && input->get_type() == ral::cache::CacheDataType::GPU ){
+            if (i < last_input_decached && input->get_type() == ral::cache::CacheDataType::GPU){
                 //this was a gpu cachedata so now its not valid
                 
                 std::unique_ptr<ral::frame::BlazingCudfTable> temp_cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(input_tables[i].release()));
@@ -264,7 +264,7 @@ void executor::execute(){
             active_tasks_counter++;
 
             try {
-                cur_task->run(this->streams[thread_id],this);
+                cur_task->run(this->streams[thread_id], this);
             } catch(...) {
                 std::unique_lock<std::mutex> lock(exception_holder_mutex);
                 exception_holder.push(std::current_exception());

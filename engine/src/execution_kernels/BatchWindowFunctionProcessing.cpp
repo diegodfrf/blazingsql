@@ -61,19 +61,10 @@ ComputeWindowKernel::ComputeWindowKernel(std::size_t kernel_id, const std::strin
 std::unique_ptr<cudf::column> ComputeWindowKernel::compute_column_from_window_function(
     cudf::table_view input_table_cudf_view,
     cudf::column_view col_view_to_agg,
-    std::size_t pos, int & agg_param_count ) {
-
-    std::unique_ptr<cudf::aggregation> window_aggregation;
+    std::size_t pos ) {
 
     // we want firs get the type of aggregation
-    if (this->agg_param_values.size() > agg_param_count && is_lag_or_lead_aggregation(this->type_aggs_as_str[pos])) {
-        window_aggregation = ral::operators::makeCudfAggregation(this->aggs_wind_func[pos], this->agg_param_values[agg_param_count]);
-        agg_param_count++;
-    } else if (is_last_value_window(this->type_aggs_as_str[pos])) {
-        window_aggregation = ral::operators::makeCudfAggregation(this->aggs_wind_func[pos], -1);
-    } else {
-        window_aggregation = ral::operators::makeCudfAggregation(this->aggs_wind_func[pos]);
-    }
+    std::unique_ptr<cudf::rolling_aggregation> window_aggregation = ral::operators::makeCudfAggregation<cudf::rolling_aggregation>(this->aggs_wind_func[pos], this->agg_param_values[pos]);
 
     // want all columns to be partitioned
     std::vector<cudf::column_view> columns_to_partition;
@@ -144,21 +135,24 @@ std::unique_ptr<cudf::column> ComputeWindowKernel::compute_column_from_window_fu
         else if (window_expression_contains_order_by(this->expression)) {
             if (window_expression_contains_bounds(this->expression)) {
                 // TODO: for now just ROWS bounds works (not RANGE)
-                windowed_col = cudf::grouped_rolling_window(partitioned_table_view, col_view_to_agg, this->preceding_value + 1, this->following_value, 1, window_aggregation);
+                windowed_col = cudf::grouped_rolling_window(partitioned_table_view, col_view_to_agg, 
+                    this->preceding_value >= 0 ? this->preceding_value + 1: partitioned_table_view.num_rows(), 
+                    this->following_value >= 0 ? this->following_value : partitioned_table_view.num_rows(), 
+                    1, *window_aggregation);
             } else {
                 if (this->type_aggs_as_str[pos] == "LEAD") {
-                    windowed_col = cudf::grouped_rolling_window(partitioned_table_view, col_view_to_agg, 0, col_view_to_agg.size(), 1, window_aggregation);
+                    windowed_col = cudf::grouped_rolling_window(partitioned_table_view, col_view_to_agg, 0, col_view_to_agg.size(), 1, *window_aggregation);
                 } else {
-                    windowed_col = cudf::grouped_rolling_window(partitioned_table_view, col_view_to_agg, col_view_to_agg.size(), 0, 1, window_aggregation);
+                    windowed_col = cudf::grouped_rolling_window(partitioned_table_view, col_view_to_agg, col_view_to_agg.size(), 0, 1, *window_aggregation);
                 }
             }
         } else {
-            windowed_col = cudf::grouped_rolling_window(partitioned_table_view, col_view_to_agg, col_view_to_agg.size(), col_view_to_agg.size(), 1, window_aggregation);
+            windowed_col = cudf::grouped_rolling_window(partitioned_table_view, col_view_to_agg, col_view_to_agg.size(), col_view_to_agg.size(), 1, *window_aggregation);
         }
     } else {
         if (window_expression_contains_bounds(this->expression)) {
             // TODO: for now just ROWS bounds works (not RANGE)
-            windowed_col = cudf::rolling_window(col_view_to_agg, this->preceding_value + 1, this->following_value, 1, window_aggregation);
+            windowed_col = cudf::rolling_window(col_view_to_agg, this->preceding_value + 1, this->following_value, 1, *window_aggregation);
         } else {
            throw std::runtime_error("Window functions without partitions and without bounded windows are currently not supported");
         }
