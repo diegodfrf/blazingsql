@@ -5,7 +5,6 @@
 #include "cudf/interop.hpp"
 #include "blazing_table/BlazingColumnView.h"
 #include "blazing_table/BlazingColumnOwner.h"
-
 #include <cudf/detail/interop.hpp>
 
 namespace ral {
