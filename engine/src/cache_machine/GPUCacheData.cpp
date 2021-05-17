@@ -33,8 +33,8 @@ void GPUCacheData::set_names(const std::vector<std::string> & names) {
 }
 
 std::unique_ptr<CacheData> GPUCacheData::clone() {
-    //return std::unique_ptr<CacheData>(new GPUCacheData(data_));
-    return std::unique_ptr<CacheData>(std::make_unique<GPUCacheData>(*this));
+    std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(this->data_->clone().release()));
+    return std::make_unique<GPUCacheData>(std::move(cudf_table), this->metadata);
 }
 
 std::shared_ptr<ral::frame::BlazingTableView> GPUCacheData::getTableView() {

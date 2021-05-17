@@ -13,9 +13,6 @@ namespace cache {
 */
 class GPUCacheData : public CacheData {
 public:
-	GPUCacheData(const GPUCacheData& other) : data_(std::make_unique<ral::frame::BlazingCudfTable>(*other.data_)){
-	}
-
 	/**
 	* Constructor
 	* @param table The BlazingTable that is moved into the CacheData.
