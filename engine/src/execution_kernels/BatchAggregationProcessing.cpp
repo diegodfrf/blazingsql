@@ -156,7 +156,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
                 std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(aggregation_input->length() - aggregation_input->null_count());
  				reductions.emplace_back(std::move(scalar));
  			} else {
-                std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation(aggregation_types[i]);
+                std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation<cudf::aggregation>(aggregation_types[i]);
                 cudf::type_id theinput_type = cudf::detail::arrow_to_cudf_type(*aggregation_input->type()).id();
  				cudf::type_id output_type = get_aggregation_output_type(theinput_type, aggregation_types[i], false);
 

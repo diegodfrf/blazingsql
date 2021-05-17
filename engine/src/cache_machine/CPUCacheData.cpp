@@ -49,6 +49,7 @@ CPUCacheData::CPUCacheData(const std::vector<blazingdb::transport::ColumnTranspo
 			std::vector<ral::memory::blazing_chunked_column_info> && chunked_column_infos,
 			std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>> && allocations,
 			const MetadataDictionary & metadata)  {
+
 	this->cache_type = CacheDataType::CPU;
 	for(int i = 0; i < column_transports.size(); i++){
 		this->col_names.push_back(std::string(column_transports[i].metadata.col_name));

@@ -14,13 +14,16 @@ namespace io {
 
 struct sql_info {
   std::string host;
-  size_t port;
+  std::size_t port;
   std::string user;
   std::string password;
   std::string schema; // aka database name
   std::string table;
   std::string table_filter;
-  size_t table_batch_size;
+  std::size_t table_batch_size;
+  std::string dsn;
+  std::string sub_schema;
+  std::string server;
 };
 
 /**
@@ -59,7 +62,8 @@ protected:
 
 protected:
   // returns SELECT ... FROM ... WHERE ... LIMIT ... OFFSET
-  std::string build_select_query(size_t batch_index) const;
+  std::string build_select_query(std::size_t batch_index,
+                                 const std::string & orderBy = "") const;
 
 protected:
   sql_info sql;

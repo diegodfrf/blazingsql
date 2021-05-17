@@ -50,8 +50,8 @@ postgresql_tpch_table_descriptions = {
                            o_orderstatus    char(1) ,
                            o_totalprice     decimal(15,2) ,
                            o_orderdate      date ,
-                           o_orderpriority  char(15) ,  
-                           o_clerk          char(15) , 
+                           o_orderpriority  char(15) ,
+                           o_clerk          char(15) ,
                            o_shippriority   integer ,
                            o_comment        varchar(79) )""",
     "lineitem": """create table lineitem ( l_orderkey    integer ,
@@ -131,7 +131,7 @@ def create_and_load_tpch_schema(sql: sql_connection, only_create_tables : bool =
             table_files = "%s/%s_*.psv" % (tabs_dir, table)
             postgresql_load_data_in_file(table, table_files, cursor, cnx)
         else:
-            print("MySQL table %s already exists, will not load any data!" % table)
+            print("PostgreSQL table %s already exists, will not load any data!" % table)
 
     cursor.close()
     cnx.close()
