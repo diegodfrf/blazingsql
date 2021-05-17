@@ -64,6 +64,7 @@ function(configure_test TEST_NAME Tests_SRCS)
         ${MYSQL_LIBRARY}
         ${SQLITE_LIBRARY}
         ${POSTGRESQL_LIBRARY}
+        ${SNOWFLAKE_LIBRARY}
     )
 
     set_target_properties(${TEST_NAME} PROPERTIES
