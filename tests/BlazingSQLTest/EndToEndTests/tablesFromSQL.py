@@ -210,7 +210,7 @@ def setup_test(data_type: DataType) -> createSchema.sql_connection:
     sql = createSchema.get_sql_connection(data_type)
     if not sql:
         print(
-            f"ERROR: You cannot run tablesFromSQL test, setup your SQL connection for {data_type}using env vars! See tests/README.md")
+            f"ERROR: You cannot run tablesFromSQL test, setup your SQL connection for {data_type.name} using env vars! See tests/README.md")
         return None
 
     if data_type is DataType.MYSQL:

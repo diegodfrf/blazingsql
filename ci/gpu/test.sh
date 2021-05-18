@@ -167,6 +167,9 @@ else
                         echo "The fork doesn't exist"
                         git clone --depth 1 https://github.com/BlazingDB/blazingsql-testing-files.git --branch ${TARGET_BRANCH} --single-branch
                     fi
+                else
+                    echo "PR_AUTHOR not found cloning blazingsql testing files from master branch"
+                    git clone --depth 1 https://github.com/BlazingDB/blazingsql-testing-files.git --branch master --single-branch
                 fi
                 set -e
 

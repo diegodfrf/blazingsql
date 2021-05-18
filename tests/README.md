@@ -317,8 +317,8 @@ BLAZINGSQL_E2E_SNOWFLAKE_PASSWORD
 BLAZINGSQL_E2E_SNOWFLAKE_DATABASE
 BLAZINGSQL_E2E_SNOWFLAKE_ACCOUNT
 ```
-
-Note BLAZINGSQL_E2E_SQL_PORT is a number and the other vars are strings!
+To run test for tables in Snowflake you can configure ODBC DSN here https://github.com/aucahuasi/blazingsql-private#snowflake
+Note: BLAZINGSQL_E2E_SQL_PORT is a number and the other vars are strings!
 #### Troubleshooting
 
 Sometimes, for many reasons the E2E script test could raise an error. In that case, containers may be in an invalid state. Before try again, please check that there aren't any HDFS or Kerberos containers running by calling the stopping of the containers explicitly:
