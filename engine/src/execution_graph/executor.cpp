@@ -95,26 +95,12 @@ void task::run(cudaStream_t stream, executor * executor){
                 break;
             }
             
+            // TODO percy WSM this execution paradigm needs to be made more intelligent
+
             last_input_decached++;
             auto decached_input = input->decache(executor->preferred_compute());
             input_tables.push_back(std::move(decached_input));
 
-            // WSM TODO this execution paradigm needs to be made more intelligent
-//            if (input->get_type() == ral::cache::CacheDataType::ARROW){
-//                input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::ARROW))));
-//            } else if (input->get_type() == ral::cache::CacheDataType::GPU) {
-//                input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
-//            } else if (input->get_type() == ral::cache::CacheDataType::IO_FILE){
-//                ral::cache::CacheDataIO* cache_data_io_ptr = dynamic_cast<ral::cache::CacheDataIO*>(input.get());
-//                if (cache_data_io_ptr->GetParserType() == ral::io::ARROW){
-//                    input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::ARROW))));
-//                } else {
-//                    input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
-//                }
-//            } else {
-//                input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
-//            }
-            
             executor->accumulate_rows(input_tables.back()->num_rows());
         }
     }catch(const rmm::bad_alloc& e){
