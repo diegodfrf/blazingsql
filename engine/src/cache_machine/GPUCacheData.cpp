@@ -3,10 +3,6 @@
 namespace ral {
 namespace cache {
 
-/*GPUCacheData::GPUCacheData(const GPUCacheData&& other) : data_(std::move(other.data_->clone())){
-    //data_ = dynamic_cast<ral::frame::BlazingCudfTable*>(data_->clone());//other.data_->clone();
-}*/
-
 GPUCacheData::GPUCacheData(std::unique_ptr<ral::frame::BlazingCudfTable> table)
     : CacheData(CacheDataType::GPU,table->column_names(), table->column_types(), table->num_rows()),  data_{std::move(table)} {}
 
