@@ -623,8 +623,13 @@ kstatus Print::run() {
 // BEGIN OutputKernel
 
 kstatus OutputKernel::run() {
+  ral::execution::backend_id output_type = ral::execution::backend_id::CUDF;
+  if (this->context->output_type() == "pandas") {
+    output_type = ral::execution::backend_id::ARROW;
+  }
+
     while (this->input_.get_cache()->wait_for_next()) {
-        std::unique_ptr<frame::BlazingTable> temp_output = this->input_.get_cache()->pullFromCache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
+        std::unique_ptr<frame::BlazingTable> temp_output = this->input_.get_cache()->pullFromCache(ral::execution::execution_backend(output_type));
 
         if(temp_output){
             output.emplace_back(std::move(temp_output));

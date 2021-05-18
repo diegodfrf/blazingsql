@@ -12,7 +12,9 @@
 std::string runGeneratePhysicalGraph(uint32_t masterIndex,
                                      std::vector<std::string> worker_ids,
                                      int32_t ctxToken,
-                                     std::string query);
+                                     std::string query,
+                                     std::string output_type,
+                                     std::string preferred_compute);
 
 std::shared_ptr<ral::cache::graph> runGenerateGraph(uint32_t masterIndex,
 	std::vector<std::string> worker_ids,
@@ -28,7 +30,9 @@ std::shared_ptr<ral::cache::graph> runGenerateGraph(uint32_t masterIndex,
 	std::vector<std::vector<std::map<std::string, std::string>>> uri_values,
 	std::map<std::string, std::string> config_options,
 	std::string sql,
-	std::string current_timestamp);
+	std::string current_timestamp,
+  std::string output_type,
+  std::string preferred_compute);
 
 void startExecuteGraph(std::shared_ptr<ral::cache::graph> graph, int ctx_token);
 std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral::cache::graph> graph, int ctx_token);

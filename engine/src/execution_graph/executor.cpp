@@ -95,26 +95,12 @@ void task::run(cudaStream_t stream, executor * executor){
                 break;
             }
             
-            last_input_decached++;
-            //auto decached_input = input->decache();
-            //input_gpu.push_back(std::move(decached_input));
+            // TODO percy WSM this execution paradigm needs to be made more intelligent
 
-            // WSM TODO this execution paradigm needs to be made more intelligent
-            if (input->get_type() == ral::cache::CacheDataType::ARROW){
-                input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::ARROW))));
-            } else if (input->get_type() == ral::cache::CacheDataType::GPU) {
-                input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
-            } else if (input->get_type() == ral::cache::CacheDataType::IO_FILE){
-                ral::cache::CacheDataIO* cache_data_io_ptr = dynamic_cast<ral::cache::CacheDataIO*>(input.get());
-                if (cache_data_io_ptr->GetParserType() == ral::io::ARROW){
-                    input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::ARROW))));
-                } else {
-                    input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
-                }
-            } else {
-                input_tables.push_back(std::move(input->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF))));
-            }
-            
+            last_input_decached++;
+            auto decached_input = input->decache(executor->preferred_compute());
+            input_tables.push_back(std::move(decached_input));
+
             executor->accumulate_rows(input_tables.back()->num_rows());
         }
     }catch(const rmm::bad_alloc& e){
@@ -227,8 +213,9 @@ void task::set_inputs(std::vector<std::unique_ptr<ral::cache::CacheData > > inpu
 
 executor * executor::_instance;
 
-executor::executor(int num_threads, double processing_memory_limit_threshold) :
- pool(num_threads), task_id_counter(0), total_rows_accumulated(0), resource(&blazing_device_memory_resource::getInstance()), task_queue("executor_task_queue") {
+executor::executor(int num_threads, double processing_memory_limit_threshold, ral::execution::execution_backend preferred_compute) :
+ pool(num_threads), task_id_counter(0), total_rows_accumulated(0), resource(&blazing_device_memory_resource::getInstance()), task_queue("executor_task_queue"),
+ preferred_compute_(preferred_compute) {
      processing_memory_limit = resource->get_total_memory() * processing_memory_limit_threshold;
      for( int i = 0; i < num_threads; i++){
          cudaStream_t stream;

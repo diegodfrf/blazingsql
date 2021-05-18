@@ -146,11 +146,11 @@ cdef unique_ptr[cio.ResultSet] parseMetadataPython(vector[string] files, pair[in
     with nogil:
         return blaz_move( cio.parseMetadata(files, offset, schema, file_format_hint,arg_keys,arg_values) )
 
-cdef shared_ptr[cio.graph] runGenerateGraphPython(uint32_t masterIndex,vector[string] worker_ids, vector[string] tableNames, vector[string] tableScans, vector[TableSchema] tableSchemas, vector[vector[string]] tableSchemaCppArgKeys, vector[vector[string]] tableSchemaCppArgValues, vector[vector[string]] filesAll, vector[int] fileTypes, int ctxToken, string query, vector[vector[map[string,string]]] uri_values_cpp, map[string,string] config_options, string sql, string current_timestamp) except *:
-    return cio.runGenerateGraph(masterIndex, worker_ids, tableNames, tableScans, tableSchemas, tableSchemaCppArgKeys, tableSchemaCppArgValues, filesAll, fileTypes, ctxToken, query, uri_values_cpp, config_options, sql, current_timestamp)
+cdef shared_ptr[cio.graph] runGenerateGraphPython(uint32_t masterIndex,vector[string] worker_ids, vector[string] tableNames, vector[string] tableScans, vector[TableSchema] tableSchemas, vector[vector[string]] tableSchemaCppArgKeys, vector[vector[string]] tableSchemaCppArgValues, vector[vector[string]] filesAll, vector[int] fileTypes, int ctxToken, string query, vector[vector[map[string,string]]] uri_values_cpp, map[string,string] config_options, string sql, string current_timestamp, string output_type, string preferred_compute) except *:
+    return cio.runGenerateGraph(masterIndex, worker_ids, tableNames, tableScans, tableSchemas, tableSchemaCppArgKeys, tableSchemaCppArgValues, filesAll, fileTypes, ctxToken, query, uri_values_cpp, config_options, sql, current_timestamp, output_type, preferred_compute)
 
-cdef string runGeneratePhysicalGraphPython(uint32_t masterIndex, vector[string] worker_ids, int ctxToken, string query) except *:
-    return cio.runGeneratePhysicalGraph(masterIndex, worker_ids, ctxToken, query)
+cdef string runGeneratePhysicalGraphPython(uint32_t masterIndex, vector[string] worker_ids, int ctxToken, string query, string output_type, string preferred_compute) except *:
+    return cio.runGeneratePhysicalGraph(masterIndex, worker_ids, ctxToken, query, output_type, preferred_compute)
 
 cdef unique_ptr[cio.PartitionedResultSet] startExecuteGraphPython(shared_ptr[cio.graph] graph, int ctx_token) except *:
     with nogil:
@@ -177,9 +177,9 @@ cdef cio.TableScanInfo getTableScanInfoPython(string logicalPlan) nogil:
 
 cdef pair[pair[shared_ptr[cio.CacheMachine], shared_ptr[cio.CacheMachine] ], int] initializePython(uint16_t ralId, string worker_id, string network_iface_name,
     int ralCommunicationPort, vector[NodeMetaDataUCP] workers_ucp_info, bool singleNode, map[string,string] config_options,
-    string allocation_mode, size_t initial_pool_size, size_t maximum_pool_size, bool enable_logging) nogil except +:
+    string allocation_mode, size_t initial_pool_size, size_t maximum_pool_size, bool enable_logging, string preferred_compute) nogil except +:
     with nogil:
-        return cio.initialize( ralId, worker_id, network_iface_name, ralCommunicationPort, workers_ucp_info, singleNode, config_options, allocation_mode, initial_pool_size, maximum_pool_size, enable_logging)
+        return cio.initialize( ralId, worker_id, network_iface_name, ralCommunicationPort, workers_ucp_info, singleNode, config_options, allocation_mode, initial_pool_size, maximum_pool_size, enable_logging, preferred_compute)
 
 
 cdef void finalizePython(vector[int] ctx_tokens) nogil except +:
@@ -316,9 +316,10 @@ cdef class PyBlazingCache:
 #        return df, metadata_py
 
 cpdef initializeCaller(uint16_t ralId, string worker_id, string network_iface_name,  int ralCommunicationPort, vector[NodeMetaDataUCP] workers_ucp_info,
-        bool singleNode, map[string,string] config_options, string allocation_mode, size_t initial_pool_size, size_t maximum_pool_size, bool enable_logging):
+        bool singleNode, map[string,string] config_options, string allocation_mode, size_t initial_pool_size, size_t maximum_pool_size, bool enable_logging, preferred_compute_py):
+    preferred_compute = str.encode(preferred_compute_py)
     init_output = initializePython( ralId, worker_id, network_iface_name,  ralCommunicationPort, workers_ucp_info, singleNode, config_options,
-        allocation_mode, initial_pool_size, maximum_pool_size, enable_logging)
+        allocation_mode, initial_pool_size, maximum_pool_size, enable_logging, preferred_compute)
     caches = init_output.first
     port = init_output.second
     transport_out = PyBlazingCache()
@@ -475,18 +476,28 @@ cdef class PyBlazingGraph:
     cpdef get_progress(self):
         return deref(self.ptr).get_progress()
 
-cpdef runGeneratePhysicalGraphCaller(uint32_t masterIndex, worker_ids, int ctxToken, queryPy):
+cpdef runGeneratePhysicalGraphCaller(uint32_t masterIndex, worker_ids, int ctxToken, queryPy, output_type_py, preferred_compute_py):
     cdef string query
+    cdef string output_type
+    cdef string preferred_compute
     query = str.encode(queryPy)
+    output_type = str.encode(output_type_py)
+    preferred_compute = str.encode(preferred_compute_py)
 
     cdef vector[string] worker_ids_c
     for worker_id in worker_ids:
         worker_ids_c.push_back(worker_id.encode())
 
-    physicalPlan = runGeneratePhysicalGraphPython(masterIndex, worker_ids_c, ctxToken, query)
+    physicalPlan = runGeneratePhysicalGraphPython(masterIndex, worker_ids_c, ctxToken, query, output_type, preferred_compute)
     return physicalPlan.decode('UTF-8')
 
-cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_scans, vector[int] fileTypes, int ctxToken, queryPy, map[string,string] config_options, sql, current_timestamp):
+cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_scans, vector[int] fileTypes, int ctxToken, queryPy, map[string,string] config_options, sql, current_timestamp, output_type_py, preferred_compute_py):
+    cdef string output_type
+    cdef string preferred_compute
+
+    output_type = str.encode(output_type_py)
+    preferred_compute = str.encode(preferred_compute_py)
+
     cdef string sql_c
     sql_c = sql.encode()
     cdef string query
@@ -595,7 +606,7 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
     for worker_id in worker_ids:
         worker_ids_c.push_back(worker_id.encode())
 
-    pyGraph.ptr = runGenerateGraphPython(masterIndex, worker_ids_c, tableNames, tableScans, tableSchemaCpp, tableSchemaCppArgKeys, tableSchemaCppArgValues, filesAll, fileTypes, ctxToken, query, uri_values_cpp_all, config_options, sql_c, current_timestamp)
+    pyGraph.ptr = runGenerateGraphPython(masterIndex, worker_ids_c, tableNames, tableScans, tableSchemaCpp, tableSchemaCppArgKeys, tableSchemaCppArgValues, filesAll, fileTypes, ctxToken, query, uri_values_cpp_all, config_options, sql_c, current_timestamp, output_type, preferred_compute)
     return pyGraph
 
 cpdef startExecuteGraphCaller(PyBlazingGraph graph, int ctx_token):
@@ -605,8 +616,6 @@ cpdef startExecuteGraphCaller(PyBlazingGraph graph, int ctx_token):
 
 cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_single_node):
 
-    cdef PandasOptions c_pandas_options
-    cdef PyObject* result_pandas_obj
     cdef shared_ptr[cio.graph] ptr = graph.ptr
     cdef ResultTable resultTable
     graph = None
@@ -620,11 +629,7 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
         df = None
         is_arrow = dereference(dereference(resultSet.get()).tables[0].get()).is_arrow
         if is_arrow:
-            # TODO percy arrow
-            pandas_options_dict = {}
-            #c_pandas_options = _convert_pandas_options(pandas_options_dict)
-            ConvertTableToPandas(c_pandas_options, dereference(dereference(resultSet.get()).tables[0].get()).arrow_table, &result_pandas_obj)
-            df = PyObject_to_object(result_pandas_obj)
+            df = pyarrow_wrap_table(dereference(dereference(resultSet.get()).tables[0].get()).arrow_table).to_pandas()
         else:
             df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[0].get()).cudf_table), decoded_names)._data)
         return df
@@ -634,11 +639,7 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
             df = None
             is_arrow = dereference(dereference(resultSet.get()).tables[0].get()).is_arrow
             if resultTable.is_arrow:
-                pandas_options_dict = {}
-                # TODO percy arrow
-                #c_pandas_options = _convert_pandas_options(pandas_options_dict)
-                ConvertTableToPandas(c_pandas_options, dereference(dereference(resultSet.get()).tables[i].get()).arrow_table, &result_pandas_obj)
-                df = PyObject_to_object(result_pandas_obj)
+                df = pyarrow_wrap_table(dereference(dereference(resultSet.get()).tables[i].get()).arrow_table).to_pandas()
             else:
                 df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[i].get()).cudf_table), decoded_names)._data)
             dfs.append(df)
