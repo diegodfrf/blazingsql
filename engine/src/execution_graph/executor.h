@@ -72,9 +72,9 @@ public:
 		return _instance;
 	}
 
-	static void init_executor(int num_threads, double processing_memory_limit_threshold){
+	static void init_executor(int num_threads, double processing_memory_limit_threshold, ral::execution::execution_backend preferred_compute){
 		if(!_instance){
-			_instance = new executor(num_threads, processing_memory_limit_threshold);
+			_instance = new executor(num_threads, processing_memory_limit_threshold, preferred_compute);
 			_instance->task_id_counter = 0;
 			_instance->active_tasks_counter = 0;
 			_instance->total_rows_accumulated = 0;
@@ -115,8 +115,10 @@ public:
 		return this->total_rows_accumulated;
 	}
 
+  ral::execution::execution_backend preferred_compute() const { return this->preferred_compute_; }
+
 private:
-	executor(int num_threads, double processing_memory_limit_threshold);
+	executor(int num_threads, double processing_memory_limit_threshold, ral::execution::execution_backend preferred_compute);
 	ctpl::thread_pool<BlazingThread> pool;
 	std::vector<cudaStream_t> streams; //one stream per thread
 	ral::cache::WaitingQueue< std::unique_ptr<task> > task_queue;
@@ -142,6 +144,7 @@ private:
 	std::atomic<int> active_tasks_counter;
 	std::mutex memory_safety_mutex;
 	std::condition_variable memory_safety_cv;
+  ral::execution::execution_backend preferred_compute_;
 };
 
 

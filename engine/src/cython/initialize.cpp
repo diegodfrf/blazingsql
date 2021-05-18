@@ -234,7 +234,8 @@ std::pair<std::pair<std::shared_ptr<CacheMachine>,std::shared_ptr<CacheMachine> 
 	std::string allocation_mode,
 	std::size_t initial_pool_size,
 	std::size_t maximum_pool_size,
-	bool enable_logging) {
+	bool enable_logging,
+  std::string preferred_compute) {
 
 	std::lock_guard<std::mutex> init_lock(initialize_lock);
 
@@ -613,7 +614,12 @@ std::pair<std::pair<std::shared_ptr<CacheMachine>,std::shared_ptr<CacheMachine> 
 		processing_memory_limit_threshold = std::stod(config_options["BLAZING_PROCESSING_DEVICE_MEM_CONSUMPTION_THRESHOLD"]);
 	}
 
-	ral::execution::executor::init_executor(executor_threads, processing_memory_limit_threshold);
+  ral::execution::backend_id preferred_compute_type = ral::execution::backend_id::CUDF;
+  if (preferred_compute == "arrow") {
+    preferred_compute_type = ral::execution::backend_id::ARROW;
+  }
+
+	ral::execution::executor::init_executor(executor_threads, processing_memory_limit_threshold, ral::execution::execution_backend(preferred_compute_type));
 	initialized = true;
   blazing_context_ref_counter::getInstance().increase();
 	return std::make_pair(output_input_caches, ralCommunicationPort);	
@@ -674,7 +680,8 @@ error_code_t initialize_C(uint16_t ralId,
 	std::string allocation_mode,
 	std::size_t initial_pool_size,
 	std::size_t maximum_pool_size,
-	bool enable_logging) {
+	bool enable_logging,
+  std::string preferred_compute) {
 
 	try {
 		initialize(ralId,
@@ -687,7 +694,8 @@ error_code_t initialize_C(uint16_t ralId,
 			allocation_mode,
 			initial_pool_size,
 			maximum_pool_size,
-			enable_logging);
+			enable_logging,
+      preferred_compute);
 		return E_SUCCESS;
 	} catch (std::exception& e) {
 		return E_EXCEPTION;

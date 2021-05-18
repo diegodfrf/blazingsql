@@ -166,6 +166,7 @@ def initializeBlazing(
     config_options={},
     logging_dir_path="blazing_log",
     is_dask=False,
+    preferred_compute="cudf", # TODO percy arrow make enums preferred_compute_py: "arrow", "cudf"
 ):
 
     last_str = '|%(levelname)s|||"%(message)s"||||||'
@@ -254,6 +255,7 @@ def initializeBlazing(
         initial_pool_size,
         maximum_pool_size,
         enable_logging,
+        preferred_compute
     )
     if singleNode is False:
         worker.output_cache = output_cache
@@ -1684,6 +1686,7 @@ class BlazingContext(object):
                         logging_dir_path=logging_dir_path,
                         workers=[worker],
                         is_dask=True,
+                        preferred_compute=self.preferred_compute,
                     )
                 )
                 i = i + 1
@@ -1731,6 +1734,7 @@ class BlazingContext(object):
                 config_options=self.config_options,
                 logging_dir_path=logging_dir_path,
                 is_dask=False,
+                preferred_compute=self.preferred_compute,
             )
             self.node_log_paths.add(log_path)
 

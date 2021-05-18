@@ -18,7 +18,8 @@ std::pair<std::pair<std::shared_ptr<ral::cache::CacheMachine>,std::shared_ptr<ra
 	std::string allocation_mode,
 	std::size_t initial_pool_size,
 	std::size_t maximum_pool_size,
-	bool enable_logging);
+	bool enable_logging,
+  std::string preferred_compute);
 
 void finalize(std::vector<int32_t> ctx_tokens);
 
@@ -38,7 +39,8 @@ error_code_t initialize_C(uint16_t ralId,
 	std::string allocation_mode,
 	std::size_t initial_pool_size,
 	std::size_t maximum_pool_size,
-	bool enable_logging);
+	bool enable_logging,
+  std::string preferred_compute);
 
 error_code_t finalize_C(std::vector<int32_t> ctx_tokens);
 

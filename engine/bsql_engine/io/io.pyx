@@ -177,9 +177,9 @@ cdef cio.TableScanInfo getTableScanInfoPython(string logicalPlan) nogil:
 
 cdef pair[pair[shared_ptr[cio.CacheMachine], shared_ptr[cio.CacheMachine] ], int] initializePython(uint16_t ralId, string worker_id, string network_iface_name,
     int ralCommunicationPort, vector[NodeMetaDataUCP] workers_ucp_info, bool singleNode, map[string,string] config_options,
-    string allocation_mode, size_t initial_pool_size, size_t maximum_pool_size, bool enable_logging) nogil except +:
+    string allocation_mode, size_t initial_pool_size, size_t maximum_pool_size, bool enable_logging, string preferred_compute) nogil except +:
     with nogil:
-        return cio.initialize( ralId, worker_id, network_iface_name, ralCommunicationPort, workers_ucp_info, singleNode, config_options, allocation_mode, initial_pool_size, maximum_pool_size, enable_logging)
+        return cio.initialize( ralId, worker_id, network_iface_name, ralCommunicationPort, workers_ucp_info, singleNode, config_options, allocation_mode, initial_pool_size, maximum_pool_size, enable_logging, preferred_compute)
 
 
 cdef void finalizePython(vector[int] ctx_tokens) nogil except +:
@@ -316,9 +316,10 @@ cdef class PyBlazingCache:
 #        return df, metadata_py
 
 cpdef initializeCaller(uint16_t ralId, string worker_id, string network_iface_name,  int ralCommunicationPort, vector[NodeMetaDataUCP] workers_ucp_info,
-        bool singleNode, map[string,string] config_options, string allocation_mode, size_t initial_pool_size, size_t maximum_pool_size, bool enable_logging):
+        bool singleNode, map[string,string] config_options, string allocation_mode, size_t initial_pool_size, size_t maximum_pool_size, bool enable_logging, preferred_compute_py):
+    preferred_compute = str.encode(preferred_compute_py)
     init_output = initializePython( ralId, worker_id, network_iface_name,  ralCommunicationPort, workers_ucp_info, singleNode, config_options,
-        allocation_mode, initial_pool_size, maximum_pool_size, enable_logging)
+        allocation_mode, initial_pool_size, maximum_pool_size, enable_logging, preferred_compute)
     caches = init_output.first
     port = init_output.second
     transport_out = PyBlazingCache()
