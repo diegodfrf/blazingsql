@@ -198,7 +198,7 @@ To build without the SQL providers (MySQL, PostgreSQL, SQLite, Snowflake) use th
 # Disable MySQL provider
 ./build.sh disable-mysql
 
-# Disable Snoflake provider
+# Disable Snowflake provider
 ./build.sh disable-snowflake
 ...
 ```

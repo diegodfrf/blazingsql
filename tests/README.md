@@ -282,7 +282,7 @@ We provide as well a copy of the Apache Hive software (tested with version 1.2.2
 #### MySQL, PostgreSQL, SQLite and Snowflake testing
 For MySQL, PostgreSQL and Snowflake you will need to install dependencies:
 ```shell-script
-./dependencies.sh mysql postgres snoflake
+./dependencies.sh mysql postgres snowflake
 ```
 
 and run the following line in the MySQL console:
