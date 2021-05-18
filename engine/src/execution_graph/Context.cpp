@@ -9,7 +9,9 @@ Context::Context(const uint32_t token,
                  const Node &masterNode,
                  const std::string &logicalPlan,
                  const std::map<std::string, std::string>& config_options,
-                 const std::string current_timestamp)
+                 const std::string current_timestamp,
+                 const std::string &output_type,
+                 const std::string &preferred_compute)
     : token_{token},
       query_step{0},
       query_substep{0},
@@ -18,10 +20,13 @@ Context::Context(const uint32_t token,
       logicalPlan_{logicalPlan},
       kernel_id_{0},
       config_options_{config_options},
-      current_timestamp_{current_timestamp} {}
+      current_timestamp_{current_timestamp},
+      output_type_{output_type},
+      preferred_compute_{preferred_compute} {}
 
 std::shared_ptr<Context> Context::clone() {
-  auto ptr = std::make_shared<Context>(this->token_, this->taskNodes_, this->masterNode_, this->logicalPlan_, this->config_options_, this->current_timestamp_);
+  auto ptr = std::make_shared<Context>(this->token_, this->taskNodes_, this->masterNode_, this->logicalPlan_, this->config_options_, this->current_timestamp_,
+                                       this->output_type_, this->preferred_compute_);
   ptr->query_step = this->query_step;
   ptr->query_substep = this->query_substep;
   ptr->kernel_id_ = this->kernel_id_;

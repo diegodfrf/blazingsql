@@ -204,7 +204,9 @@ void fix_column_names_duplicated(std::vector<std::string> & col_names){
 std::string runGeneratePhysicalGraph(uint32_t masterIndex,
                                      std::vector<std::string> worker_ids,
                                      int32_t ctxToken,
-                                     std::string query) {
+                                     std::string query,
+                                     std::string output_type,
+                                     std::string preferred_compute) {
     using blazingdb::manager::Context;
     using blazingdb::transport::Node;
 
@@ -212,7 +214,8 @@ std::string runGeneratePhysicalGraph(uint32_t masterIndex,
     for (const auto &worker_id : worker_ids) {
         contextNodes.emplace_back(worker_id);
     }
-    Context queryContext{static_cast<uint32_t>(ctxToken), contextNodes, contextNodes[masterIndex], "", {}, ""};
+    Context queryContext{static_cast<uint32_t>(ctxToken), contextNodes, contextNodes[masterIndex], "", {}, "",
+                         output_type, preferred_compute};
 
     return get_physical_plan(query, queryContext);
 }
@@ -231,7 +234,9 @@ std::shared_ptr<ral::cache::graph> runGenerateGraph(uint32_t masterIndex,
 	std::vector<std::vector<std::map<std::string, std::string>>> uri_values,
 	std::map<std::string, std::string> config_options,
 	std::string sql,
-	std::string current_timestamp)
+	std::string current_timestamp,
+  std::string output_type,
+  std::string preferred_compute)
 {
   using blazingdb::manager::Context;
   using blazingdb::transport::Node;
@@ -242,7 +247,8 @@ std::shared_ptr<ral::cache::graph> runGenerateGraph(uint32_t masterIndex,
   for (const auto &worker_id : worker_ids) {
     contextNodes.emplace_back(worker_id);
   }
-	Context queryContext{static_cast<uint32_t>(ctxToken), contextNodes, contextNodes[masterIndex], "", config_options, current_timestamp};
+	Context queryContext{static_cast<uint32_t>(ctxToken), contextNodes, contextNodes[masterIndex], "", config_options, current_timestamp,
+                       output_type, preferred_compute};
   	auto& self_node = ral::communication::CommunicationData::getInstance().getSelfNode();
   	int self_node_idx = queryContext.getNodeIndex(self_node);
 

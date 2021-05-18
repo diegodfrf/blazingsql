@@ -20,7 +20,9 @@ public:
                    const Node& masterNode,
                    const std::string& logicalPlan,
                    const std::map<std::string, std::string>& config_options,
-                   const std::string current_timestamp);
+                   const std::string current_timestamp,
+                   const std::string &output_type,
+                   const std::string &preferred_compute);
 
       // TODO Cristhian Gonzalez no copies allowed
   std::shared_ptr<Context> clone();
@@ -68,6 +70,9 @@ public:
     return config_options_;
   }
 
+  std::string output_type() const { return this->output_type_; } // TODO percy arrow make enums "pandas", "cudf"
+  std::string preferred_compute() const { return this->preferred_compute_; } // TODO percy arrow make enums "arrow", "cudf"
+
 private:
   const uint32_t token_;
   uint32_t query_step;
@@ -79,6 +84,8 @@ private:
   std::mutex increment_step_mutex;
   std::map<std::string, std::string> config_options_;
   std::string current_timestamp_;
+  std::string output_type_; // TODO percy arrow make enums "pandas", "cudf"
+  std::string preferred_compute_; // TODO percy arrow make enums "arrow", "cudf"
 };
 
 }  // namespace manager

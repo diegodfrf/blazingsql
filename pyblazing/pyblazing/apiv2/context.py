@@ -290,7 +290,8 @@ def get_element(query_partid):
     del worker.query_parts[query_partid]
     return df
 
-
+# TODO percy arrow make enums output_type_py: "pandas", "cudf"
+# TODO percy arrow make enums preferred_compute_py: "arrow", "cudf"
 def generateGraphs(
     masterIndex,
     nodes,
@@ -302,6 +303,8 @@ def generateGraphs(
     config_options,
     sql,
     current_timestamp,
+    output_type,
+    preferred_compute
 ):
 
     worker = get_worker()
@@ -334,6 +337,8 @@ def generateGraphs(
             config_options,
             sql,
             current_timestamp,
+            output_type,
+            preferred_compute
         )
         graph.set_input_and_output_caches(worker.input_cache, worker.output_cache)
     except Exception as e:
@@ -1385,6 +1390,16 @@ class BlazingContext(object):
     :param enable_progress_bar: boolean.
         Set to ``True`` to display a progress bar during query executions.
         **Default:** ``False``
+    :param output_type: str
+        Allowed values are "pandas", "cudf".
+        "pandas": query results will be pandas.DataFrame
+        "cudf": query results will be cudf.DataFrame
+        **Default:** ``cudf``
+    :param preferred_compute: str
+        Allowed values are "arrow", "cudf"
+        "arrow": engine will use arrow compute primitives as processing backend (file reades, algorithms, etc)
+        "cudf": engine will use cudf compute primitives as processing backend (file reades, algorithms, etc)
+        **Default:** ``cudf``
     :param config_options: dictionary.
         A dictionary for setting certain parameters in the engine. **Default:** ``{}``
         List of options:
@@ -1544,6 +1559,8 @@ class BlazingContext(object):
         maximum_pool_size=None,
         enable_logging=False,
         enable_progress_bar=False,
+        output_type = "cudf", # TODO percy arrow make enums "pandas", "cudf"
+        preferred_compute = "cudf", # TODO percy arrow make enums "arrow", "cudf"
         config_options={},
     ):
         self.lock = Lock()
@@ -1552,6 +1569,8 @@ class BlazingContext(object):
         self.node_log_paths = set()
         self.config_options = load_config_options_from_env(config_options)
         self.calcite_primed = False
+        self.output_type = str(output_type)
+        self.preferred_compute = str(preferred_compute)
 
         logging_dir_path = "blazing_log"
         if "BLAZING_LOGGING_DIRECTORY".encode() in self.config_options:
@@ -1948,12 +1967,12 @@ class BlazingContext(object):
 
                 if self.dask_client is None:
                     physical_plan = cio.runGeneratePhysicalGraphCaller(
-                        masterIndex, ["self"], ctxToken, str(algebra)
+                        masterIndex, ["self"], ctxToken, str(algebra), output_type, preferred_compute
                     )
                 else:
                     dummy_nodes = [str(i) for i in range(len(self.nodes))]
                     physical_plan = cio.runGeneratePhysicalGraphCaller(
-                        masterIndex, dummy_nodes, ctxToken, str(algebra)
+                        masterIndex, dummy_nodes, ctxToken, str(algebra), output_type, preferred_compute
                     )
 
         except SqlValidationExceptionClass as exception:
@@ -3267,7 +3286,7 @@ class BlazingContext(object):
                     algebra,
                     query_config_options,
                     query,
-                    current_timestamp,
+                    current_timestamp, self.output_type, self.preferred_compute
                 )
                 cio.startExecuteGraphCaller(graph, ctxToken)
                 self.graphs[ctxToken] = graph
@@ -3306,6 +3325,8 @@ class BlazingContext(object):
                         current_timestamp,
                         workers=[worker],
                         pure=False,
+                        output_type=self.output_type,
+                        preferred_compute=self.preferred_compute
                     )
                 )
                 i = i + 1
