@@ -116,7 +116,7 @@ std::tuple<std::shared_ptr<CacheMachine>, std::shared_ptr<CacheMachine>> registe
 // Feeds an input cache
 void add_data_to_cache(
 	std::shared_ptr<CacheMachine> cache_machine,
-	std::vector<std::unique_ptr<BlazingTable>> batches) {
+	std::vector<std::unique_ptr<ral::frame::BlazingCudfTable>> batches) {
 	int total_batches = batches.size();
 
 	for (int i = 0; i < total_batches; ++i) {
@@ -135,7 +135,7 @@ std::unique_ptr<cudf::column> make_col(cudf::size_type size) {
 }
 
 template<class TypeParam>
-std::vector<std::unique_ptr<BlazingTable>> make_table(cudf::size_type size) {
+std::vector<std::unique_ptr<ral::frame::BlazingCudfTable>> make_table(cudf::size_type size) {
 	auto col1 = make_col<TypeParam>(size);
 	auto col2 = make_col<TypeParam>(size);
 
@@ -146,9 +146,9 @@ std::vector<std::unique_ptr<BlazingTable>> make_table(cudf::size_type size) {
 	auto cudf_table = std::make_unique<cudf::table>(std::move(columns));
 
 	std::vector<std::string> names({"A", "B"});
-	std::unique_ptr<BlazingTable> batch = std::make_unique<BlazingTable>(std::move(cudf_table), names);
+	std::unique_ptr<ral::frame::BlazingCudfTable> batch = std::make_unique<ral::frame::BlazingCudfTable>(std::move(cudf_table), names);
 
-	std::vector<std::unique_ptr<BlazingTable>> batches;
+	std::vector<std::unique_ptr<ral::frame::BlazingCudfTable>> batches;
 	batches.push_back(std::move(batch));
 	return batches;
 }
