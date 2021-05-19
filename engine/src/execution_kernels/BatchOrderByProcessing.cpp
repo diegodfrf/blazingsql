@@ -127,14 +127,7 @@ SortAndSampleKernel::SortAndSampleKernel(std::size_t kernel_id, const std::strin
 void SortAndSampleKernel::make_partition_plan_task(){
     already_computed_partition_plan = true;
 
-    std::vector<std::unique_ptr <ral::cache::CacheData> > sampleCacheDatas;
-    // first lets take the local samples and convert them to CacheData to make a task
-    for (std::size_t i = 0; i < samplesTables.size(); ++i) {
-        // WSM TODO need generic function that can put a BlazingTable into a CacheData
-        std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(samplesTables[i].release()));
-        std::unique_ptr <ral::cache::CacheData> cache_data = std::make_unique<ral::cache::GPUCacheData>(std::move(cudf_table));
-        sampleCacheDatas.push_back(std::move(cache_data));
-    }
+    std::vector<std::unique_ptr <ral::cache::CacheData> > sampleCacheDatas = samples_cache_machine->pull_all_cache_data();
 
     if (this->context->getAllNodes().size() > 1 && context->isMasterNode(ral::communication::CommunicationData::getInstance().getSelfNode())){
         auto nodes = context->getAllNodes();
@@ -252,7 +245,7 @@ ral::execution::task_result SortAndSampleKernel::do_process(std::vector< std::un
                     population_sampled += sampledTable->num_rows(); 
                     total_num_rows_for_sampling += input->to_table_view()->num_rows();
                     total_bytes_for_sampling += input->size_in_bytes();
-                    samplesTables.push_back(std::move(sampledTable));
+                    this->samples_cache_machine->put(0, std::move(sampledTable));
                     if (population_sampled > max_order_by_samples) {
                         get_samples = false;  // we got enough samples, at least as max_order_by_samples
                     }

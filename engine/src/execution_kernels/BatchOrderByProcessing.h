@@ -59,14 +59,14 @@ public:
 	kstatus run() override;
 
 private:
-	std::vector<std::unique_ptr<ral::frame::BlazingTable>> samplesTables;
+	std::shared_ptr<ral::cache::CacheMachine> samples_cache_machine;
 	std::atomic<bool> get_samples;
 	std::atomic<bool> already_computed_partition_plan;
 	std::mutex samples_mutex;
     std::size_t population_sampled = 0;
 	std::size_t max_order_by_samples = 10000;
 	std::size_t total_num_rows_for_sampling = 0;
-    std::size_t total_bytes_for_sampling = 0;	
+    std::size_t total_bytes_for_sampling = 0;
 };
 
 class PartitionKernel : public distributing_kernel {
