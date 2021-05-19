@@ -117,14 +117,14 @@ This is the recommended way of building all of the BlazingSQL components and dep
 ```bash
 conda create -n bsql python=$PYTHON_VERSION
 conda activate bsql
-./dependencies.sh 0.19 $CUDA_VERSION
+./dependencies.sh rapids=0.19 cuda=$CUDA_VERSION
 ```
 Where $CUDA_VERSION is is 10.1, 10.2 or 11.0 and $PYTHON_VERSION is 3.7 or 3.8
 *For example for CUDA 10.1 and Python 3.7:*
 ```bash
 conda create -n bsql python=3.7
 conda activate bsql
-./dependencies.sh 0.19 10.1
+./dependencies.sh rapids=0.19 cuda=10.1
 ```
 
 ### Build
@@ -149,14 +149,14 @@ For nightly version cuda 11+ are only supported, see https://github.com/rapidsai
 ```bash
 conda create -n bsql python=$PYTHON_VERSION
 conda activate bsql
-./dependencies.sh 0.20 $CUDA_VERSION nightly
+./dependencies.sh rapids=0.20 cuda=$CUDA_VERSION nightly
 ```
 Where $CUDA_VERSION is 11.0 or 11.2 and $PYTHON_VERSION is 3.7 or 3.8
 *For example for CUDA 11.2 and Python 3.8:*
 ```bash
 conda create -n bsql python=3.8
 conda activate bsql
-./dependencies.sh 0.20 11.2 nightly
+./dependencies.sh rapids=0.20 cuda=11.2 nightly
 ```
 
 ### Build
@@ -198,7 +198,7 @@ To build without the SQL providers (MySQL, PostgreSQL, SQLite, Snowflake) use th
 # Disable MySQL provider
 ./build.sh disable-mysql
 
-# Disable Snoflake provider
+# Disable Snowflake provider
 ./build.sh disable-snowflake
 ...
 ```

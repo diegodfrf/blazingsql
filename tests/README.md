@@ -9,11 +9,20 @@ Testing Automation Framework for BlazingSQL
 Inside a conda environment:
 
 ```shell-script
-conda install --yes -c conda-forge openjdk=8.0 maven pyspark=3.0.0 pytest
-pip install pydrill openpyxl pymysql gitpython pynvml gspread oauth2client
+./dependencies.sh e2e
 ```
 
 You will also need [Apache Drill](https://drill.apache.org/download/)
+Inside a conda environment:
+
+```
+wget http://archive.apache.org/dist/drill/drill-1.12.0/apache-drill-1.12.0.tar.gz
+tar xzvf apache-drill-1.12.0.tar.gz
+```
+In a separate terminal you can start drill
+```
+./apache-drill-1.12.0/bin/drill-embedded
+```
 
 ## Basic usage
 
@@ -270,11 +279,10 @@ We provide as well a copy of the Apache Hive software (tested with version 1.2.2
 	$ python -m EndToEndTests.fileSystemHiveTest configE2ETest.json
 	```
 
-#### MySQL, PostgreSQL, SQLite testing
-For MySQL and PostgreSQL you will need to install these libs:
+#### MySQL, PostgreSQL, SQLite and Snowflake testing
+For MySQL, PostgreSQL and Snowflake you will need to install dependencies:
 ```shell-script
-conda install -c conda-forge mysql-connector-python
-conda install -c conda-forge psycopg2
+./dependencies.sh mysql postgres snowflake
 ```
 
 and run the following line in the MySQL console:
@@ -301,9 +309,16 @@ BLAZINGSQL_E2E_POSTGRESQL_DATABASE
 
 # for SQLite
 BLAZINGSQL_E2E_SQLITE_DATABASE
-```
 
-Note BLAZINGSQL_E2E_SQL_PORT is a number and the other vars are strings!
+# for Snowflake
+BLAZINGSQL_E2E_SNOWFLAKE_DSN
+BLAZINGSQL_E2E_SNOWFLAKE_USER
+BLAZINGSQL_E2E_SNOWFLAKE_PASSWORD
+BLAZINGSQL_E2E_SNOWFLAKE_DATABASE
+BLAZINGSQL_E2E_SNOWFLAKE_ACCOUNT
+```
+To run test for tables in Snowflake you can configure ODBC DSN here https://github.com/aucahuasi/blazingsql-private#snowflake
+Note: BLAZINGSQL_E2E_SQL_PORT is a number and the other vars are strings!
 #### Troubleshooting
 
 Sometimes, for many reasons the E2E script test could raise an error. In that case, containers may be in an invalid state. Before try again, please check that there aren't any HDFS or Kerberos containers running by calling the stopping of the containers explicitly:
