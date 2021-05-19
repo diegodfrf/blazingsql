@@ -51,7 +51,7 @@ gpuci_logger "Installing BlazingSQL dev environment"
 # NOTE: needing to manually install spdlog here because v1.8 is causing issues https://github.com/gabime/spdlog/issues/1662
 
 gpuci_logger "Install Dependencies"
-${WORKSPACE}/dependencies.sh rapids=${MINOR_VERSION} cuda=${CUDA_REL} nightly e2e mysql postgres snowflake
+${WORKSPACE}/dependencies.sh rapids=${MINOR_VERSION} cuda=${CUDA_REL} nightly all
 
 gpuci_logger "Check versions"
 python --version
