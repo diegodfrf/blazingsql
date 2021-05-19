@@ -595,12 +595,14 @@ std::unique_ptr<ral::cache::CacheData> CacheMachine::pullCacheData(std::string m
 std::unique_ptr<ral::cache::CacheData> CacheMachine::pullCacheDataCopy() {
 
     std::unique_ptr<ral::cache::CacheData> output;
-	{ // scope for lock
-		std::unique_lock<std::mutex> lock = this->waitingCache->lock();
-		std::vector<std::unique_ptr<message>> all_messages = this->waitingCache->get_all_unsafe();
-		output = all_messages[0]->clone();
-		this->waitingCache->put_all_unsafe(std::move(all_messages));
-	}
+    if (this->waitingCache->wait_for_next()) {
+        std::unique_lock<std::mutex> lock = this->waitingCache->lock();
+        std::vector<std::unique_ptr<message>> all_messages = this->waitingCache->get_all_unsafe();
+        output = all_messages[0]->clone();
+        this->waitingCache->put_all_unsafe(std::move(all_messages));
+    } else {
+        return nullptr;
+    }
 
     return output;
 }

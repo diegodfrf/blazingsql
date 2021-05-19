@@ -404,8 +404,6 @@ kstatus PartitionKernel::run() {
     CodeTimer timer;
     context->incrementQuerySubstep();
 
-    std::map<std::string, std::map<int32_t, int> > node_count;
-
     auto nodes = context->getAllNodes();
 
     std::unique_ptr <ral::cache::CacheData> cache_data = this->input_.get_cache("input_a")->pullCacheData();
@@ -414,14 +412,6 @@ kstatus PartitionKernel::run() {
 
     // If we have no partitionPlan, its because we have no data, therefore its one partition per node
     num_partitions_per_node = partition_plan_cache_data->num_rows() == 0 ? 1 : (partition_plan_cache_data->num_rows() + 1) / this->context->getTotalNodes();
-
-    /*std::map<int32_t, int> temp_partitions_map;
-    for (int i = 0; i < num_partitions_per_node; i++) {
-        temp_partitions_map[i] = 0;
-    }
-    for (auto &&node : nodes) {
-        node_count.emplace(node.id(), temp_partitions_map);
-    }*/
 
     while(cache_data != nullptr && partition_plan_cache_data != nullptr){
         std::vector<std::unique_ptr <ral::cache::CacheData> > inputs;
