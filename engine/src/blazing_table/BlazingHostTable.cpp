@@ -135,7 +135,7 @@ const std::vector<ColumnTransport> &BlazingHostTable::get_columns_offsets() cons
 }
 
 std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
-  int buffer_index = 0;
+	int buffer_index = 0;
 
 	std::vector<std::shared_ptr<arrow::Array>> arrays;
 	arrays.reserve(columns_offsets.size());
@@ -143,23 +143,25 @@ std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
 	std::vector<std::shared_ptr<arrow::Field>> fields;
 	fields.reserve(columns_offsets.size());
 
-	for(const ral::memory::blazing_chunked_column_info & chunked_column_info :
+	for (const ral::memory::blazing_chunked_column_info & chunked_column_info :
 		chunked_column_infos) {
 		std::size_t position = 0;
 
+		const blazingdb::transport::ColumnTransport & column_offset =
+			columns_offsets[buffer_index];
+
 		std::unique_ptr<arrow::ArrayBuilder> arrayBuilder;
 		std::shared_ptr<arrow::Field> field;
-		std::tie(arrayBuilder, field) =
-			MakeArrayBuilderField(columns_offsets[buffer_index]);
+		std::tie(arrayBuilder, field) = MakeArrayBuilderField(column_offset);
 
 		fields.emplace_back(field);
 
 		position += AppendChunkToArrayBuilder(
-			arrayBuilder, chunked_column_info, allocations);
+			arrayBuilder, column_offset, chunked_column_info, allocations);
 
 		std::shared_ptr<arrow::Array> array;
 		arrow::Status status = arrayBuilder->Finish(&array);
-		if(!status.ok()) {
+		if (!status.ok()) {
 			throw std::runtime_error{"Building array"};
 		}
 		arrays.push_back(array);
@@ -170,7 +172,7 @@ std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
 	std::shared_ptr<arrow::Schema> schema = arrow::schema(fields);
 	std::shared_ptr<arrow::Table> table = arrow::Table::Make(schema, arrays);
 
-  return std::make_unique<ral::frame::BlazingArrowTable>(table);
+	return std::make_unique<ral::frame::BlazingArrowTable>(table);
 }
 
 std::unique_ptr<BlazingCudfTable> BlazingHostTable::get_cudf_table() const {
