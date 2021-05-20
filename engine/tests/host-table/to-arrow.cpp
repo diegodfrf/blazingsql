@@ -61,20 +61,16 @@ TEST(BlazingHostTable, ToArrowTable) {
 			std::move(chunked_column_infos),
 			std::move(allocations));
 
-	std::unique_ptr<ral::frame::BlazingTable> blazingTable =
-		blazingHostTable->get_gpu_table();
-
-	ral::frame::BlazingTableView tableView = blazingTable->toBlazingTableView();
-
-	ral::utilities::print_blazing_table_view_schema(tableView, "TestTable");
-
-	std::shared_ptr<arrow::Table> table = blazingHostTable->to_arrow();
+	std::unique_ptr<ral::frame::BlazingArrowTable> blazingArrowTable =
+		blazingHostTable->get_arrow_table();
+	std::shared_ptr<arrow::Table> table =
+		blazingArrowTable->to_table_view()->view();
 
 	std::ostringstream sink;
 	arrow::Status status = arrow::PrettyPrint(*table, {0}, &sink);
-  ASSERT_EQ(status.ok(), true);
+	ASSERT_EQ(status.ok(), true);
 	status = arrow::PrettyPrint(*table, {0}, &std::cout);
-  ASSERT_EQ(status.ok(), true);
+	ASSERT_EQ(status.ok(), true);
 	std::string result = sink.str();
 	static const char * expected = R"del(f0: int32
 ----
