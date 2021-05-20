@@ -3,6 +3,7 @@
 
 #include <src/cache_machine/GPUCacheData.h>
 #include <src/utilities/DebuggingUtils.h>
+#include "execution_graph/backend.hpp"
 
 #include <cudf_test/column_wrapper.hpp>
 #include <cudf_test/table_utilities.hpp>
@@ -35,42 +36,37 @@ std::unique_ptr<cudf::column> make_col(cudf::size_type size) {
     return col.release();
 }
 
-std::unique_ptr<ral::frame::BlazingTable> build_custom_table() {
-	cudf::size_type size = 10;
-
-	auto num_column_1 = make_col<int32_t>(size);
-	auto num_column_2 = make_col<int64_t>(size);
-	auto num_column_3 = make_col<float>(size);
-	auto num_column_4 = make_col<double>(size);
-
-	std::vector<std::unique_ptr<cudf::column>> columns;
-	columns.push_back(std::move(num_column_1));
-	columns.push_back(std::move(num_column_2));
-	columns.push_back(std::move(num_column_3));
-	columns.push_back(std::move(num_column_4));
-
-	cudf::test::strings_column_wrapper col2({"d", "e", "a", "d", "k", "d", "l", "a", "b", "c"}, {1, 0, 1, 1, 1, 1, 1, 1, 0, 1});
-
-	std::unique_ptr<cudf::column> str_col = std::make_unique<cudf::column>(std::move(col2));
-	columns.push_back(std::move(str_col));
-
-	std::vector<std::string> column_names = {"INT64", "INT32", "FLOAT64", "FLOAT32", "STRING"};
-
-	auto table = std::make_unique<cudf::table>(std::move(columns));
-	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(table), column_names);
-}
-
 TEST_F(CacheDataTest, CacheDataCloneTest) {
 
-	auto blz_table = build_custom_table();
+	using T = int32_t;
+	cudf::test::fixed_width_column_wrapper<T> col1{{4, 5, 3, 5, 8, 5, 6}, {1, 1, 1, 1, 1, 1, 1}};
+	cudf::test::strings_column_wrapper col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
+	cudf::test::fixed_width_column_wrapper<T> col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
+	cudf::table_view cudf_table_in_view {{col1, col2, col3}};
+
+	std::unique_ptr<cudf::table> cudf_table = std::make_unique<cudf::table>(cudf_table_in_view);
+
+	std::vector<std::string> names({"A", "B", "C"});
+	std::unique_ptr<ral::frame::BlazingCudfTable> blz_table = std::make_unique<ral::frame::BlazingCudfTable>(std::move(cudf_table), names);
+
 	std::size_t num_rows = blz_table->num_rows();
 	std::size_t num_columns = blz_table->num_columns();
 
-	std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(blz_table.release()));
-	auto table_ptr = std::make_unique<ral::cache::GPUCacheData>(std::move(cudf_table));
+	auto table_ptr = std::make_unique<ral::cache::GPUCacheData>(std::move(blz_table));
 	std::unique_ptr<ral::cache::CacheData> cloned_data = table_ptr->clone();
 	table_ptr.reset();
 
 	EXPECT_EQ(cloned_data->num_rows(), num_rows);
 	EXPECT_EQ(cloned_data->num_columns(), num_columns);
+
+	auto decached_table = cloned_data->decache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
+	auto blz_table_view = decached_table->to_table_view();
+	auto cloned_table = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(blz_table_view)->view();
+
+	cudf::test::fixed_width_column_wrapper<T> expect_col1{{4, 5, 3, 5, 8, 5, 6}, {1, 1, 1, 1, 1, 1, 1}};
+	cudf::test::strings_column_wrapper expect_col2({"b", "d", "a", "d", "l", "d", "k"}, {1, 1, 1, 1, 1, 1, 1});
+	cudf::test::fixed_width_column_wrapper<T> expect_col3{{10, 40, 70, 5, 2, 10, 11}, {1, 1, 1, 1, 1, 1, 1}};
+	cudf::table_view expect_cudf_table_view {{expect_col1, expect_col2, expect_col3}};
+
+	cudf::test::expect_tables_equal(expect_cudf_table_view, cloned_table);
 }
