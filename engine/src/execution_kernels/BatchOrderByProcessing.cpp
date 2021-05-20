@@ -122,6 +122,13 @@ SortAndSampleKernel::SortAndSampleKernel(std::size_t kernel_id, const std::strin
     this->output_.add_port("output_a", "output_b");
     get_samples = true;
     already_computed_partition_plan = false;
+
+    ral::cache::cache_settings cache_machine_config;
+    cache_machine_config.type = ral::cache::CacheType::SIMPLE;
+    cache_machine_config.context = context->clone();
+
+    std::string samples_cache_name = std::to_string(this->get_id()) + "_samples";
+    this->samples_cache_machine = ral::cache::create_cache_machine(cache_machine_config, samples_cache_name);
 }
 
 void SortAndSampleKernel::make_partition_plan_task(){
