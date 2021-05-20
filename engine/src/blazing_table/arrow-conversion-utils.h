@@ -62,8 +62,7 @@ static inline void AppendValues(
 	case cudf::type_id::INT16:
 		AppendNumericTypedValue<arrow::Int16Builder>(arrayBuilder, allocation);
 	case cudf::type_id::INT32:
-		AppendNumericTypedValue<arrow::Int32Builder>(arrayBuilder, allocation);
-		return;
+		return AppendNumericTypedValue<arrow::Int32Builder>(arrayBuilder, allocation);
 	case cudf::type_id::INT64:
 		AppendNumericTypedValue<arrow::Int64Builder>(arrayBuilder, allocation);
 	default:
