@@ -2,11 +2,68 @@
 #include "bmr/BlazingMemoryResource.h"
 #include "bmr/BufferProvider.h"
 #include "communication/CommunicationInterface/serializer.hpp"
+#include <arrow/array/builder_primitive.h>
+#include <arrow/table.h>
+
+#include "bmr/BufferProvider.h"
+#include "transport/ColumnTransport.h"
 
 using namespace fmt::literals;
 
 namespace ral {
 namespace frame {
+
+// BEGIN internal utils
+
+static inline std::tuple<std::unique_ptr<arrow::ArrayBuilder>,
+	std::shared_ptr<arrow::Field>>
+MakeArrayBuilderField(
+	const blazingdb::transport::ColumnTransport & /*columnTransport*/) {
+	return std::make_tuple(std::make_unique<arrow::Int32Builder>(),
+		arrow::field("f0", arrow::int32()));
+}
+
+static inline void AppendValues(
+	std::unique_ptr<arrow::ArrayBuilder> & arrayBuilder,
+	const std::unique_ptr<ral::memory::blazing_allocation_chunk> & allocation) {
+	std::int32_t * data = reinterpret_cast<std::int32_t *>(allocation->data);
+	std::size_t length = allocation->size / sizeof(std::int32_t);
+
+	for(std::size_t i = 0; i < length; i++) {
+		// TODO: nulls
+		arrow::Int32Builder & int32Builder =
+			*dynamic_cast<arrow::Int32Builder *>(arrayBuilder.get());
+		arrow::Status status = int32Builder.Append(data[i]);
+		if(!status.ok()) {
+			throw std::runtime_error{"Builder appending"};
+		}
+	}
+}
+
+static inline std::size_t AppendChunkToArrayBuilder(
+	std::unique_ptr<arrow::ArrayBuilder> & arrayBuilder,
+	const ral::memory::blazing_chunked_column_info & chunkedColumnInfo,
+	const std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>> &
+		allocations) {
+	std::size_t position = 0;
+
+	for(std::size_t i = 0; i < chunkedColumnInfo.chunk_index.size(); i++) {
+		std::size_t chunk_index = chunkedColumnInfo.chunk_index[i];
+		// std::size_t offset = chunkedColumnInfo.offset[i];
+		std::size_t chunk_size = chunkedColumnInfo.size[i];
+
+		const std::unique_ptr<ral::memory::blazing_allocation_chunk> &
+			allocation = allocations[chunk_index];
+
+		AppendValues(arrayBuilder, allocation);
+
+		position += chunk_size;
+	}
+
+	return position;
+}
+
+// END internal utils
 
 BlazingHostTable::BlazingHostTable(const std::vector<ColumnTransport> &columns_offsets,
             std::vector<ral::memory::blazing_chunked_column_info> && chunked_column_infos,
@@ -78,9 +135,42 @@ const std::vector<ColumnTransport> &BlazingHostTable::get_columns_offsets() cons
 }
 
 std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
-    // WSM TODO
-//   assert(this->is_arrow());
-//   return std::make_unique<ral::frame::BlazingArrowTable>(this->arrow_table);
+  int buffer_index = 0;
+
+	std::vector<std::shared_ptr<arrow::Array>> arrays;
+	arrays.reserve(columns_offsets.size());
+
+	std::vector<std::shared_ptr<arrow::Field>> fields;
+	fields.reserve(columns_offsets.size());
+
+	for(const ral::memory::blazing_chunked_column_info & chunked_column_info :
+		chunked_column_infos) {
+		std::size_t position = 0;
+
+		std::unique_ptr<arrow::ArrayBuilder> arrayBuilder;
+		std::shared_ptr<arrow::Field> field;
+		std::tie(arrayBuilder, field) =
+			MakeArrayBuilderField(columns_offsets[buffer_index]);
+
+		fields.emplace_back(field);
+
+		position += AppendChunkToArrayBuilder(
+			arrayBuilder, chunked_column_info, allocations);
+
+		std::shared_ptr<arrow::Array> array;
+		arrow::Status status = arrayBuilder->Finish(&array);
+		if(!status.ok()) {
+			throw std::runtime_error{"Building array"};
+		}
+		arrays.push_back(array);
+
+		buffer_index++;
+	}
+
+	std::shared_ptr<arrow::Schema> schema = arrow::schema(fields);
+	std::shared_ptr<arrow::Table> table = arrow::Table::Make(schema, arrays);
+
+  return std::make_unique<ral::frame::BlazingArrowTable>(table);
 }
 
 std::unique_ptr<BlazingCudfTable> BlazingHostTable::get_cudf_table() const {

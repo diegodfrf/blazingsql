@@ -16,9 +16,8 @@ template<>
 std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::operator()<ral::frame::BlazingArrowTable>(
 	std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
 
-	// WSM TODO. Need to make BlazingHostTable arrow based constructor
-    // ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
-    // return std::make_unique<ral::frame::BlazingHostTable>(arrow_table_ptr->view());
+  ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
+  return ral::communication::messages::serialize_arrow_message_to_host_table(arrow_table_ptr->to_table_view(), use_pinned);
 }
 
 template<>
