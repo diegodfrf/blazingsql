@@ -149,6 +149,43 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_tabl
 	return table;
 }
 
+std::unique_ptr<ral::frame::BlazingHostTable> serialize_arrow_message_to_host_table(std::shared_ptr<ral::frame::BlazingArrowTableView> table_view, bool use_pinned)
+{
+  // TODO percy arrow
+  
+//  std::vector<std::size_t> buffer_sizes;
+//	std::vector<const char *> raw_buffers;
+//	std::vector<ColumnTransport> column_offset;
+//	std::vector<std::unique_ptr<rmm::device_buffer>> temp_scope_holder;
+
+
+//	std::tie(buffer_sizes, raw_buffers, column_offset, temp_scope_holder) = serialize__message_to_gpu_containers(table_view);
+
+	
+//	typedef std::pair< std::vector<ral::memory::blazing_chunked_column_info>, std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk> >> buffer_alloc_type;
+//	buffer_alloc_type buffers_and_allocations = ral::memory::convert_gpu_buffers_to_chunks(buffer_sizes,use_pinned);
+
+	
+//	auto & allocations = buffers_and_allocations.second;
+//	size_t buffer_index = 0;
+//	for(auto & chunked_column_info : buffers_and_allocations.first){
+//		size_t position = 0;
+//		for(size_t i = 0; i < chunked_column_info.chunk_index.size(); i++){
+//			size_t chunk_index = chunked_column_info.chunk_index[i];
+//			size_t offset = chunked_column_info.offset[i];
+//			size_t chunk_size = chunked_column_info.size[i];
+//			cudaMemcpyAsync((void *) (allocations[chunk_index]->data + offset), raw_buffers[buffer_index] + position, chunk_size, cudaMemcpyDeviceToHost,0);
+//			position += chunk_size;
+//		}		
+//		buffer_index++;
+//	}
+//	cudaStreamSynchronize(0);
+
+
+//	auto table = std::make_unique<ral::frame::BlazingHostTable>(column_offset, std::move(buffers_and_allocations.first),std::move(buffers_and_allocations.second));
+//	return table;
+}
+
 std::unique_ptr<ral::frame::BlazingCudfTable> deserialize_from_gpu_raw_buffers(const std::vector<ColumnTransport> & columns_offsets,
 									  const std::vector<rmm::device_buffer> & raw_buffers) {
 	auto num_columns = columns_offsets.size();
