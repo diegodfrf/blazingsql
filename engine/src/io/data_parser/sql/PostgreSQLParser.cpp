@@ -76,8 +76,8 @@ parse_postgresql_column_type(const std::string & columnTypeName) {
   throw std::runtime_error("PostgreSQL type hint not found: " + columnTypeName);
 }
 
-postgresql_parser::postgresql_parser()
-    : abstractsql_parser{DataType::POSTGRESQL} {}
+postgresql_parser::postgresql_parser(ral::execution::execution_backend preferred_compute)
+    : abstractsql_parser{DataType::POSTGRESQL, preferred_compute} {}
 
 postgresql_parser::~postgresql_parser() = default;
 

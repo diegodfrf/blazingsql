@@ -8,7 +8,8 @@
 namespace ral {
 namespace io {
 
-json_parser::json_parser(std::map<std::string, std::string> args_map_) : args_map{args_map_} {}
+json_parser::json_parser(std::map<std::string, std::string> args_map_, ral::execution::execution_backend preferred_compute)
+  : data_parser(preferred_compute), args_map{args_map_} {}
 
 json_parser::~json_parser() {
 

@@ -59,7 +59,15 @@ TableSchema parseSchema(std::vector<std::string> files,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
 	std::vector<std::pair<std::string, cudf::type_id>> extra_columns,
-	bool ignore_missing_paths) {
+	bool ignore_missing_paths,
+  std::string preferred_compute) {
+
+  // TODO percy arrow move this into utils or a common place
+  ral::execution::backend_id preferred_compute_type = ral::execution::backend_id::CUDF;
+  if (preferred_compute == "arrow") {
+    preferred_compute_type = ral::execution::backend_id::ARROW;
+  }
+  ral::execution::execution_backend preferred_compute_backend(preferred_compute_type);
 
 	// sanitize and normalize paths
 	for (size_t i = 0; i < files.size(); ++i) {
@@ -83,16 +91,16 @@ TableSchema parseSchema(std::vector<std::string> files,
   bool isSqlProvider = false;
 
 	if(fileType == ral::io::DataType::PARQUET) {
-		parser = std::make_shared<ral::io::parquet_parser>();
+		parser = std::make_shared<ral::io::parquet_parser>(preferred_compute_backend);
 	} else if(fileType == ral::io::DataType::ORC) {
-		parser = std::make_shared<ral::io::orc_parser>(args_map);
+		parser = std::make_shared<ral::io::orc_parser>(args_map, preferred_compute_backend);
 	} else if(fileType == ral::io::DataType::JSON) {
-		parser = std::make_shared<ral::io::json_parser>(args_map);
+		parser = std::make_shared<ral::io::json_parser>(args_map, preferred_compute_backend);
 	} else if(fileType == ral::io::DataType::CSV) {
-		parser = std::make_shared<ral::io::csv_parser>(args_map);
+		parser = std::make_shared<ral::io::csv_parser>(args_map, preferred_compute_backend);
 	} else if(fileType == ral::io::DataType::MYSQL) {
 #ifdef MYSQL_SUPPORT
-		parser = std::make_shared<ral::io::mysql_parser>();
+		parser = std::make_shared<ral::io::mysql_parser>(preferred_compute_backend);
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::mysql_data_provider>(sql, 0, 0);
 #else
@@ -101,7 +109,7 @@ TableSchema parseSchema(std::vector<std::string> files,
     isSqlProvider = true;
   } else if(fileType == ral::io::DataType::POSTGRESQL) {
 #ifdef POSTGRESQL_SUPPORT
-		parser = std::make_shared<ral::io::postgresql_parser>();
+		parser = std::make_shared<ral::io::postgresql_parser>(preferred_compute_backend);
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::postgresql_data_provider>(sql, 0, 0);
 #else
@@ -110,7 +118,7 @@ TableSchema parseSchema(std::vector<std::string> files,
     isSqlProvider = true;
   } else if(fileType == ral::io::DataType::SQLITE) {
 #ifdef SQLITE_SUPPORT
-    parser = std::make_shared<ral::io::sqlite_parser>();
+    parser = std::make_shared<ral::io::sqlite_parser>(preferred_compute_backend);
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::sqlite_data_provider>(sql, 0, 0);
     isSqlProvider = true;
@@ -119,7 +127,7 @@ TableSchema parseSchema(std::vector<std::string> files,
 #endif
   } else if(fileType == ral::io::DataType::SNOWFLAKE) {
 #ifdef SNOWFLAKE_SUPPORT
-    parser = std::make_shared<ral::io::snowflake_parser>();
+    parser = std::make_shared<ral::io::snowflake_parser>(preferred_compute_backend);
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::snowflake_data_provider>(sql, 0, 0);
     isSqlProvider = true;
@@ -202,7 +210,16 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	TableSchema schema,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
-	std::vector<std::string> arg_values) {
+	std::vector<std::string> arg_values,
+  std::string preferred_compute) {
+
+  // TODO percy arrow move this into utils or a common place
+  ral::execution::backend_id preferred_compute_type = ral::execution::backend_id::CUDF;
+  if (preferred_compute == "arrow") {
+    preferred_compute_type = ral::execution::backend_id::ARROW;
+  }
+  ral::execution::execution_backend preferred_compute_backend(preferred_compute_type);
+
 		// TODO percy arrow
 	if (offset.second == 0) {
 		std::cout<<"offset.second = 0\n";
@@ -247,13 +264,13 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 
 	std::shared_ptr<ral::io::data_parser> parser;
 	if(fileType == ral::io::DataType::PARQUET) {
-		parser = std::make_shared<ral::io::parquet_parser>();
+		parser = std::make_shared<ral::io::parquet_parser>(preferred_compute_backend);
 	} else if(fileType == ral::io::DataType::ORC) {
-		parser = std::make_shared<ral::io::orc_parser>(args_map);
+		parser = std::make_shared<ral::io::orc_parser>(args_map, preferred_compute_backend);
 	} else if(fileType == ral::io::DataType::JSON) {
-		parser = std::make_shared<ral::io::json_parser>(args_map);
+		parser = std::make_shared<ral::io::json_parser>(args_map, preferred_compute_backend);
 	} else if(fileType == ral::io::DataType::CSV) {
-		parser = std::make_shared<ral::io::csv_parser>(args_map);
+		parser = std::make_shared<ral::io::csv_parser>(args_map, preferred_compute_backend);
 	}
 	std::vector<Uri> uris;
 	for(auto file_path : files) {
@@ -405,7 +422,8 @@ std::pair<TableSchema, error_code_t> parseSchema_C(std::vector<std::string> file
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
 	std::vector<std::pair<std::string, cudf::type_id>> extra_columns,
-	bool ignore_missing_paths) {
+	bool ignore_missing_paths,
+  std::string preferred_compute) {
 
 	TableSchema result;
 
@@ -415,7 +433,8 @@ std::pair<TableSchema, error_code_t> parseSchema_C(std::vector<std::string> file
 					arg_keys,
 					arg_values,
 					extra_columns,
-					ignore_missing_paths);
+					ignore_missing_paths,
+          preferred_compute);
 		return std::make_pair(result, E_SUCCESS);
 	} catch (std::exception& e) {
 		return std::make_pair(result, E_EXCEPTION);
@@ -427,7 +446,8 @@ std::pair<std::unique_ptr<ResultSet>, error_code_t> parseMetadata_C(std::vector<
 	TableSchema schema,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
-	std::vector<std::string> arg_values) {
+	std::vector<std::string> arg_values,
+  std::string preferred_compute) {
 
 	std::unique_ptr<ResultSet> result = nullptr;
 
@@ -437,7 +457,8 @@ std::pair<std::unique_ptr<ResultSet>, error_code_t> parseMetadata_C(std::vector<
 					schema,
 					file_format_hint,
 					arg_keys,
-					arg_values));
+					arg_values,
+          preferred_compute));
 		return std::make_pair(std::move(result), E_SUCCESS);
 	} catch (std::exception& e) {
 		return std::make_pair(std::move(result), E_EXCEPTION);

@@ -12,7 +12,7 @@ namespace io {
 
 class snowflake_parser : public abstractsql_parser {
 public:
-  snowflake_parser();
+  snowflake_parser(ral::execution::execution_backend preferred_compute);
   virtual ~snowflake_parser();
 
 protected:

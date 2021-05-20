@@ -13,7 +13,7 @@ namespace io {
 
 class sqlite_parser : public abstractsql_parser {
 public:
-  sqlite_parser();
+  sqlite_parser(ral::execution::execution_backend preferred_compute);
   virtual ~sqlite_parser();
 
 protected:

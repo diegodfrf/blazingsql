@@ -34,7 +34,7 @@ namespace io {
 
 
 
-abstractsql_parser::abstractsql_parser(DataType sql_datatype): sql_datatype(sql_datatype) {
+abstractsql_parser::abstractsql_parser(DataType sql_datatype, ral::execution::execution_backend preferred_compute): data_parser(preferred_compute), sql_datatype(sql_datatype) {
 }
 
 abstractsql_parser::~abstractsql_parser() {

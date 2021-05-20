@@ -51,7 +51,14 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 	const std::vector<int> & fileTypes,
 	const std::vector<std::vector<std::map<std::string, std::string>>> & uri_values,
   size_t total_number_of_nodes,
-  size_t self_node_idx){
+  size_t self_node_idx, std::string preferred_compute){
+
+  // TODO percy arrow move this into utils or a common place
+  ral::execution::backend_id preferred_compute_type = ral::execution::backend_id::CUDF;
+  if (preferred_compute == "arrow") {
+    preferred_compute_type = ral::execution::backend_id::ARROW;
+  }
+  ral::execution::execution_backend preferred_compute_backend(preferred_compute_type);
 
 	std::vector<ral::io::data_loader> input_loaders;
 	std::vector<ral::io::Schema> schemas;
@@ -91,20 +98,20 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 
 		std::shared_ptr<ral::io::data_parser> parser;
 		if(fileType == ral::io::DataType::PARQUET) {
-			parser = std::make_shared<ral::io::parquet_parser>();
+			parser = std::make_shared<ral::io::parquet_parser>(preferred_compute_backend);
 		} else if(fileType == gdfFileType || fileType == daskFileType) {
-			parser = std::make_shared<ral::io::gdf_parser>();
+			parser = std::make_shared<ral::io::gdf_parser>(preferred_compute_backend);
 		} else if(fileType == ral::io::DataType::ORC) {
-			parser = std::make_shared<ral::io::orc_parser>(args_map);
+			parser = std::make_shared<ral::io::orc_parser>(args_map, preferred_compute_backend);
 		} else if(fileType == ral::io::DataType::JSON) {
-			parser = std::make_shared<ral::io::json_parser>(args_map);
+			parser = std::make_shared<ral::io::json_parser>(args_map, preferred_compute_backend);
 		} else if(fileType == ral::io::DataType::CSV) {
-			parser = std::make_shared<ral::io::csv_parser>(args_map);
+			parser = std::make_shared<ral::io::csv_parser>(args_map, preferred_compute_backend);
 		} else if(fileType == ral::io::DataType::ARROW){
-			parser = std::make_shared<ral::io::arrow_parser>();
+			parser = std::make_shared<ral::io::arrow_parser>(preferred_compute_backend);
 		} else if(fileType == ral::io::DataType::MYSQL) {
 #ifdef MYSQL_SUPPORT
-      parser = std::make_shared<ral::io::mysql_parser>();
+      parser = std::make_shared<ral::io::mysql_parser>(preferred_compute_backend);
       auto sql = ral::io::getSqlInfo(args_map);
       provider = std::make_shared<ral::io::mysql_data_provider>(sql, total_number_of_nodes, self_node_idx);
       isSqlProvider = true;
@@ -113,7 +120,7 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 #endif
     } else if(fileType == ral::io::DataType::POSTGRESQL) {
 #ifdef POSTGRESQL_SUPPORT
-		parser = std::make_shared<ral::io::postgresql_parser>();
+		parser = std::make_shared<ral::io::postgresql_parser>(preferred_compute_backend);
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::postgresql_data_provider>(sql, total_number_of_nodes, self_node_idx);
 	isSqlProvider = true;
@@ -122,7 +129,7 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 #endif
 	} else if(fileType == ral::io::DataType::SQLITE) {
 #ifdef SQLITE_SUPPORT
-  		parser = std::make_shared<ral::io::sqlite_parser>();
+  		parser = std::make_shared<ral::io::sqlite_parser>(preferred_compute_backend);
       auto sql = ral::io::getSqlInfo(args_map);
       provider = std::make_shared<ral::io::sqlite_data_provider>(sql, total_number_of_nodes, self_node_idx);
       isSqlProvider = true;
@@ -132,7 +139,7 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 
   } else if (fileType == ral::io::DataType::SNOWFLAKE) {
 #ifdef SNOWFLAKE_SUPPORT
-    parser = std::make_shared<ral::io::snowflake_parser>();
+    parser = std::make_shared<ral::io::snowflake_parser>(preferred_compute_backend);
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::snowflake_data_provider>(
         sql, total_number_of_nodes, self_node_idx);
@@ -255,7 +262,7 @@ std::shared_ptr<ral::cache::graph> runGenerateGraph(uint32_t masterIndex,
 	std::vector<ral::io::data_loader> input_loaders;
 	std::vector<ral::io::Schema> schemas;
 	std::tie(input_loaders, schemas) = get_loaders_and_schemas(tableSchemas, tableSchemaCppArgKeys,
-		tableSchemaCppArgValues, filesAll, fileTypes, uri_values, contextNodes.size(), self_node_idx);
+		tableSchemaCppArgValues, filesAll, fileTypes, uri_values, contextNodes.size(), self_node_idx, preferred_compute);
 
   	auto graph = generate_graph(input_loaders, schemas, tableNames, tableScans, query, queryContext, sql);
 

@@ -17,7 +17,7 @@ namespace io {
 
 class arrow_parser : public data_parser {
 public:
-	arrow_parser();
+	arrow_parser(ral::execution::execution_backend preferred_compute);
 
 	virtual ~arrow_parser();
 

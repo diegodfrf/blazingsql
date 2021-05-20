@@ -18,7 +18,7 @@ typedef struct cudf_string_col;
 
 class abstractsql_parser : public data_parser {
 public:
-	abstractsql_parser(DataType sql_datatype);
+	abstractsql_parser(DataType sql_datatype, ral::execution::execution_backend preferred_compute);
 	virtual ~abstractsql_parser();
 
   std::unique_ptr<ral::frame::BlazingTable> parse_batch(

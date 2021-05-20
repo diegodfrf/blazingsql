@@ -11,7 +11,9 @@
 namespace ral {
 namespace io {
 
-orc_parser::orc_parser(std::map<std::string, std::string> args_map_) : args_map{args_map_} {}
+orc_parser::orc_parser(std::map<std::string, std::string> args_map_,
+                       ral::execution::execution_backend preferred_compute) 
+  : data_parser(preferred_compute), args_map{args_map_} {}
 
 orc_parser::~orc_parser() {
 	// TODO Auto-generated destructor stub

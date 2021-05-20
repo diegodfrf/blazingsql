@@ -22,6 +22,8 @@ namespace io {
 
 class data_parser {
 public:
+  data_parser(ral::execution::execution_backend preferred_compute)
+    : preferred_compute_(preferred_compute) {}
 
 	virtual std::unique_ptr<ral::frame::BlazingTable> parse_batch(
 		ral::io::data_handle /*handle*/,
@@ -45,6 +47,10 @@ public:
 	}
 
 	virtual DataType type() const { return 	DataType::UNDEFINED; }
+	virtual ral::execution::execution_backend preferred_compute() const { return this->preferred_compute_; }
+
+protected:
+  ral::execution::execution_backend preferred_compute_;
 };
 
 } /* namespace io */

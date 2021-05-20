@@ -5,7 +5,7 @@
 namespace ral {
 namespace io {
 
-arrow_parser::arrow_parser() {}
+arrow_parser::arrow_parser(ral::execution::execution_backend preferred_compute) : data_parser(preferred_compute) {}
 
 arrow_parser::~arrow_parser() {}
 

@@ -66,8 +66,8 @@ static inline std::uint8_t ParseCudfType(void * src,
   ThrowParseError(col, row);
 }
 
-snowflake_parser::snowflake_parser()
-    : abstractsql_parser{DataType::SNOWFLAKE} {}
+snowflake_parser::snowflake_parser(ral::execution::execution_backend preferred_compute)
+    : abstractsql_parser{DataType::SNOWFLAKE, preferred_compute} {}
 
 snowflake_parser::~snowflake_parser() = default;
 

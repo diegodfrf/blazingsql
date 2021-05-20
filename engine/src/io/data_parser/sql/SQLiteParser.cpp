@@ -80,7 +80,7 @@ cudf::type_id parse_sqlite_column_type(std::string t) {
   if (!t.rfind("datetime", 0)) { return cudf::type_id::TIMESTAMP_MILLISECONDS; }
 }
 
-sqlite_parser::sqlite_parser() : abstractsql_parser{DataType::SQLITE} {}
+sqlite_parser::sqlite_parser(ral::execution::execution_backend preferred_compute) : abstractsql_parser{DataType::SQLITE, preferred_compute} {}
 
 sqlite_parser::~sqlite_parser() = default;
 

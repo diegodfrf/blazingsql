@@ -21,7 +21,7 @@ namespace io {
 
 class parquet_parser : public data_parser {
 public:
-	parquet_parser();
+	parquet_parser(ral::execution::execution_backend preferred_compute);
 	virtual ~parquet_parser();
 
 	std::unique_ptr<ral::frame::BlazingTable> parse_batch(

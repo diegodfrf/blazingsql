@@ -12,7 +12,7 @@ namespace io {
 
 class mysql_parser : public abstractsql_parser {
 public:
-	mysql_parser();
+	mysql_parser(ral::execution::execution_backend preferred_compute);
 	virtual ~mysql_parser();
 
 protected:

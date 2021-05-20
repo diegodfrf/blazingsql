@@ -14,7 +14,7 @@
 namespace ral {
 namespace io {
 
-gdf_parser::gdf_parser() {}
+gdf_parser::gdf_parser(ral::execution::execution_backend preferred_compute): data_parser(preferred_compute) {}
 
 gdf_parser::~gdf_parser() {}
 

@@ -15,7 +15,7 @@ namespace io {
 
 class gdf_parser : public data_parser {
 public:
-	gdf_parser();
+	gdf_parser(ral::execution::execution_backend preferred_compute);
 
 	virtual ~gdf_parser();
 

@@ -91,7 +91,7 @@ std::vector<cudf::type_id> parse_mysql_column_types(const std::vector<std::strin
   return ret;
 }
 
-mysql_parser::mysql_parser(): abstractsql_parser(DataType::MYSQL) {
+mysql_parser::mysql_parser(ral::execution::execution_backend preferred_compute): abstractsql_parser(DataType::MYSQL, preferred_compute) {
 }
 
 mysql_parser::~mysql_parser() {

@@ -22,7 +22,7 @@ namespace io {
 
 class csv_parser : public data_parser {
 public:
-	csv_parser(std::map<std::string, std::string> args_map);
+	csv_parser(std::map<std::string, std::string> args_map, ral::execution::execution_backend preferred_compute);
 
 	virtual ~csv_parser();
 

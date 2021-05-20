@@ -13,7 +13,7 @@ namespace io {
 
 class json_parser : public data_parser {
 public:
-	json_parser(std::map<std::string, std::string> args_map);
+	json_parser(std::map<std::string, std::string> args_map, ral::execution::execution_backend preferred_compute);
 
 	virtual ~json_parser();
 

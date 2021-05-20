@@ -15,7 +15,7 @@ namespace io {
 
 class orc_parser : public data_parser {
 public:
-	orc_parser(std::map<std::string, std::string> args_map);
+	orc_parser(std::map<std::string, std::string> args_map, ral::execution::execution_backend preferred_compute);
 
 	virtual ~orc_parser();
 
