@@ -64,16 +64,20 @@ static inline void AppendValues(
 	const blazingdb::transport::ColumnTransport & columnTransport,
 	const std::unique_ptr<ral::memory::blazing_allocation_chunk> & allocation) {
 	const cudf::type_id type_id =
-		static_cast<cudf::type_id>(columnTransport.metadata.size);
+		static_cast<cudf::type_id>(columnTransport.metadata.dtype);
 	switch (type_id) {
 	case cudf::type_id::INT8:
-		return AppendNumericTypedValue<arrow::Int8Builder>(arrayBuilder, allocation);
+		return AppendNumericTypedValue<arrow::Int8Builder>(
+			arrayBuilder, allocation);
 	case cudf::type_id::INT16:
-		return AppendNumericTypedValue<arrow::Int16Builder>(arrayBuilder, allocation);
+		return AppendNumericTypedValue<arrow::Int16Builder>(
+			arrayBuilder, allocation);
 	case cudf::type_id::INT32:
-		return AppendNumericTypedValue<arrow::Int32Builder>(arrayBuilder, allocation);
+		return AppendNumericTypedValue<arrow::Int32Builder>(
+			arrayBuilder, allocation);
 	case cudf::type_id::INT64:
-		return AppendNumericTypedValue<arrow::Int64Builder>(arrayBuilder, allocation);
+		return AppendNumericTypedValue<arrow::Int64Builder>(
+			arrayBuilder, allocation);
 	default:
 		throw std::runtime_error{
 			"Unsupported column cudf type id for append value"};

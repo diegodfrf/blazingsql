@@ -72,9 +72,9 @@ TEST(BlazingHostTable, ToArrowTable) {
 	status = arrow::PrettyPrint(*table, {0}, &std::cout);
 	ASSERT_EQ(status.ok(), true);
 	std::string result = sink.str();
-	static const char * expected = R"del(f0: int32
+	static const char * expected = R"del(int32: int32
 ----
-f0:
+int32:
   [
     [
       1,
