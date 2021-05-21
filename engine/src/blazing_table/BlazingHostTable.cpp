@@ -14,6 +14,15 @@ namespace frame {
 
 // BEGIN internal utils
 
+template <class B, class D>
+static inline std::unique_ptr<B> unique_base(std::unique_ptr<D> && d) {
+	if (B * b = static_cast<B *>(d.get())) {
+		d.release();
+		return std::unique_ptr<B>(b, std::move(d.get_deleter()));
+	}
+	throw std::bad_alloc{};
+}
+
 static inline std::tuple<std::unique_ptr<arrow::ArrayBuilder>,
 	std::shared_ptr<arrow::Field>>
 MakeArrayBuilderField(
@@ -26,37 +35,47 @@ MakeArrayBuilderField(
 
 	// TODO: get column name
 	switch (type_id) {
-  case cudf::type_id::INT8:
-    return std::make_tuple(std::make_unique<arrow::Int8Builder>(),
-      arrow::field(columnName, arrow::int8()));
-  case cudf::type_id::INT16:
-    return std::make_tuple(std::make_unique<arrow::Int16Builder>(),
-      arrow::field(columnName, arrow::int16()));
-  case cudf::type_id::INT32:
-    return std::make_tuple(std::make_unique<arrow::Int32Builder>(),
-      arrow::field(columnName, arrow::int32()));
-  case cudf::type_id::INT64:
-    return std::make_tuple(std::make_unique<arrow::Int64Builder>(),
-      arrow::field(columnName, arrow::int64()));
-  case cudf::type_id::FLOAT32:
-    return std::make_tuple(std::make_unique<arrow::FloatBuilder>(),
-      arrow::field(columnName, arrow::float32()));
-  case cudf::type_id::FLOAT64:
-    return std::make_tuple(std::make_unique<arrow::DoubleBuilder>(),
-      arrow::field(columnName, arrow::float64()));
-  case cudf::type_id::UINT8:
-    return std::make_tuple(std::make_unique<arrow::UInt8Builder>(),
-      arrow::field(columnName, arrow::uint8()));
-  case cudf::type_id::UINT16:
-    return std::make_tuple(std::make_unique<arrow::UInt16Builder>(),
-      arrow::field(columnName, arrow::uint16()));
-  case cudf::type_id::UINT32:
-    return std::make_tuple(std::make_unique<arrow::UInt32Builder>(),
-      arrow::field(columnName, arrow::uint32()));
-  case cudf::type_id::UINT64:
-    return std::make_tuple(std::make_unique<arrow::UInt64Builder>(),
-      arrow::field(columnName, arrow::uint64()));
-  default:
+	case cudf::type_id::INT8:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::Int8Builder>()),
+			arrow::field(columnName, arrow::int8()));
+	case cudf::type_id::INT16:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::Int16Builder>()),
+			arrow::field(columnName, arrow::int16()));
+	case cudf::type_id::INT32:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::Int32Builder>()),
+			arrow::field(columnName, arrow::int32()));
+	case cudf::type_id::INT64:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::Int64Builder>()),
+			arrow::field(columnName, arrow::int64()));
+	case cudf::type_id::FLOAT32:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::FloatBuilder>()),
+			arrow::field(columnName, arrow::float32()));
+	case cudf::type_id::FLOAT64:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::DoubleBuilder>()),
+			arrow::field(columnName, arrow::float64()));
+	case cudf::type_id::UINT8:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::UInt8Builder>()),
+			arrow::field(columnName, arrow::uint8()));
+	case cudf::type_id::UINT16:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::UInt16Builder>()),
+			arrow::field(columnName, arrow::uint16()));
+	case cudf::type_id::UINT32:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::UInt32Builder>()),
+			arrow::field(columnName, arrow::uint32()));
+	case cudf::type_id::UINT64:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::UInt64Builder>()),
+			arrow::field(columnName, arrow::uint64()));
+	default:
 		throw std::runtime_error{
 			"Unsupported column cudf type id for array builder"};
 	}
@@ -72,11 +91,6 @@ static inline void AppendNumericTypedValue(
 		reinterpret_cast<value_type *>(allocation->data + offset);
 	std::size_t length = allocation->size / sizeof(value_type);
 
-	std::cout << "\033[34mcounter: " << allocation->size << "\033[0m"
-			  << std::endl;
-	std::cout << "\033[34mcounter: " << sizeof(value_type) << "\033[0m"
-			  << std::endl;
-
 	for (std::size_t i = 0; i < length; i++) {
 		// TODO: nulls
 		BuilderType & builder = *static_cast<BuilderType *>(arrayBuilder.get());
@@ -84,8 +98,6 @@ static inline void AppendNumericTypedValue(
 		if (!status.ok()) {
 			throw std::runtime_error{"Builder appending"};
 		}
-
-		std::cout << "\033[33mcounter: " << i << "\033[0m" << std::endl;
 	}
 }
 
@@ -247,9 +259,6 @@ std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
 		std::unique_ptr<arrow::ArrayBuilder> arrayBuilder;
 		std::shared_ptr<arrow::Field> field;
 		std::tie(arrayBuilder, field) = MakeArrayBuilderField(column_offset);
-
-		std::cout << "\033[33mBuilder type: "
-				  << arrayBuilder->type()->ToString() << "\033[0m" << std::endl;
 
 		fields.emplace_back(field);
 

@@ -9,24 +9,47 @@
 template <cudf::type_id>
 class Traits {};
 
-#define FACT_TRAIT(dtype, ptype)                                               \
+#define FACT_TRAIT(dtype, ptype, gtor)                                         \
 	template <>                                                                \
 	class Traits<cudf::type_id::dtype> {                                       \
 	public:                                                                    \
 		using value_type = ptype;                                              \
 		static constexpr std::size_t size = sizeof(value_type);                \
+		static value_type generate(const std::size_t n) {                      \
+			return gtor(static_cast<value_type>(n));                           \
+		}                                                                      \
 	}
 
-// FACT_TRAIT(INT8, std::int8_t);
-FACT_TRAIT(INT16, std::int16_t);
-FACT_TRAIT(INT32, std::int32_t);
-// FACT_TRAIT(INT64, std::int64_t);
-// FACT_TRAIT(FLOAT32, float);
-// FACT_TRAIT(FLOAT64, double);
-// FACT_TRAIT(UINT8, std::uint8_t);
-// FACT_TRAIT(UINT16, std::uint16_t);
-// FACT_TRAIT(UINT32, std::uint32_t);
-// FACT_TRAIT(UINT64, std::uint64_t);
+// used to generate the values into column
+
+template <class T>
+T idem(const T t) {
+	return t;
+}
+
+template <std::size_t base, class T>
+T thousand(const T t) {
+	return static_cast<T>(base) * 1000 + t;
+}
+
+template <std::size_t base, class T>
+T thousandth(const T t) {
+	return static_cast<T>(base) + (t / 1000);
+}
+
+FACT_TRAIT(INT8, std::int8_t, idem);
+FACT_TRAIT(INT16, std::int16_t, thousand<16>);
+FACT_TRAIT(INT32, std::int32_t, thousand<32>);
+FACT_TRAIT(INT64, std::int64_t, thousand<64>);
+FACT_TRAIT(FLOAT32, float, thousandth<32>);
+FACT_TRAIT(FLOAT64, double, thousandth<64>);
+FACT_TRAIT(UINT8, std::uint8_t, idem);
+FACT_TRAIT(UINT16, std::uint16_t, idem);
+FACT_TRAIT(UINT32, std::uint32_t, idem);
+FACT_TRAIT(UINT64, std::uint64_t, idem);
+
+static std::size_t columnCounter = 0;
+static std::size_t generationCounter = 1;
 
 template <cudf::type_id type_id>
 static inline void AddColumn(
@@ -54,16 +77,15 @@ static inline void AddColumn(
 
 	// chunked column info
 	chunkedColumnInfos.emplace_back(ral::memory::blazing_chunked_column_info{
-		{0}, {0}, {columnSize}, columnSize});
+		{columnCounter++}, {0}, {columnSize}, columnSize});
 
 	// allocation
 	std::unique_ptr<value_type[]> payload =
 		std::make_unique<value_type[]>(columnLength);
 
-	//std::iota(payload.get(), payload.get() + columnLength, 1);
-  for (std::size_t i = 0; i < columnLength; i++) {
-    payload[i] = i + 1;
-  }
+	std::generate(payload.get(), payload.get() + columnLength, []() {
+		return typeid_traits::generate(generationCounter++);
+	});
 	char * data = reinterpret_cast<char *>(payload.get());
 
 	static std::vector<std::unique_ptr<value_type[]>> payloads;
@@ -84,9 +106,6 @@ static inline void AddColumn(
 	static std::vector<std::unique_ptr<ral::memory::allocation_pool>> pools;
 	pools.emplace_back(std::move(pool));
 
-	std::cout << "\033[33m>>> " << columnLength << "\033[0m" << std::endl;
-	std::cout << "\033[33m>>> " << columnSize << "\033[0m" << std::endl;
-
 	allocationChunks.emplace_back(
 		std::make_unique<ral::memory::blazing_allocation_chunk>(
 			ral::memory::blazing_allocation_chunk{
@@ -105,16 +124,40 @@ TEST(BlazingHostTable, ToArrowTable) {
 	std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>>
 		allocationChunks;
 
-	AddColumn<cudf::type_id::INT32>(columnTransports,
+	AddColumn<cudf::type_id::INT8>(columnTransports,
 		chunkedColumnInfos,
 		allocationChunks,
-		"int32-col",
+		"int8-col",
 		columnLength);
 
 	AddColumn<cudf::type_id::INT16>(columnTransports,
 		chunkedColumnInfos,
 		allocationChunks,
 		"int16-col",
+		columnLength);
+
+	AddColumn<cudf::type_id::INT32>(columnTransports,
+		chunkedColumnInfos,
+		allocationChunks,
+		"int32-col",
+		columnLength);
+
+	AddColumn<cudf::type_id::INT64>(columnTransports,
+		chunkedColumnInfos,
+		allocationChunks,
+		"int64-col",
+		columnLength);
+
+	AddColumn<cudf::type_id::FLOAT32>(columnTransports,
+		chunkedColumnInfos,
+		allocationChunks,
+		"float32-col",
+		columnLength);
+
+	AddColumn<cudf::type_id::FLOAT64>(columnTransports,
+		chunkedColumnInfos,
+		allocationChunks,
+		"float64-col",
 		columnLength);
 
 	std::unique_ptr<ral::frame::BlazingHostTable> blazingHostTable =
