@@ -16,7 +16,7 @@ TEST(BlazingHostTable, ToArrowTable) {
 			(std::int32_t) cudf::type_id::INT32,
 			0,
 			0,
-			"test-column",
+			"int32-col",
 		},   // metadata
 		-1,  // data
 		-1,  // size
@@ -72,9 +72,9 @@ TEST(BlazingHostTable, ToArrowTable) {
 	status = arrow::PrettyPrint(*table, {0}, &std::cout);
 	ASSERT_EQ(status.ok(), true);
 	std::string result = sink.str();
-	static const char * expected = R"del(int32: int32
+	static const char * expected = R"del(int32-col: int32
 ----
-int32:
+int32-col:
   [
     [
       1,

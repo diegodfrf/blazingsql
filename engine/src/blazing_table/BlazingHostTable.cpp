@@ -18,23 +18,44 @@ static inline std::tuple<std::unique_ptr<arrow::ArrayBuilder>,
 	std::shared_ptr<arrow::Field>>
 MakeArrayBuilderField(
 	const blazingdb::transport::ColumnTransport & columnTransport) {
-	const cudf::type_id type_id =
-		static_cast<cudf::type_id>(columnTransport.metadata.dtype);
+	const blazingdb::transport::ColumnTransport::MetaData & metadata =
+		columnTransport.metadata;
+
+	const cudf::type_id type_id = static_cast<cudf::type_id>(metadata.dtype);
+	const std::string columnName = metadata.col_name;
 
 	// TODO: get column name
 	switch (type_id) {
 	case cudf::type_id::INT8:
 		return std::make_tuple(std::make_unique<arrow::Int8Builder>(),
-			arrow::field("int8", arrow::int8()));
+			arrow::field(columnName, arrow::int8()));
 	case cudf::type_id::INT16:
 		return std::make_tuple(std::make_unique<arrow::Int16Builder>(),
-			arrow::field("int16", arrow::int16()));
+			arrow::field(columnName, arrow::int16()));
 	case cudf::type_id::INT32:
 		return std::make_tuple(std::make_unique<arrow::Int32Builder>(),
-			arrow::field("int32", arrow::int32()));
+			arrow::field(columnName, arrow::int32()));
 	case cudf::type_id::INT64:
 		return std::make_tuple(std::make_unique<arrow::Int64Builder>(),
-			arrow::field("int64", arrow::int64()));
+			arrow::field(columnName, arrow::int64()));
+	case cudf::type_id::FLOAT32:
+		return std::make_tuple(std::make_unique<arrow::FloatBuilder>(),
+			arrow::field(columnName, arrow::float32()));
+	case cudf::type_id::FLOAT64:
+		return std::make_tuple(std::make_unique<arrow::DoubleBuilder>(),
+			arrow::field(columnName, arrow::float64()));
+	case cudf::type_id::UINT8:
+		return std::make_tuple(std::make_unique<arrow::UInt8Builder>(),
+			arrow::field(columnName, arrow::uint8()));
+	case cudf::type_id::UINT16:
+		return std::make_tuple(std::make_unique<arrow::UInt16Builder>(),
+			arrow::field(columnName, arrow::uint16()));
+	case cudf::type_id::UINT32:
+		return std::make_tuple(std::make_unique<arrow::UInt32Builder>(),
+			arrow::field(columnName, arrow::uint32()));
+	case cudf::type_id::UINT64:
+		return std::make_tuple(std::make_unique<arrow::UInt64Builder>(),
+			arrow::field(columnName, arrow::uint64()));
 	default:
 		throw std::runtime_error{
 			"Unsupported column cudf type id for array builder"};
@@ -77,6 +98,24 @@ static inline void AppendValues(
 			arrayBuilder, allocation);
 	case cudf::type_id::INT64:
 		return AppendNumericTypedValue<arrow::Int64Builder>(
+			arrayBuilder, allocation);
+	case cudf::type_id::FLOAT32:
+		return AppendNumericTypedValue<arrow::FloatBuilder>(
+			arrayBuilder, allocation);
+	case cudf::type_id::FLOAT64:
+		return AppendNumericTypedValue<arrow::DoubleBuilder>(
+			arrayBuilder, allocation);
+	case cudf::type_id::UINT8:
+		return AppendNumericTypedValue<arrow::UInt8Builder>(
+			arrayBuilder, allocation);
+	case cudf::type_id::UINT16:
+		return AppendNumericTypedValue<arrow::UInt16Builder>(
+			arrayBuilder, allocation);
+	case cudf::type_id::UINT32:
+		return AppendNumericTypedValue<arrow::UInt32Builder>(
+			arrayBuilder, allocation);
+	case cudf::type_id::UINT64:
+		return AppendNumericTypedValue<arrow::UInt64Builder>(
 			arrayBuilder, allocation);
 	default:
 		throw std::runtime_error{
