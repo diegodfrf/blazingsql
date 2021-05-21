@@ -431,31 +431,31 @@ std::pair<bool, uint64_t> ComputeAggregateKernel::get_estimated_output_num_rows(
 // END ComputeAggregateKernel
 
 
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>> DistributeAggregateKernel::prepare_partitions(std::shared_ptr<ral::frame::BlazingTableView> input,
-                                                                                                        int num_partitions){
-    auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(input);
-    cudf::table_view batch_view = cudf_table_view->view();
-    std::vector<cudf::table_view> partitioned;
-    std::unique_ptr<cudf::table> hashed_data; // Keep table alive in this scope
-    if (batch_view.num_rows() > 0) {
+std::vector<std::shared_ptr<ral::frame::BlazingTableView>> prepare_partitions(std::shared_ptr<ral::frame::BlazingTableView> table_view,
+                                                                                                        int num_partitions,
+                                                                              std::vector<cudf::size_type> columns_to_hash)
+{
+    std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitioned;
+    std::unique_ptr<ral::frame::BlazingTable> hashed_data; // Keep table alive in this scope
+    if (table_view->num_rows() > 0) {
         std::vector<cudf::size_type> hashed_data_offsets;
-        std::tie(hashed_data, hashed_data_offsets) = cudf::hash_partition(cudf_table_view->view(), this->columns_to_hash, num_partitions);
+        std::tie(hashed_data, hashed_data_offsets) = ral::execution::backend_dispatcher(table_view->get_execution_backend(),
+                                                                                       hash_partition_functor(), table_view, columns_to_hash, num_partitions);
+        
         // the offsets returned by hash_partition will always start at 0, which is a value we want to ignore for cudf::split
         std::vector<cudf::size_type> split_indexes(hashed_data_offsets.begin() + 1, hashed_data_offsets.end());
-        partitioned = cudf::split(hashed_data->view(), split_indexes);
+        partitioned = ral::execution::backend_dispatcher(hashed_data->get_execution_backend(), split_functor(), hashed_data->to_table_view(), split_indexes);
     } else {
         //  copy empty view
         for (auto i = 0; i < num_partitions; i++) {
-            partitioned.push_back(batch_view);
+            partitioned.push_back(table_view);
         }
     }
 
-    std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitions;
-    for(auto partition : partitioned) {
-        partitions.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(partition, cudf_table_view->column_names()));
-    }
-    return partitions;
+    return partitioned;
 }
+
+
 
 /// compute_aggregations_without_groupby
 
@@ -514,7 +514,7 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
     } else {
 
         try{
-            auto partitions = prepare_partitions(input->to_table_view(), num_partitions);
+            auto partitions = prepare_partitions(input->to_table_view(), num_partitions, this->columns_to_hash);
 
             scatter(partitions,
                 output.get(),

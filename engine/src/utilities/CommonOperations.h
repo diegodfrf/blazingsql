@@ -15,6 +15,7 @@
 #include <cudf/strings/strings_column_view.hpp>
 #include <cudf/filling.hpp>
 #include <cudf/concatenate.hpp>
+#include <cudf/partitioning.hpp>
 
 namespace ral {
 namespace cpu {
@@ -487,6 +488,55 @@ normalize_types_functor::operator()<ral::frame::BlazingCudfTable>(
     std::vector<cudf::size_type> column_indices) const
 {
   ral::utilities::normalize_types_gpu(table, types, column_indices);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////// hash_partition functor
+
+struct hash_partition_functor {
+  template <typename T>
+  inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>> operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_View,
+      std::vector<cudf::size_type> const& columns_to_hash,
+      int num_partitions) const
+  {
+    // TODO percy arrow thrown error
+    //return nullptr;
+  }
+};
+
+template <>
+inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>>
+hash_partition_functor::operator()<ral::frame::BlazingArrowTable>(    
+    std::shared_ptr<ral::frame::BlazingTableView> table_View,
+    std::vector<cudf::size_type> const& columns_to_hash,
+    int num_partitions) const
+{
+  // TODO percy arrow
+  //return std::make_pair(nullptr, {});
+}
+
+template <>
+inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>>
+hash_partition_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_View,
+    std::vector<cudf::size_type> const& columns_to_hash,
+    int num_partitions) const
+{
+  auto batch_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_View);
+  auto tb = cudf::hash_partition(batch_view->view(), columns_to_hash, num_partitions);
+  return std::make_pair(std::make_unique<ral::frame::BlazingCudfTable>(std::move(tb.first), table_View->column_names()), tb.second);
 }
 
 }  // namespace ral

@@ -1319,47 +1319,6 @@ void JoinPartitionKernel::small_table_scatter_distribution(std::unique_ptr<ral::
 	this->output_cache(small_output_cache_name)->wait_for_count(total_count);	
 }
 
-
-///////////////// hash_partition functor
-
-struct hash_partition_functor {
-  template <typename T>
-  std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> table_View,
-      std::vector<cudf::size_type> const& columns_to_hash,
-      int num_partitions) const
-  {
-    // TODO percy arrow thrown error
-    //return nullptr;
-  }
-};
-
-template <>
-std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>>
-hash_partition_functor::operator()<ral::frame::BlazingArrowTable>(    
-    std::shared_ptr<ral::frame::BlazingTableView> table_View,
-    std::vector<cudf::size_type> const& columns_to_hash,
-    int num_partitions) const
-{
-  // TODO percy arrow
-  //return std::make_pair(nullptr, {});
-}
-
-template <>
-std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>>
-hash_partition_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_View,
-    std::vector<cudf::size_type> const& columns_to_hash,
-    int num_partitions) const
-{
-  auto batch_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_View);
-  auto tb = cudf::hash_partition(batch_view->view(), columns_to_hash, num_partitions);
-  std::vector<std::string> names;
-  return std::make_pair(std::make_unique<ral::frame::BlazingCudfTable>(std::move(tb.first), names), tb.second);
-}
-
-
-
 ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 	std::shared_ptr<ral::cache::CacheMachine> /*output*/,
 	cudaStream_t /*stream*/, const std::map<std::string, std::string>& args) {
