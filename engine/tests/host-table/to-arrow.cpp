@@ -6,26 +6,30 @@
 #include "blazing_table/BlazingHostTable.h"
 #include "utilities/DebuggingUtils.h"
 
+static inline void AddColumnTransport(
+	std::vector<blazingdb::transport::ColumnTransport> & columnTransports,
+	const cudf::type_id type_id,
+	const std::string & columnName,
+	const std::size_t columnSize) {
+	const std::int32_t dtype = static_cast<std::int32_t>(
+		static_cast<std::underlying_type_t<cudf::type_id>>(type_id));
+	blazingdb::transport::ColumnTransport::MetaData metadata{dtype, 0, 0, {0}};
+
+	std::strncpy(metadata.col_name,
+		columnName.c_str(),
+		sizeof(blazingdb::transport::ColumnTransport::MetaData::col_name));
+
+	columnTransports.emplace_back(blazingdb::transport::ColumnTransport{
+		metadata, -1, -1, -1, -1, -1, 0, 0, columnSize});
+}
+
 TEST(BlazingHostTable, ToArrowTable) {
 	std::size_t columnLength = 10;
 	std::size_t columnSize = columnLength * sizeof(std::int32_t);
 
 	std::vector<blazingdb::transport::ColumnTransport> column_transports;
-	column_transports.emplace_back(blazingdb::transport::ColumnTransport{
-		{
-			(std::int32_t) cudf::type_id::INT32,
-			0,
-			0,
-			"int32-col",
-		},   // metadata
-		-1,  // data
-		-1,  // size
-		-1,
-		-1,
-		-1,
-		0,
-		0,
-		columnSize});
+	AddColumnTransport(
+		column_transports, cudf::type_id::INT32, "int32-col", columnSize);
 
 	std::vector<ral::memory::blazing_chunked_column_info> chunked_column_infos;
 	chunked_column_infos.emplace_back(ral::memory::blazing_chunked_column_info{

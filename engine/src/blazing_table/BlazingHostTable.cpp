@@ -22,7 +22,7 @@ MakeArrayBuilderField(
 		columnTransport.metadata;
 
 	const cudf::type_id type_id = static_cast<cudf::type_id>(metadata.dtype);
-	const std::string columnName = metadata.col_name;
+	const std::string columnName{metadata.col_name};
 
 	// TODO: get column name
 	switch (type_id) {
