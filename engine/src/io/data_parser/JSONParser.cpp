@@ -8,13 +8,14 @@
 namespace ral {
 namespace io {
 
-json_parser::json_parser(std::map<std::string, std::string> args_map_) : args_map{args_map_} {}
+json_parser::json_parser(std::map<std::string, std::string> args_map_)
+  : args_map{args_map_} {}
 
 json_parser::~json_parser() {
 
 }
 
-std::unique_ptr<ral::frame::BlazingTable> json_parser::parse_batch(ral::io::data_handle handle,
+std::unique_ptr<ral::frame::BlazingTable> json_parser::parse_batch(ral::execution::execution_backend preferred_compute,ral::io::data_handle handle,
 	const Schema & schema,
 	std::vector<int> column_indices,
 	std::vector<cudf::size_type> /*row_groups*/) {
@@ -49,7 +50,7 @@ std::unique_ptr<ral::frame::BlazingTable> json_parser::parse_batch(ral::io::data
 	return nullptr;
 }
 
-void json_parser::parse_schema(ral::io::data_handle handle, ral::io::Schema & schema) {
+void json_parser::parse_schema(ral::execution::execution_backend preferred_compute,ral::io::data_handle handle, ral::io::Schema & schema) {
   auto file = handle.file_handle;
 	auto arrow_source = cudf::io::arrow_io_source{file};
 	cudf::io::json_reader_options args = getJsonReaderOptions(args_map, arrow_source);

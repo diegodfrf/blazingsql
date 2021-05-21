@@ -51,7 +51,14 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 	const std::vector<int> & fileTypes,
 	const std::vector<std::vector<std::map<std::string, std::string>>> & uri_values,
   size_t total_number_of_nodes,
-  size_t self_node_idx){
+  size_t self_node_idx, std::string preferred_compute){
+
+  // TODO percy arrow move this into utils or a common place
+  ral::execution::backend_id preferred_compute_type = ral::execution::backend_id::CUDF;
+  if (preferred_compute == "arrow") {
+    preferred_compute_type = ral::execution::backend_id::ARROW;
+  }
+  ral::execution::execution_backend preferred_compute_backend(preferred_compute_type);
 
 	std::vector<ral::io::data_loader> input_loaders;
 	std::vector<ral::io::Schema> schemas;
@@ -255,7 +262,7 @@ std::shared_ptr<ral::cache::graph> runGenerateGraph(uint32_t masterIndex,
 	std::vector<ral::io::data_loader> input_loaders;
 	std::vector<ral::io::Schema> schemas;
 	std::tie(input_loaders, schemas) = get_loaders_and_schemas(tableSchemas, tableSchemaCppArgKeys,
-		tableSchemaCppArgValues, filesAll, fileTypes, uri_values, contextNodes.size(), self_node_idx);
+		tableSchemaCppArgValues, filesAll, fileTypes, uri_values, contextNodes.size(), self_node_idx, preferred_compute);
 
   	auto graph = generate_graph(input_loaders, schemas, tableNames, tableScans, query, queryContext, sql);
 

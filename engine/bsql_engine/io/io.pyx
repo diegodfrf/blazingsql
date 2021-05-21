@@ -138,13 +138,13 @@ class InferFolderPartitionMetadataError(BlazingError):
     """InferFolderPartitionMetadata Error."""
 cdef public PyObject * InferFolderPartitionMetadataError_ = <PyObject *>InferFolderPartitionMetadataError
 
-cdef cio.TableSchema parseSchemaPython(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values,vector[pair[string,type_id]] extra_columns, bool ignore_missing_paths) nogil except *:
+cdef cio.TableSchema parseSchemaPython(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values,vector[pair[string,type_id]] extra_columns, bool ignore_missing_paths, string preferred_compute) nogil except *:
     with nogil:
-        return cio.parseSchema(files, file_format_hint, arg_keys, arg_values, extra_columns, ignore_missing_paths)
+        return cio.parseSchema(files, file_format_hint, arg_keys, arg_values, extra_columns, ignore_missing_paths, preferred_compute)
 
-cdef unique_ptr[cio.ResultSet] parseMetadataPython(vector[string] files, pair[int,int] offset, cio.TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values) nogil except *:
+cdef unique_ptr[cio.ResultSet] parseMetadataPython(vector[string] files, pair[int,int] offset, cio.TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, string preferred_compute) nogil except *:
     with nogil:
-        return blaz_move( cio.parseMetadata(files, offset, schema, file_format_hint,arg_keys,arg_values) )
+        return blaz_move( cio.parseMetadata(files, offset, schema, file_format_hint,arg_keys,arg_values, preferred_compute) )
 
 cdef shared_ptr[cio.graph] runGenerateGraphPython(uint32_t masterIndex,vector[string] worker_ids, vector[string] tableNames, vector[string] tableScans, vector[TableSchema] tableSchemas, vector[vector[string]] tableSchemaCppArgKeys, vector[vector[string]] tableSchemaCppArgValues, vector[vector[string]] filesAll, vector[int] fileTypes, int ctxToken, string query, vector[vector[map[string,string]]] uri_values_cpp, map[string,string] config_options, string sql, string current_timestamp, string output_type, string preferred_compute) except *:
     return cio.runGenerateGraph(masterIndex, worker_ids, tableNames, tableScans, tableSchemas, tableSchemaCppArgKeys, tableSchemaCppArgValues, filesAll, fileTypes, ctxToken, query, uri_values_cpp, config_options, sql, current_timestamp, output_type, preferred_compute)
@@ -362,11 +362,14 @@ cpdef getProductDetailsCaller():
     return new_map
 
 
-cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_missing_paths):
+cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_missing_paths, preferred_compute_py):
+    cdef string preferred_compute
     cdef vector[string] files
     cdef vector[string] arg_keys
     cdef vector[string] arg_values
     cdef underlying_type_t_compression c_compression
+
+    preferred_compute = str.encode(preferred_compute_py)
 
     if 'compression' in args:
         if args['compression'] is None:
@@ -390,7 +393,7 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
         extra_column_cpp.second = <type_id>(<underlying_type_t_type_id>(extra_column[1]))
         extra_columns_cpp.push_back(extra_column_cpp)
 
-    tableSchema = parseSchemaPython(files,str.encode(file_format_hint),arg_keys,arg_values, extra_columns_cpp, ignore_missing_paths)
+    tableSchema = parseSchemaPython(files,str.encode(file_format_hint),arg_keys,arg_values, extra_columns_cpp, ignore_missing_paths, preferred_compute)
 
     return_object = {}
     return_object['datasource'] = files
@@ -407,7 +410,8 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
     return return_object
 
 
-cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args):
+cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, preferred_compute_py):
+    cdef string preferred_compute
     cdef unique_ptr[ResultTable] resultTable
     cdef vector[string] files
     for file in fileList:
@@ -417,6 +421,8 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args):
     cdef vector[string] arg_values
     cdef TableSchema cpp_schema
     cdef type_id tid
+
+    preferred_compute = str.encode(preferred_compute_py)
 
     for col in schema['names']:
         cpp_schema.names.push_back(col)
@@ -429,7 +435,7 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args):
       arg_keys.push_back(str.encode(key))
       arg_values.push_back(str.encode(str(value)))
 
-    resultSet = blaz_move(parseMetadataPython(files, offset, cpp_schema, str.encode(file_format_hint), arg_keys,arg_values))
+    resultSet = blaz_move(parseMetadataPython(files, offset, cpp_schema, str.encode(file_format_hint), arg_keys,arg_values, preferred_compute))
 
     names = dereference(resultSet).names
     decoded_names = []
