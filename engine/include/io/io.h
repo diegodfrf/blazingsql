@@ -106,14 +106,16 @@ TableSchema parseSchema(std::vector<std::string> files,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
 	std::vector<std::pair<std::string, cudf::type_id>> extra_columns,
-	bool ignore_missing_paths);
+	bool ignore_missing_paths,
+  std::string preferred_compute);
 
 std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	std::pair<int, int> offset,
 	TableSchema schema,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
-	std::vector<std::string> arg_values);
+	std::vector<std::string> arg_values,
+  std::string preferred_compute);
 
 std::pair<bool, std::string> registerFileSystemHDFS(HDFS hdfs, std::string root, std::string authority);
 std::pair<bool, std::string> registerFileSystemGCS(GCS gcs, std::string root, std::string authority);
@@ -129,14 +131,16 @@ std::pair<TableSchema, error_code_t> parseSchema_C(std::vector<std::string> file
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
 	std::vector<std::pair<std::string, cudf::type_id>> extra_columns,
-	bool ignore_missing_paths);
+	bool ignore_missing_paths,
+  std::string preferred_compute);
 
 std::pair<std::unique_ptr<ResultSet>, error_code_t> parseMetadata_C(std::vector<std::string> files,
 	std::pair<int, int> offset,
 	TableSchema schema,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
-	std::vector<std::string> arg_values);
+	std::vector<std::string> arg_values,
+  std::string preferred_compute);
 
 std::pair<std::pair<bool, std::string>, error_code_t> registerFileSystemHDFS_C(HDFS hdfs, std::string root, std::string authority);
 std::pair<std::pair<bool, std::string>, error_code_t> registerFileSystemGCS_C(GCS gcs, std::string root, std::string authority);

@@ -6,53 +6,22 @@
 #include "blazing_table/BlazingHostTable.h"
 #include "utilities/DebuggingUtils.h"
 
-template <cudf::type_id>
-class Traits {};
+#include <arrow/api.h>
+#include <arrow/compute/api.h>
 
-#define FACT_TRAIT(dtype, ptype, gtor)                                         \
-	template <>                                                                \
-	class Traits<cudf::type_id::dtype> {                                       \
-	public:                                                                    \
-		using value_type = ptype;                                              \
-		static constexpr std::size_t size = sizeof(value_type);                \
-		static value_type generate(const std::size_t n) {                      \
-			return gtor(static_cast<value_type>(n));                           \
-		}                                                                      \
-	}
+TEST(BlazingHostTable, arrow_slice) {
+  /*
+  * input:   {10, 12, 14, 16, 18, 20, 22, 24, 26, 28}
+  * indices: {1, 3, 5, 9, 2, 4, 8, 8}
+  * output:  {{12, 14}, {20, 22, 24, 26}, {14, 16}, {}}
+  */
+  //std::vector<column_view> slice(column_view const& input, std::vector<size_type> const& indices);
 
-// used to generate the values into column
-
-template <class T>
-T idem(const T t) {
-	return t;
+  //asdad  
+  
 }
 
-template <std::size_t base, class T>
-T thousand(const T t) {
-	return static_cast<T>(base) * 1000 + t;
-}
-
-template <std::size_t base, class T>
-T thousandth(const T t) {
-	return static_cast<T>(base) + (t / 1000);
-}
-
-FACT_TRAIT(INT8, std::int8_t, idem);
-FACT_TRAIT(INT16, std::int16_t, thousand<16>);
-FACT_TRAIT(INT32, std::int32_t, thousand<32>);
-FACT_TRAIT(INT64, std::int64_t, thousand<64>);
-FACT_TRAIT(FLOAT32, float, thousandth<32>);
-FACT_TRAIT(FLOAT64, double, thousandth<64>);
-FACT_TRAIT(UINT8, std::uint8_t, idem);
-FACT_TRAIT(UINT16, std::uint16_t, idem);
-FACT_TRAIT(UINT32, std::uint32_t, idem);
-FACT_TRAIT(UINT64, std::uint64_t, idem);
-
-static std::size_t columnCounter = 0;
-static std::size_t generationCounter = 1;
-
-template <cudf::type_id type_id>
-static inline void AddColumn(
+static inline void AddColumnTransport(
 	std::vector<blazingdb::transport::ColumnTransport> & columnTransports,
 	std::vector<ral::memory::blazing_chunked_column_info> & chunkedColumnInfos,
 	std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>> &

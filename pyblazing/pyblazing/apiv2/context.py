@@ -2459,7 +2459,7 @@ class BlazingContext(object):
                 kwargs,
                 extra_columns,
                 ignore_missing_paths,
-                local_files,
+                local_files
             )
 
             parsedSchema["names"] = [i.decode() for i in parsedSchema["names"]]
@@ -2731,6 +2731,7 @@ class BlazingContext(object):
                     ignore_missing_paths,
                     workers=[worker],
                     pure=False,
+                    preferred_compute=self.preferred_compute,
                 )
                 parsed_schema = connection.result()
                 if len(parsed_schema["files"]) == 0 and file_format_hint not in [
@@ -2759,6 +2760,7 @@ class BlazingContext(object):
                                 ignore_missing_paths,
                                 workers=[worker],
                                 pure=False,
+                                preferred_compute=self.preferred_compute,
                             ),
                             worker,
                         )
@@ -2809,7 +2811,7 @@ class BlazingContext(object):
                 return return_object, all_files
         else:
             parsed_schema = cio.parseSchemaCaller(
-                input, file_format_hint, kwargs, extra_columns, ignore_missing_paths
+                input, file_format_hint, kwargs, extra_columns, ignore_missing_paths, self.preferred_compute
             )
             return parsed_schema, {"localhost": parsed_schema["files"]}
 
@@ -2836,6 +2838,7 @@ class BlazingContext(object):
                         kwargs,
                         workers=[worker],
                         pure=False,
+                        preferred_compute=self.preferred_compute,
                     )
                     dask_futures.append(connection)
             return dask.dataframe.from_delayed(dask_futures)
@@ -2843,7 +2846,7 @@ class BlazingContext(object):
         else:
             files = [file.decode() for file in currentTableNodes[0].files]
             return cio.parseMetadataCaller(
-                files, currentTableNodes[0].offset, schema, file_format_hint, kwargs
+                files, currentTableNodes[0].offset, schema, file_format_hint, kwargs, self.preferred_compute
             )
 
     def _sliceRowGroups(self, numSlices, files, uri_values, row_groups_ids):

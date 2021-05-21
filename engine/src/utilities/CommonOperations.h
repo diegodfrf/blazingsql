@@ -15,6 +15,7 @@
 #include <cudf/strings/strings_column_view.hpp>
 #include <cudf/filling.hpp>
 #include <cudf/concatenate.hpp>
+#include <cudf/partitioning.hpp>
 
 namespace ral {
 namespace cpu {
@@ -415,14 +416,83 @@ struct split_functor {
   }
 };
 
+/*
+std::vector<std::shared_ptr<ral::frame::BlazingTableView>> slice(
+    std::shared_ptr<ral::frame::BlazingTableView> input,
+    std::vector<cudf::size_type> const& indices)
+{
+  //CUDF_FUNC_RANGE();
+  //CUDF_EXPECTS(indices.size() % 2 == 0, "indices size must be even");
+  if (indices.empty()) { return {}; }
+
+  // 2d arrangement of column_views that represent the outgoing table_views sliced_table[i][j]
+  // where i is the i'th column of the j'th table_view
+  auto op = [&indices](std::shared_ptr<arrow::ChunkedArray> c) {
+    //return cudf::slice(c, indices);
+    c->Slice()
+  };
+  auto f  = thrust::make_transform_iterator(input.begin(), op);
+
+  auto sliced_table = std::vector<std::vector<cudf::column_view>>(f, f + input.num_columns());
+  sliced_table.reserve(indices.size() + 1);
+
+  std::vector<cudf::table_view> result{};
+  // distribute columns into outgoing table_views
+  size_t num_output_tables = indices.size() / 2;
+  for (size_t i = 0; i < num_output_tables; i++) {
+    std::vector<cudf::column_view> table_columns;
+    for (size_type j = 0; j < input.num_columns(); j++) {
+      table_columns.emplace_back(sliced_table[j][i]);
+    }
+    result.emplace_back(table_view{table_columns});
+  }
+
+  return result;
+};
+
+std::vector<std::shared_ptr<ral::frame::BlazingTableView>> split(
+    std::shared_ptr<ral::frame::BlazingTableView> input,
+    cudf::size_type column_size,
+    std::vector<cudf::size_type> const& splits)
+{
+  if (splits.empty() or column_size == 0) { 
+    std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
+    ret.push_back(input);
+    return ret;
+  }
+  //CUDF_EXPECTS(splits.back() <= column_size, "splits can't exceed size of input columns");
+
+  // If the size is not zero, the split will always start at `0`
+  std::vector<cudf::size_type> indices{0};
+  std::for_each(splits.begin(), splits.end(), [&indices](auto split) {
+    indices.push_back(split);  // This for end
+    indices.push_back(split);  // This for the start
+  });
+
+  indices.push_back(column_size);  // This to include rest of the elements
+
+  return cudf::slice(input, indices);
+}
+*/
+
 template <>
 inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
 split_functor::operator()<ral::frame::BlazingArrowTable>(    
     std::shared_ptr<ral::frame::BlazingTableView> table_View,
     std::vector<cudf::size_type> const& splits) const
 {
-  // TODO percy arrow
-  //return std::make_pair(nullptr, {});
+  /*
+  * input:   [{10, 12, 14, 16, 18, 20, 22, 24, 26, 28},
+  *           {50, 52, 54, 56, 58, 60, 62, 64, 66, 68}]
+  * splits:  {2, 5, 9}
+  * output:  [{{10, 12}, {14, 16, 18}, {20, 22, 24, 26}, {28}},
+  *           {{50, 52}, {54, 56, 58}, {60, 62, 64, 66}, {68}}]
+  */
+
+//  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> result{};
+//  if (table_View.num_columns() == 0) { return result; }
+  
+  
 }
 
 template <>
@@ -487,6 +557,55 @@ normalize_types_functor::operator()<ral::frame::BlazingCudfTable>(
     std::vector<cudf::size_type> column_indices) const
 {
   ral::utilities::normalize_types_gpu(table, types, column_indices);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////// hash_partition functor
+
+struct hash_partition_functor {
+  template <typename T>
+  inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>> operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_View,
+      std::vector<cudf::size_type> const& columns_to_hash,
+      int num_partitions) const
+  {
+    // TODO percy arrow thrown error
+    //return nullptr;
+  }
+};
+
+template <>
+inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>>
+hash_partition_functor::operator()<ral::frame::BlazingArrowTable>(    
+    std::shared_ptr<ral::frame::BlazingTableView> table_View,
+    std::vector<cudf::size_type> const& columns_to_hash,
+    int num_partitions) const
+{
+  // TODO percy arrow
+  //return std::make_pair(nullptr, {});
+}
+
+template <>
+inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>>
+hash_partition_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_View,
+    std::vector<cudf::size_type> const& columns_to_hash,
+    int num_partitions) const
+{
+  auto batch_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_View);
+  auto tb = cudf::hash_partition(batch_view->view(), columns_to_hash, num_partitions);
+  return std::make_pair(std::make_unique<ral::frame::BlazingCudfTable>(std::move(tb.first), table_View->column_names()), tb.second);
 }
 
 }  // namespace ral

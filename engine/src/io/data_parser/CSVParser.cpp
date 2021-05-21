@@ -22,11 +22,12 @@
 namespace ral {
 namespace io {
 
-csv_parser::csv_parser(std::map<std::string, std::string> args_map_) : args_map{args_map_} {}
+csv_parser::csv_parser(std::map<std::string, std::string> args_map_) 
+  : args_map{args_map_} {}
 
 csv_parser::~csv_parser() {}
 
-std::unique_ptr<ral::frame::BlazingTable> csv_parser::parse_batch(
+std::unique_ptr<ral::frame::BlazingTable> csv_parser::parse_batch(ral::execution::execution_backend preferred_compute,
 	ral::io::data_handle handle,
 	const Schema & schema,
 	std::vector<int> column_indices,
@@ -95,7 +96,7 @@ std::unique_ptr<ral::frame::BlazingTable> csv_parser::parse_batch(
 }
 
 
-void csv_parser::parse_schema(
+void csv_parser::parse_schema(ral::execution::execution_backend preferred_compute,
 	ral::io::data_handle handle, ral::io::Schema & schema) {
 
   auto file = handle.file_handle;
