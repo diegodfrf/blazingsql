@@ -592,6 +592,21 @@ std::unique_ptr<ral::cache::CacheData> CacheMachine::pullCacheData(std::string m
 	return output;
 }
 
+std::unique_ptr<ral::cache::CacheData> CacheMachine::pullCacheDataCopy() {
+
+    std::unique_ptr<ral::cache::CacheData> output;
+    if (this->waitingCache->wait_for_next()) {
+        std::unique_lock<std::mutex> lock = this->waitingCache->lock();
+        std::vector<std::unique_ptr<message>> all_messages = this->waitingCache->get_all_unsafe();
+        output = all_messages[0]->clone();
+        this->waitingCache->put_all_unsafe(std::move(all_messages));
+    } else {
+        return nullptr;
+    }
+
+    return output;
+}
+
 std::unique_ptr<ral::frame::BlazingTable> CacheMachine::pullUnorderedFromCache(execution::execution_backend backend) {
     if (is_array_access) {
         return this->pullFromCache(backend);

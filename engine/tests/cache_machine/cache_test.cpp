@@ -61,7 +61,7 @@ std::unique_ptr<ral::frame::BlazingTable> build_custom_table() {
 	std::vector<std::string> column_names = {"INT64", "INT32", "FLOAT64", "FLOAT32", "STRING"};
 
 	auto table = std::make_unique<cudf::table>(std::move(columns));
-	return std::make_unique<ral::frame::BlazingTable>(ral::frame::BlazingTable(std::move(table), column_names));
+	return std::make_unique<ral::frame::BlazingTable>(ral::frame::BlazingCudfTable(std::move(table), column_names));
 }
 
 
@@ -74,7 +74,7 @@ std::unique_ptr<ral::frame::BlazingTable>  build_custom_one_column_table() {
 	std::vector<std::string> column_names = {"INT64"};
 
 	auto table = std::make_unique<cudf::table>(std::move(columns));
-	return std::make_unique<ral::frame::BlazingTable>(ral::frame::BlazingTable(std::move(table), column_names));
+	return std::make_unique<ral::frame::BlazingTable>(ral::frame::BlazingCudfTable(std::move(table), column_names));
 
 }
 
@@ -122,7 +122,7 @@ TEST_F(CacheMachineTest, CPUCacheMachineTest) {
 
 	for(int i = 0; i < 10; ++i) {
 		auto cacheTable = cacheMachine.pullFromCache(ral::execution::execution_backend(ral::execution::backend_id::CUDF));
-		cudf::test::expect_tables_equivalent(compare_table->view(), cacheTable->view());						
+		cudf::test::expect_tables_equivalent(compare_table->view(), cacheTable->view());
 	}
 
 
