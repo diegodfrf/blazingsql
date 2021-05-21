@@ -91,16 +91,16 @@ TableSchema parseSchema(std::vector<std::string> files,
   bool isSqlProvider = false;
 
 	if(fileType == ral::io::DataType::PARQUET) {
-		parser = std::make_shared<ral::io::parquet_parser>(preferred_compute_backend);
+		parser = std::make_shared<ral::io::parquet_parser>();
 	} else if(fileType == ral::io::DataType::ORC) {
-		parser = std::make_shared<ral::io::orc_parser>(args_map, preferred_compute_backend);
+		parser = std::make_shared<ral::io::orc_parser>(args_map);
 	} else if(fileType == ral::io::DataType::JSON) {
-		parser = std::make_shared<ral::io::json_parser>(args_map, preferred_compute_backend);
+		parser = std::make_shared<ral::io::json_parser>(args_map);
 	} else if(fileType == ral::io::DataType::CSV) {
-		parser = std::make_shared<ral::io::csv_parser>(args_map, preferred_compute_backend);
+		parser = std::make_shared<ral::io::csv_parser>(args_map);
 	} else if(fileType == ral::io::DataType::MYSQL) {
 #ifdef MYSQL_SUPPORT
-		parser = std::make_shared<ral::io::mysql_parser>(preferred_compute_backend);
+		parser = std::make_shared<ral::io::mysql_parser>();
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::mysql_data_provider>(sql, 0, 0);
 #else
@@ -109,7 +109,7 @@ TableSchema parseSchema(std::vector<std::string> files,
     isSqlProvider = true;
   } else if(fileType == ral::io::DataType::POSTGRESQL) {
 #ifdef POSTGRESQL_SUPPORT
-		parser = std::make_shared<ral::io::postgresql_parser>(preferred_compute_backend);
+		parser = std::make_shared<ral::io::postgresql_parser>();
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::postgresql_data_provider>(sql, 0, 0);
 #else
@@ -118,7 +118,7 @@ TableSchema parseSchema(std::vector<std::string> files,
     isSqlProvider = true;
   } else if(fileType == ral::io::DataType::SQLITE) {
 #ifdef SQLITE_SUPPORT
-    parser = std::make_shared<ral::io::sqlite_parser>(preferred_compute_backend);
+    parser = std::make_shared<ral::io::sqlite_parser>();
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::sqlite_data_provider>(sql, 0, 0);
     isSqlProvider = true;
@@ -127,7 +127,7 @@ TableSchema parseSchema(std::vector<std::string> files,
 #endif
   } else if(fileType == ral::io::DataType::SNOWFLAKE) {
 #ifdef SNOWFLAKE_SUPPORT
-    parser = std::make_shared<ral::io::snowflake_parser>(preferred_compute_backend);
+    parser = std::make_shared<ral::io::snowflake_parser>();
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::snowflake_data_provider>(sql, 0, 0);
     isSqlProvider = true;
@@ -148,7 +148,7 @@ TableSchema parseSchema(std::vector<std::string> files,
 		bool got_schema = false;
     if (isSqlProvider) {
         ral::io::data_handle handle = provider->get_next(false);
-        parser->parse_schema(handle, schema);
+        parser->parse_schema(preferred_compute_backend,handle, schema);
         if (schema.get_num_columns() > 0){
           got_schema = true;
         }
@@ -156,7 +156,7 @@ TableSchema parseSchema(std::vector<std::string> files,
       while (!got_schema && provider->has_next()){
         ral::io::data_handle handle = provider->get_next();
         if (handle.file_handle != nullptr){
-          parser->parse_schema(handle, schema);
+          parser->parse_schema(preferred_compute_backend,handle, schema);
           if (schema.get_num_columns() > 0){
             got_schema = true;
             schema.add_file(handle.uri.toString(true));
@@ -264,13 +264,13 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 
 	std::shared_ptr<ral::io::data_parser> parser;
 	if(fileType == ral::io::DataType::PARQUET) {
-		parser = std::make_shared<ral::io::parquet_parser>(preferred_compute_backend);
+		parser = std::make_shared<ral::io::parquet_parser>();
 	} else if(fileType == ral::io::DataType::ORC) {
-		parser = std::make_shared<ral::io::orc_parser>(args_map, preferred_compute_backend);
+		parser = std::make_shared<ral::io::orc_parser>(args_map);
 	} else if(fileType == ral::io::DataType::JSON) {
-		parser = std::make_shared<ral::io::json_parser>(args_map, preferred_compute_backend);
+		parser = std::make_shared<ral::io::json_parser>(args_map);
 	} else if(fileType == ral::io::DataType::CSV) {
-		parser = std::make_shared<ral::io::csv_parser>(args_map, preferred_compute_backend);
+		parser = std::make_shared<ral::io::csv_parser>(args_map);
 	}
 	std::vector<Uri> uris;
 	for(auto file_path : files) {
@@ -279,7 +279,7 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	auto provider = std::make_shared<ral::io::uri_data_provider>(uris);
 	auto loader = std::make_shared<ral::io::data_loader>(parser, provider);
 	try{
-		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(offset.first);
+		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(preferred_compute_backend,offset.first);
 		// ral::utilities::print_blazing_table_view(metadata->to_table_view());
 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
 		result->names = metadata->column_names();

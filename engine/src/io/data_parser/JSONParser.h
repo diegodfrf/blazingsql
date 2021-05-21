@@ -13,16 +13,16 @@ namespace io {
 
 class json_parser : public data_parser {
 public:
-	json_parser(std::map<std::string, std::string> args_map, ral::execution::execution_backend preferred_compute);
+	json_parser(std::map<std::string, std::string> args_map);
 
 	virtual ~json_parser();
 
-	std::unique_ptr<ral::frame::BlazingTable> parse_batch(ral::io::data_handle handle,
+	std::unique_ptr<ral::frame::BlazingTable> parse_batch(ral::execution::execution_backend preferred_compute, ral::io::data_handle handle,
 		const Schema & schema,
 		std::vector<int> column_indices,
 		std::vector<cudf::size_type> row_groups) override;
 
-	void parse_schema(ral::io::data_handle handle, Schema & schema);
+	void parse_schema(ral::execution::execution_backend preferred_compute, ral::io::data_handle handle, Schema & schema);
 
 	DataType type() const override { return DataType::JSON; }
 

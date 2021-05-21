@@ -14,11 +14,11 @@
 namespace ral {
 namespace io {
 
-gdf_parser::gdf_parser(ral::execution::execution_backend preferred_compute): data_parser(preferred_compute) {}
+gdf_parser::gdf_parser() {}
 
 gdf_parser::~gdf_parser() {}
 
-std::unique_ptr<ral::frame::BlazingTable> gdf_parser::parse_batch(
+std::unique_ptr<ral::frame::BlazingTable> gdf_parser::parse_batch(ral::execution::execution_backend preferred_compute,
 		ral::io::data_handle data_handle,
 		const Schema & schema,
 		std::vector<int> column_indices,
@@ -52,7 +52,7 @@ std::unique_ptr<ral::frame::BlazingTable> gdf_parser::parse_batch(
 
 size_t gdf_parser::get_num_partitions() {return 0;}
 
-void gdf_parser::parse_schema(
+void gdf_parser::parse_schema(ral::execution::execution_backend preferred_compute,
 	ral::io::data_handle /*handle*/, ral::io::Schema & /*schema*/) {}
 
 

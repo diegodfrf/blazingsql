@@ -98,20 +98,20 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 
 		std::shared_ptr<ral::io::data_parser> parser;
 		if(fileType == ral::io::DataType::PARQUET) {
-			parser = std::make_shared<ral::io::parquet_parser>(preferred_compute_backend);
+			parser = std::make_shared<ral::io::parquet_parser>();
 		} else if(fileType == gdfFileType || fileType == daskFileType) {
-			parser = std::make_shared<ral::io::gdf_parser>(preferred_compute_backend);
+			parser = std::make_shared<ral::io::gdf_parser>();
 		} else if(fileType == ral::io::DataType::ORC) {
-			parser = std::make_shared<ral::io::orc_parser>(args_map, preferred_compute_backend);
+			parser = std::make_shared<ral::io::orc_parser>(args_map);
 		} else if(fileType == ral::io::DataType::JSON) {
-			parser = std::make_shared<ral::io::json_parser>(args_map, preferred_compute_backend);
+			parser = std::make_shared<ral::io::json_parser>(args_map);
 		} else if(fileType == ral::io::DataType::CSV) {
-			parser = std::make_shared<ral::io::csv_parser>(args_map, preferred_compute_backend);
+			parser = std::make_shared<ral::io::csv_parser>(args_map);
 		} else if(fileType == ral::io::DataType::ARROW){
-			parser = std::make_shared<ral::io::arrow_parser>(preferred_compute_backend);
+			parser = std::make_shared<ral::io::arrow_parser>();
 		} else if(fileType == ral::io::DataType::MYSQL) {
 #ifdef MYSQL_SUPPORT
-      parser = std::make_shared<ral::io::mysql_parser>(preferred_compute_backend);
+      parser = std::make_shared<ral::io::mysql_parser>();
       auto sql = ral::io::getSqlInfo(args_map);
       provider = std::make_shared<ral::io::mysql_data_provider>(sql, total_number_of_nodes, self_node_idx);
       isSqlProvider = true;
@@ -120,7 +120,7 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 #endif
     } else if(fileType == ral::io::DataType::POSTGRESQL) {
 #ifdef POSTGRESQL_SUPPORT
-		parser = std::make_shared<ral::io::postgresql_parser>(preferred_compute_backend);
+		parser = std::make_shared<ral::io::postgresql_parser>();
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::postgresql_data_provider>(sql, total_number_of_nodes, self_node_idx);
 	isSqlProvider = true;
@@ -129,7 +129,7 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 #endif
 	} else if(fileType == ral::io::DataType::SQLITE) {
 #ifdef SQLITE_SUPPORT
-  		parser = std::make_shared<ral::io::sqlite_parser>(preferred_compute_backend);
+  		parser = std::make_shared<ral::io::sqlite_parser>();
       auto sql = ral::io::getSqlInfo(args_map);
       provider = std::make_shared<ral::io::sqlite_data_provider>(sql, total_number_of_nodes, self_node_idx);
       isSqlProvider = true;
@@ -139,7 +139,7 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 
   } else if (fileType == ral::io::DataType::SNOWFLAKE) {
 #ifdef SNOWFLAKE_SUPPORT
-    parser = std::make_shared<ral::io::snowflake_parser>(preferred_compute_backend);
+    parser = std::make_shared<ral::io::snowflake_parser>();
     auto sql = ral::io::getSqlInfo(args_map);
     provider = std::make_shared<ral::io::snowflake_data_provider>(
         sql, total_number_of_nodes, self_node_idx);

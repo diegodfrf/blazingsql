@@ -34,13 +34,13 @@ namespace io {
 
 
 
-abstractsql_parser::abstractsql_parser(DataType sql_datatype, ral::execution::execution_backend preferred_compute): data_parser(preferred_compute), sql_datatype(sql_datatype) {
+abstractsql_parser::abstractsql_parser(DataType sql_datatype): sql_datatype(sql_datatype) {
 }
 
 abstractsql_parser::~abstractsql_parser() {
 }
 
-std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_batch(
+std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_batch(ral::execution::execution_backend preferred_compute,
 	ral::io::data_handle handle,
 	const Schema & schema,
 	std::vector<int> column_indices,
@@ -88,7 +88,7 @@ std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_batch(
     src, schema, column_indices, row_groups, handle.sql_handle.row_count);
 }
 
-void abstractsql_parser::parse_schema(ral::io::data_handle handle, ral::io::Schema & schema) {
+void abstractsql_parser::parse_schema(ral::execution::execution_backend preferred_compute,ral::io::data_handle handle, ral::io::Schema & schema) {
 	for(int i = 0; i < handle.sql_handle.column_names.size(); i++) {
 		cudf::type_id type = get_cudf_type_id(handle.sql_handle.column_types.at(i));
 		size_t file_index = i;
@@ -99,7 +99,7 @@ void abstractsql_parser::parse_schema(ral::io::data_handle handle, ral::io::Sche
 }
 
 // TODO percy
-std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::get_metadata(
+std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::get_metadata(ral::execution::execution_backend preferred_compute,
 	std::vector<ral::io::data_handle> handles, int offset){
 //	std::vector<size_t> num_row_groups(files.size());
 //	BlazingThread threads[files.size()];

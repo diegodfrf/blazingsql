@@ -13,7 +13,7 @@ namespace io {
 
 class postgresql_parser : public abstractsql_parser {
 public:
-  postgresql_parser(ral::execution::execution_backend preferred_compute);
+  postgresql_parser();
   virtual ~postgresql_parser();
 
 protected:

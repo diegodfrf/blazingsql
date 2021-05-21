@@ -89,7 +89,7 @@ std::unique_ptr<ral::frame::BlazingTable> read_parquet_arrow(
   return std::make_unique<ral::frame::BlazingArrowTable>(table);
 }
 
-parquet_parser::parquet_parser(ral::execution::execution_backend preferred_compute): data_parser(preferred_compute) {
+parquet_parser::parquet_parser(){
 	// TODO Auto-generated constructor stub
 }
 
@@ -98,6 +98,7 @@ parquet_parser::~parquet_parser() {
 }
 
 std::unique_ptr<ral::frame::BlazingTable> parquet_parser::parse_batch(
+    ral::execution::execution_backend preferred_compute,
 	ral::io::data_handle handle,
 	const Schema & schema,
 	std::vector<int> column_indices,
@@ -114,9 +115,9 @@ std::unique_ptr<ral::frame::BlazingTable> parquet_parser::parse_batch(
 		}
 
 		std::unique_ptr<ral::frame::BlazingTable> ret = nullptr;
-    if (this->preferred_compute_.id() == ral::execution::backend_id::CUDF) {
+    if (preferred_compute.id() == ral::execution::backend_id::CUDF) {
       ret = read_parquet_cudf(file, column_indices, col_names, row_groups);
-    } else if (this->preferred_compute_.id() == ral::execution::backend_id::ARROW) {
+    } else if (preferred_compute.id() == ral::execution::backend_id::ARROW) {
       ret = read_parquet_arrow(file, column_indices, col_names, row_groups);
     }
     return ret;
@@ -157,7 +158,7 @@ std::vector<std::pair<std::string, cudf::type_id>> parse_schema_arrow(std::share
   return ret;
 }
 
-void parquet_parser::parse_schema(ral::io::data_handle handle, ral::io::Schema & schema) {
+void parquet_parser::parse_schema(ral::execution::execution_backend preferred_compute,ral::io::data_handle handle, ral::io::Schema & schema) {
   auto file = handle.file_handle;
 	auto parquet_reader = parquet::ParquetFileReader::Open(file);
 	if (parquet_reader->metadata()->num_rows() == 0) {
@@ -166,9 +167,9 @@ void parquet_parser::parse_schema(ral::io::data_handle handle, ral::io::Schema &
 	}
 
   std::vector<std::pair<std::string, cudf::type_id>> fields;
-  if (this->preferred_compute_.id() == ral::execution::backend_id::CUDF) {
+  if (preferred_compute.id() == ral::execution::backend_id::CUDF) {
     fields = parse_schema_cudf(file);
-  } else if (this->preferred_compute_.id() == ral::execution::backend_id::ARROW) {
+  } else if (preferred_compute.id() == ral::execution::backend_id::ARROW) {
     fields = parse_schema_arrow(parquet_reader->metadata());
   }
 
@@ -179,7 +180,7 @@ void parquet_parser::parse_schema(ral::io::data_handle handle, ral::io::Schema &
 	}
 }
 
-std::unique_ptr<ral::frame::BlazingTable> parquet_parser::get_metadata(
+std::unique_ptr<ral::frame::BlazingTable> parquet_parser::get_metadata(ral::execution::execution_backend preferred_compute,
 	std::vector<ral::io::data_handle> handles, int offset){
   // TODO percy arrow
 	std::vector<size_t> num_row_groups(handles.size());

@@ -11,15 +11,14 @@
 namespace ral {
 namespace io {
 
-orc_parser::orc_parser(std::map<std::string, std::string> args_map_,
-                       ral::execution::execution_backend preferred_compute) 
-  : data_parser(preferred_compute), args_map{args_map_} {}
+orc_parser::orc_parser(std::map<std::string, std::string> args_map_) 
+  : args_map{args_map_} {}
 
 orc_parser::~orc_parser() {
 	// TODO Auto-generated destructor stub
 }
 
-std::unique_ptr<ral::frame::BlazingTable> orc_parser::parse_batch(
+std::unique_ptr<ral::frame::BlazingTable> orc_parser::parse_batch(ral::execution::execution_backend preferred_compute,
 	ral::io::data_handle handle,
 	const Schema & schema,
 	std::vector<int> column_indices,
@@ -52,7 +51,7 @@ std::unique_ptr<ral::frame::BlazingTable> orc_parser::parse_batch(
 	return nullptr;
 }
 
-void orc_parser::parse_schema(
+void orc_parser::parse_schema(ral::execution::execution_backend preferred_compute,
 	ral::io::data_handle handle, ral::io::Schema & schema) {
 
   auto file = handle.file_handle;
@@ -72,7 +71,7 @@ void orc_parser::parse_schema(
 	}
 }
 
-std::unique_ptr<ral::frame::BlazingTable> orc_parser::get_metadata(
+std::unique_ptr<ral::frame::BlazingTable> orc_parser::get_metadata(ral::execution::execution_backend preferred_compute,
 	std::vector<ral::io::data_handle> handles, int offset) {
 	std::vector<size_t> num_stripes(handles.size());
 	std::vector<cudf::io::parsed_orc_statistics> statistics(handles.size());
