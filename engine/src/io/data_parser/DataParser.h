@@ -22,8 +22,8 @@ namespace io {
 
 class data_parser {
 public:
-
 	virtual std::unique_ptr<ral::frame::BlazingTable> parse_batch(
+      ral::execution::execution_backend preferred_compute,
 		ral::io::data_handle /*handle*/,
 		const Schema & /*schema*/,
 		std::vector<int> /*column_indices*/,
@@ -31,20 +31,21 @@ public:
 		return nullptr; // TODO cordova ask ALexander why is not a pure virtual function as before
 	}
 
-	virtual size_t get_num_partitions() {
+	virtual size_t get_num_partitions(ral::execution::execution_backend preferred_compute) {
 		return 0;
 	}
 
 	virtual void parse_schema(
-		ral::io::data_handle /*handle*/, ral::io::Schema & schema) = 0;
+		ral::execution::execution_backend preferred_compute,ral::io::data_handle /*handle*/, ral::io::Schema & schema) = 0;
 
-	virtual std::unique_ptr<ral::frame::BlazingTable> get_metadata(
+	virtual std::unique_ptr<ral::frame::BlazingTable> get_metadata(ral::execution::execution_backend preferred_compute,
 		std::vector<ral::io::data_handle> /*handles*/,
 		int /*offset*/) {
 		return nullptr;
 	}
 
 	virtual DataType type() const { return 	DataType::UNDEFINED; }
+
 };
 
 } /* namespace io */

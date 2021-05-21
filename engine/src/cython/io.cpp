@@ -59,7 +59,15 @@ TableSchema parseSchema(std::vector<std::string> files,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
 	std::vector<std::pair<std::string, cudf::type_id>> extra_columns,
-	bool ignore_missing_paths) {
+	bool ignore_missing_paths,
+  std::string preferred_compute) {
+
+  // TODO percy arrow move this into utils or a common place
+  ral::execution::backend_id preferred_compute_type = ral::execution::backend_id::CUDF;
+  if (preferred_compute == "arrow") {
+    preferred_compute_type = ral::execution::backend_id::ARROW;
+  }
+  ral::execution::execution_backend preferred_compute_backend(preferred_compute_type);
 
 	// sanitize and normalize paths
 	for (size_t i = 0; i < files.size(); ++i) {
@@ -140,7 +148,7 @@ TableSchema parseSchema(std::vector<std::string> files,
 		bool got_schema = false;
     if (isSqlProvider) {
         ral::io::data_handle handle = provider->get_next(false);
-        parser->parse_schema(handle, schema);
+        parser->parse_schema(preferred_compute_backend,handle, schema);
         if (schema.get_num_columns() > 0){
           got_schema = true;
         }
@@ -148,7 +156,7 @@ TableSchema parseSchema(std::vector<std::string> files,
       while (!got_schema && provider->has_next()){
         ral::io::data_handle handle = provider->get_next();
         if (handle.file_handle != nullptr){
-          parser->parse_schema(handle, schema);
+          parser->parse_schema(preferred_compute_backend,handle, schema);
           if (schema.get_num_columns() > 0){
             got_schema = true;
             schema.add_file(handle.uri.toString(true));
@@ -202,7 +210,16 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	TableSchema schema,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
-	std::vector<std::string> arg_values) {
+	std::vector<std::string> arg_values,
+  std::string preferred_compute) {
+
+  // TODO percy arrow move this into utils or a common place
+  ral::execution::backend_id preferred_compute_type = ral::execution::backend_id::CUDF;
+  if (preferred_compute == "arrow") {
+    preferred_compute_type = ral::execution::backend_id::ARROW;
+  }
+  ral::execution::execution_backend preferred_compute_backend(preferred_compute_type);
+
 		// TODO percy arrow
 	if (offset.second == 0) {
 		std::cout<<"offset.second = 0\n";
@@ -262,7 +279,7 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	auto provider = std::make_shared<ral::io::uri_data_provider>(uris);
 	auto loader = std::make_shared<ral::io::data_loader>(parser, provider);
 	try{
-		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(offset.first);
+		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(preferred_compute_backend,offset.first);
 		// ral::utilities::print_blazing_table_view(metadata->to_table_view());
 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
 		result->names = metadata->column_names();
@@ -405,7 +422,8 @@ std::pair<TableSchema, error_code_t> parseSchema_C(std::vector<std::string> file
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
 	std::vector<std::pair<std::string, cudf::type_id>> extra_columns,
-	bool ignore_missing_paths) {
+	bool ignore_missing_paths,
+  std::string preferred_compute) {
 
 	TableSchema result;
 
@@ -415,7 +433,8 @@ std::pair<TableSchema, error_code_t> parseSchema_C(std::vector<std::string> file
 					arg_keys,
 					arg_values,
 					extra_columns,
-					ignore_missing_paths);
+					ignore_missing_paths,
+          preferred_compute);
 		return std::make_pair(result, E_SUCCESS);
 	} catch (std::exception& e) {
 		return std::make_pair(result, E_EXCEPTION);
@@ -427,7 +446,8 @@ std::pair<std::unique_ptr<ResultSet>, error_code_t> parseMetadata_C(std::vector<
 	TableSchema schema,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
-	std::vector<std::string> arg_values) {
+	std::vector<std::string> arg_values,
+  std::string preferred_compute) {
 
 	std::unique_ptr<ResultSet> result = nullptr;
 
@@ -437,7 +457,8 @@ std::pair<std::unique_ptr<ResultSet>, error_code_t> parseMetadata_C(std::vector<
 					schema,
 					file_format_hint,
 					arg_keys,
-					arg_values));
+					arg_values,
+          preferred_compute));
 		return std::make_pair(std::move(result), E_SUCCESS);
 	} catch (std::exception& e) {
 		return std::make_pair(std::move(result), E_EXCEPTION);
