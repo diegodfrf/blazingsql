@@ -4,7 +4,7 @@ repos:
               - id: checkstyle
                 name: checkstyle
                 description: Check style black flake8 clang
-                entry: ./ci/checks/style.sh
+                entry: ./scripts/checkstyle.sh
                 language: system
                 types: [file]
 
