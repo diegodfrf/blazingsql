@@ -14,6 +14,9 @@
 #include <cudf/copying.hpp>
 #include <cudf/sorting.hpp>
 #include <cudf/search.hpp>
+#include <arrow/array/builder_primitive.h>
+#include <arrow/api.h>
+#include <arrow/compute/api.h>
 
 namespace ral {
 
@@ -142,8 +145,6 @@ upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
 
 ////////////////////////////// sorted_order_grather functor
 
-
-
 struct sorted_order_gather_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
@@ -164,6 +165,23 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::op
     const std::vector<cudf::order> & sortOrderTypes,
     std::vector<cudf::null_order> null_orders) const
 {
+  auto table = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  auto arrow_table = table->view();
+  for (int c = 0; c < arrow_table->columns().size(); ++c) {
+    auto col = arrow_table->column(c);
+    std::shared_ptr<arrow::Array> flecha = arrow::Concatenate(col->chunks()).ValueOrDie();
+    std::shared_ptr<arrow::Array> sorted_indx = arrow::compute::SortToIndices(*flecha).ValueOrDie();
+    //arrow::compute::Take(sorted_indx);
+  }
+
+//    std::unique_ptr<> arrayBuilder;
+//    arrow::ArrayBuilder()
+//    arrayBuilder->
+//    std::shared_ptr<arrow::Array> temp = std::make_shared<arrow::Array>(col);
+    //arrow::compute::SortToIndices();
+  //arrow::compute::SortToIndices(
+//    arrow::compute::Take();
+//  }
   // TODO percy arrow
   return nullptr;
 }
