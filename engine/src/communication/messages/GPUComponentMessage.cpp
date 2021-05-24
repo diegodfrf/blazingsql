@@ -1,4 +1,7 @@
 #include "GPUComponentMessage.h"
+#include "transport/ColumnTransport.h"
+
+#include <arrow/array/concatenate.h>
 
 using namespace fmt::literals;
 
@@ -203,12 +206,17 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_arrow_message_to_host_ta
 		  std::shared_ptr<arrow::ChunkedArray> chunkedArray;
 		  std::tie(field, chunkedArray) = arrowColumnInfoPair;
 
-		  cudf::type_id type_id = typeMap.at(field->type()->id());
+			cudf::type_id type_id = typeMap.at(field->type()->id());
 
-		  blazingdb::transform::ColumnTransport::MetaData metadata;
-		  metadata.size = field->siz metadata.dtype = type_id;
+		  std::shared_ptr<arrow::Array> arrayColumn = *arrow::Concatenate(
+			  chunkedArray->chunks(), arrow::default_memory_pool());
 
-		  blazingdb::transform::ColumnTransport columnTransport;
+		  blazingdb::transport::ColumnTransport::MetaData metadata;
+		  metadata.null_count = arrayColumn->null_count();
+		  metadata.dtype =
+			  static_cast<std::underlying_type_t<cudf::type_id>>(type_id);
+
+		  blazingdb::transport::ColumnTransport columnTransport;
 
 		  return columnTransport;
 	  });
