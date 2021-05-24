@@ -6,17 +6,18 @@
 #include "blazing_table/BlazingHostTable.h"
 #include "utilities/DebuggingUtils.h"
 
+#include "utilities/CommonOperations.h"
 #include <arrow/api.h>
 #include <arrow/compute/api.h>
 
-TEST(BlazingHostTable, arrow_slice) {
+
+void slice() {
   /*
   * input:   {10, 12, 14, 16, 18, 20, 22, 24, 26, 28}
   * indices: {1, 3, 5, 9, 2, 4, 8, 8}
   * output:  {{12, 14}, {20, 22, 24, 26}, {14, 16}, {}}
   */
   //std::vector<column_view> slice(column_view const& input, std::vector<size_type> const& indices);
-
   //asdad
 
 }

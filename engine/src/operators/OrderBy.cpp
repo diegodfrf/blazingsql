@@ -259,11 +259,12 @@ std::unique_ptr<ral::frame::BlazingTable> sample(std::shared_ptr<ral::frame::Bla
 	std::vector<int> sortColIndices;
 	
 	if (is_window_function(query_part)){
-		if (window_expression_contains_partition_by(query_part)) {
-			std::tie(sortColIndices, sortOrderTypes) = get_vars_to_partition(query_part);
-		} else {
-			std::tie(sortColIndices, sortOrderTypes) = get_vars_to_orders(query_part);
-		}
+    // TODO percy arrow
+//		if (window_expression_contains_partition_by(query_part)) {
+//			std::tie(sortColIndices, sortOrderTypes) = get_vars_to_partition(query_part);
+//		} else {
+//			std::tie(sortColIndices, sortOrderTypes) = get_vars_to_orders(query_part);
+//		}
 	}
 	else {
 		std::tie(sortColIndices, sortOrderTypes, std::ignore) = get_sort_vars(query_part);
