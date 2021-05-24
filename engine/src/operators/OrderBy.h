@@ -166,14 +166,25 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::op
     std::vector<cudf::null_order> null_orders) const
 {
   auto table = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  auto sortColumns = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(sortColumns_view);
+  //std::unique_ptr<cudf::column> output = cudf::sorted_order( sortColumns->view(), sortOrderTypes, null_orders );
+  auto col = table->view()->column(0); // TODO percy arrow
+  std::shared_ptr<arrow::Array> vals = arrow::Concatenate(col->chunks()).ValueOrDie();
+  std::shared_ptr<arrow::Array> output = arrow::compute::SortToIndices(*vals).ValueOrDie();
+  std::shared_ptr<arrow::Table> gathered = arrow::compute::Take(*table->view(), *output).ValueOrDie();
+  return std::make_unique<ral::frame::BlazingArrowTable>(gathered);
+
+  
+  /*
+  auto table = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
   auto arrow_table = table->view();
   for (int c = 0; c < arrow_table->columns().size(); ++c) {
     auto col = arrow_table->column(c);
     std::shared_ptr<arrow::Array> flecha = arrow::Concatenate(col->chunks()).ValueOrDie();
     std::shared_ptr<arrow::Array> sorted_indx = arrow::compute::SortToIndices(*flecha).ValueOrDie();
-    //arrow::compute::Take(sorted_indx);
+    arrow::compute::Take(sorted_indx);
   }
-
+*/
 //    std::unique_ptr<> arrayBuilder;
 //    arrow::ArrayBuilder()
 //    arrayBuilder->
