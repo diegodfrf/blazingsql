@@ -71,7 +71,7 @@ gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(std::shared_ptr
 					col_transport.size_in_bytes += col_transport.strings_data_size;
 
 					raw_buffers.push_back(chars_column.head<char>() + char_col_start_end.first);
-					
+
 					col_transport.strings_offsets = raw_buffers.size();
 					col_transport.strings_offsets_size = new_offsets->size() * sizeof(int32_t);
 					buffer_sizes.push_back(col_transport.strings_offsets_size);
@@ -124,11 +124,11 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_tabl
 
 	std::tie(buffer_sizes, raw_buffers, column_offset, temp_scope_holder) = serialize_gpu_message_to_gpu_containers(table_view);
 
-	
+
 	typedef std::pair< std::vector<ral::memory::blazing_chunked_column_info>, std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk> >> buffer_alloc_type;
 	buffer_alloc_type buffers_and_allocations = ral::memory::convert_gpu_buffers_to_chunks(buffer_sizes,use_pinned);
 
-	
+
 	auto & allocations = buffers_and_allocations.second;
 	size_t buffer_index = 0;
 	for(auto & chunked_column_info : buffers_and_allocations.first){
@@ -139,7 +139,7 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_tabl
 			size_t chunk_size = chunked_column_info.size[i];
 			cudaMemcpyAsync((void *) (allocations[chunk_index]->data + offset), raw_buffers[buffer_index] + position, chunk_size, cudaMemcpyDeviceToHost,0);
 			position += chunk_size;
-		}		
+		}
 		buffer_index++;
 	}
 	cudaStreamSynchronize(0);
@@ -151,39 +151,70 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_tabl
 
 std::unique_ptr<ral::frame::BlazingHostTable> serialize_arrow_message_to_host_table(std::shared_ptr<ral::frame::BlazingArrowTableView> table_view, bool use_pinned)
 {
-  // TODO percy arrow
-  
-//  std::vector<std::size_t> buffer_sizes;
-//	std::vector<const char *> raw_buffers;
-//	std::vector<ColumnTransport> column_offset;
-//	std::vector<std::unique_ptr<rmm::device_buffer>> temp_scope_holder;
+	std::shared_ptr<arrow::Table> table = table_view->view();
+	std::shared_ptr<arrow::Schema> schema = table->schema();
+
+  // create column transports from schema
+	const std::size_t columnLength = schema->num_fields();
+
+  // arguments for blazing host table creation
+	std::vector<blazingdb::transport::ColumnTransport> columnTransports;
+	std::vector<ral::memory::blazing_chunked_column_info> chunkedColumnInfos;
+	std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>>
+		allocationChunks;
+
+  columnTransports.reserve(columnLength);
+  chunkedColumnInfos.reserve(columnLength);
+  allocationChunks.reserve(columnLength);
+
+  // get info from arrow columns to host table
+	static std::unordered_map<arrow::Type::type, cudf::type_id> typeMap{
+		{arrow::Type::type::INT8, cudf::type_id::INT8},
+		{arrow::Type::type::INT16, cudf::type_id::INT16},
+		{arrow::Type::type::INT32, cudf::type_id::INT32},
+		{arrow::Type::type::INT64, cudf::type_id::INT64},
+		{arrow::Type::type::FLOAT, cudf::type_id::FLOAT32},
+		{arrow::Type::type::DOUBLE, cudf::type_id::FLOAT64},
+		{arrow::Type::type::UINT8, cudf::type_id::UINT8},
+		{arrow::Type::type::UINT16, cudf::type_id::UINT16},
+		{arrow::Type::type::UINT32, cudf::type_id::UINT32},
+		{arrow::Type::type::UINT64, cudf::type_id::UINT64}};
+
+	std::vector<std::shared_ptr<arrow::Field>> fields = schema->fields();
+	std::vector<std::shared_ptr<arrow::ChunkedArray>> columns =
+		table->columns();
+
+	std::vector<std::pair<std::shared_ptr<arrow::Field>,
+		std::shared_ptr<arrow::ChunkedArray>>> arrowColumnInfos;
+  arrowColumnInfos.reserve(columnLength);
+  std::transform(fields.cbegin(),
+	  fields.cend(),
+	  columns.cbegin(),
+	  std::back_inserter(arrowColumnInfos),
+	  std::make_pair<const std::shared_ptr<arrow::Field> &,
+		  const std::shared_ptr<arrow::ChunkedArray> &>);
+
+  std::transform(arrowColumnInfos.cbegin(),
+	  arrowColumnInfos.cend(),
+	  std::back_inserter(columnTransports),
+	  [](const std::pair<std::shared_ptr<arrow::Field>,
+		  std::shared_ptr<arrow::ChunkedArray>> & arrowColumnInfoPair) {
+		  std::shared_ptr<arrow::Field> field;
+		  std::shared_ptr<arrow::ChunkedArray> chunkedArray;
+		  std::tie(field, chunkedArray) = arrowColumnInfoPair;
+
+		  cudf::type_id type_id = typeMap.at(field->type()->id());
+
+		  blazingdb::transform::ColumnTransport::MetaData metadata;
+		  metadata.size = field->siz metadata.dtype = type_id;
+
+		  blazingdb::transform::ColumnTransport columnTransport;
 
 
-//	std::tie(buffer_sizes, raw_buffers, column_offset, temp_scope_holder) = serialize__message_to_gpu_containers(table_view);
+		  return columnTransport;
+	  });
 
-	
-//	typedef std::pair< std::vector<ral::memory::blazing_chunked_column_info>, std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk> >> buffer_alloc_type;
-//	buffer_alloc_type buffers_and_allocations = ral::memory::convert_gpu_buffers_to_chunks(buffer_sizes,use_pinned);
-
-	
-//	auto & allocations = buffers_and_allocations.second;
-//	size_t buffer_index = 0;
-//	for(auto & chunked_column_info : buffers_and_allocations.first){
-//		size_t position = 0;
-//		for(size_t i = 0; i < chunked_column_info.chunk_index.size(); i++){
-//			size_t chunk_index = chunked_column_info.chunk_index[i];
-//			size_t offset = chunked_column_info.offset[i];
-//			size_t chunk_size = chunked_column_info.size[i];
-//			cudaMemcpyAsync((void *) (allocations[chunk_index]->data + offset), raw_buffers[buffer_index] + position, chunk_size, cudaMemcpyDeviceToHost,0);
-//			position += chunk_size;
-//		}		
-//		buffer_index++;
-//	}
-//	cudaStreamSynchronize(0);
-
-
-//	auto table = std::make_unique<ral::frame::BlazingHostTable>(column_offset, std::move(buffers_and_allocations.first),std::move(buffers_and_allocations.second));
-//	return table;
+  return nullptr;
 }
 
 std::unique_ptr<ral::frame::BlazingCudfTable> deserialize_from_gpu_raw_buffers(const std::vector<ColumnTransport> & columns_offsets,
