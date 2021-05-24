@@ -93,6 +93,7 @@ struct upper_bound_split_functor {
   {
     // TODO percy arrow thrown error
     //return nullptr;
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
   }
 };
 
@@ -107,6 +108,7 @@ upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
 {
   // TODO percy arrow
   //return nullptr;
+  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
 }
 
 template <>
@@ -155,6 +157,7 @@ struct sorted_order_gather_functor {
       std::vector<cudf::null_order> null_orders) const
   {
     // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -195,7 +198,6 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::op
 //    arrow::compute::Take();
 //  }
   // TODO percy arrow
-  return nullptr;
 }
 
 template <>

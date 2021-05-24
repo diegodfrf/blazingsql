@@ -65,7 +65,8 @@ std::unique_ptr<ral::cache::CacheData> BatchSequence::next() {
         return cache->pullCacheData();
     } else {
       // TODO percy arrow william
-        //return cache->pullUnorderedFromCache();
+      throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
+      //return cache->pullUnorderedFromCache();
     }
 }
 

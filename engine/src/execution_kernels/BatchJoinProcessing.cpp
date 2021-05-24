@@ -397,6 +397,7 @@ struct cross_join_functor {
       std::shared_ptr<ral::frame::BlazingTableView> right) const
   {
     // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -407,6 +408,7 @@ std::unique_ptr<ral::frame::BlazingTable> cross_join_functor::operator()<ral::fr
     std::shared_ptr<ral::frame::BlazingTableView> right) const
 {
   // TODO percy arrow
+  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
@@ -429,6 +431,7 @@ struct check_if_has_nulls_functor {
     std::vector<cudf::size_type> const& keys) const
   {
     // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -439,6 +442,7 @@ bool check_if_has_nulls_functor::operator()<ral::frame::BlazingArrowTable>(
 {
   auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
   //return ral::cpu::check_if_has_nulls(arrow_table_view->view(), keys);
+  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
 }
 
 template <>
@@ -462,6 +466,7 @@ struct inner_join_functor {
       cudf::null_equality equalityType) const
   {
     // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -475,6 +480,7 @@ std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<ral::fr
     cudf::null_equality equalityType) const
 {
   // TODO percy arrow
+  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
@@ -507,6 +513,7 @@ struct drop_nulls_functor {
       std::vector<cudf::size_type> const& keys) const
   {
     // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -517,6 +524,7 @@ std::unique_ptr<ral::frame::BlazingTable> drop_nulls_functor::operator()<ral::fr
     std::vector<cudf::size_type> const& keys) const
 {
   // TODO percy arrow
+  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
@@ -540,6 +548,7 @@ struct left_join_functor {
       std::vector<cudf::size_type> const& right_column_indices) const
   {
     // TODO percy arrow thrown error
+	throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -552,6 +561,7 @@ std::unique_ptr<ral::frame::BlazingTable> left_join_functor::operator()<ral::fra
     std::vector<cudf::size_type> const& right_column_indices) const
 {
   // TODO percy arrow
+  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
@@ -590,6 +600,7 @@ struct full_join_functor {
       std::vector<cudf::size_type> const& right_column_indices) const
   {
     // TODO percy arrow thrown error
+	throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -604,6 +615,7 @@ std::unique_ptr<ral::frame::BlazingTable> full_join_functor::operator()<ral::fra
     std::vector<cudf::size_type> const& right_column_indices) const
 {
   // TODO percy arrow
+  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
@@ -639,6 +651,7 @@ struct reordering_columns_due_to_right_join_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(std::unique_ptr<ral::frame::BlazingTable> table_ptr, size_t right_columns) const
   {
     // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -648,6 +661,7 @@ std::unique_ptr<ral::frame::BlazingTable> reordering_columns_due_to_right_join_f
     std::unique_ptr<ral::frame::BlazingTable> table_ptr, size_t right_columns) const
 {
   // TODO percy arrow
+  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 

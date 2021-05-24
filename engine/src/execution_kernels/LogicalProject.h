@@ -73,6 +73,7 @@ struct build_only_schema {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view) const {
     // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
     return nullptr;
   }
 };
@@ -103,6 +104,7 @@ struct evaluate_expressions_wo_filter_functor {
   const std::vector<std::string> column_names) const
   {
     // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -116,6 +118,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_wo_filter_
   //std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluated_table = ral::cpu::evaluate_expressions(table_view_ptr->view(), expressions);
 
   // TODO percy arrow
+  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
@@ -134,6 +137,7 @@ struct evaluate_expressions_functor {
   const std::vector<std::string> & expressions) const
   {
     // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
