@@ -5,6 +5,7 @@
 #include "parser/expression_utils.hpp"
 #include "cache_machine/CPUCacheData.h"
 #include "cache_machine/GPUCacheData.h"
+#include "cache_machine/CacheMachine.h"
 #include "execution_graph/backend_dispatcher.h"
 
 namespace ral {
@@ -34,8 +35,9 @@ ral::execution::task_result PartitionSingleNodeKernel::do_process(std::vector< s
     
     try{
         auto & input = inputs[0];
+        auto & partition_plan_input = inputs[1];
 
-        auto partitions = ral::operators::partition_table(partitionPlan->to_table_view(), input->to_table_view(), this->sortOrderTypes, this->sortColIndices);
+        auto partitions = ral::operators::partition_table(partition_plan_input->to_table_view(), input->to_table_view(), this->sortOrderTypes, this->sortColIndices);
 
         for (std::size_t i = 0; i < partitions.size(); i++) {
             std::string cache_id = "output_" + std::to_string(i);
@@ -61,15 +63,14 @@ ral::execution::task_result PartitionSingleNodeKernel::do_process(std::vector< s
 kstatus PartitionSingleNodeKernel::run() {
     CodeTimer timer;
 
-    // WSM TODO. We should not be materializing this here in the run function
-    // partitionPlan = this->input_.get_cache("input_b").pullFromCache();
-
-    while(this->input_.get_cache("input_a")->wait_for_next()){
+    while(this->input_.get_cache("input_a")->wait_for_next() && this->input_.get_cache("input_b")->wait_for_next()){
         std::unique_ptr <ral::cache::CacheData> cache_data = this->input_.get_cache("input_a")->pullCacheData();
+        std::unique_ptr <ral::cache::CacheData> partition_plan_cache_data = this->input_.get_cache("input_b")->pullCacheDataCopy();
 
-        if(cache_data != nullptr){
+        if(cache_data != nullptr && partition_plan_cache_data != nullptr){
             std::vector<std::unique_ptr <ral::cache::CacheData> > inputs;
             inputs.push_back(std::move(cache_data));
+            inputs.push_back(std::move(partition_plan_cache_data));
 
             ral::execution::executor::get_instance()->add_task(
                     std::move(inputs),
@@ -122,19 +123,19 @@ SortAndSampleKernel::SortAndSampleKernel(std::size_t kernel_id, const std::strin
     this->output_.add_port("output_a", "output_b");
     get_samples = true;
     already_computed_partition_plan = false;
+
+    ral::cache::cache_settings cache_machine_config;
+    cache_machine_config.type = ral::cache::CacheType::SIMPLE;
+    cache_machine_config.context = context->clone();
+
+    std::string samples_cache_name = std::to_string(this->get_id()) + "_samples";
+    this->samples_cache_machine = ral::cache::create_cache_machine(cache_machine_config, samples_cache_name);
 }
 
 void SortAndSampleKernel::make_partition_plan_task(){
-    
     already_computed_partition_plan = true;
 
-    std::vector<std::unique_ptr <ral::cache::CacheData> > sampleCacheDatas;
-    // first lets take the local samples and convert them to CacheData to make a task
-    for (std::size_t i = 0; i < samplesTables.size(); ++i) {
-        // WSM TODO need generic function that can put a BlazingTable into a CacheData
-        std::unique_ptr <ral::cache::CacheData> cache_data;// = std::make_unique<ral::cache::GPUCacheData>(std::move(samplesTables[i]));
-        sampleCacheDatas.push_back(std::move(cache_data));
-    }
+    std::vector<std::unique_ptr <ral::cache::CacheData> > sampleCacheDatas = samples_cache_machine->pull_all_cache_data();
 
     if (this->context->getAllNodes().size() > 1 && context->isMasterNode(ral::communication::CommunicationData::getInstance().getSelfNode())){
         auto nodes = context->getAllNodes();
@@ -252,7 +253,11 @@ ral::execution::task_result SortAndSampleKernel::do_process(std::vector< std::un
                     population_sampled += sampledTable->num_rows(); 
                     total_num_rows_for_sampling += input->to_table_view()->num_rows();
                     total_bytes_for_sampling += input->size_in_bytes();
-                    samplesTables.push_back(std::move(sampledTable));
+
+                    std::unique_ptr<ral::cache::CacheData> cache_data = ral::execution::backend_dispatcher(sampledTable->get_execution_backend(),
+                                    ral::cache::make_cachedata_functor(), std::move(sampledTable));
+                    this->samples_cache_machine->addCacheData(std::move(cache_data));
+
                     if (population_sampled > max_order_by_samples) {
                         get_samples = false;  // we got enough samples, at least as max_order_by_samples
                     }
@@ -382,8 +387,9 @@ ral::execution::task_result PartitionKernel::do_process(std::vector< std::unique
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
     try{
         auto & input = inputs[0];
+        auto & partition_plan_input = inputs[1];
 
-        std::vector<ral::distribution::NodeColumnView> partitions = ral::distribution::partitionData(this->context.get(), input->to_table_view(), partitionPlan->to_table_view(), sortColIndices, sortOrderTypes);
+        std::vector<ral::distribution::NodeColumnView> partitions = ral::distribution::partitionData(this->context.get(), input->to_table_view(), partition_plan_input->to_table_view(), sortColIndices, sortOrderTypes);
         std::vector<int32_t> part_ids(partitions.size());
         std::generate(part_ids.begin(), part_ids.end(), [count=0, num_partitions_per_node = num_partitions_per_node] () mutable { return (count++) % (num_partitions_per_node); });
 
@@ -401,32 +407,21 @@ ral::execution::task_result PartitionKernel::do_process(std::vector< std::unique
 
 kstatus PartitionKernel::run() {
     CodeTimer timer;
-
-    // WSM TODO. We should not be materializing this here in the run() function
-    // partitionPlan = this->input_.get_cache("input_b").pullFromCache();
-    // assert(partitionPlan != nullptr);
-
     context->incrementQuerySubstep();
-
-    std::map<std::string, std::map<int32_t, int> > node_count;
 
     auto nodes = context->getAllNodes();
 
-    // If we have no partitionPlan, its because we have no data, therefore its one partition per node
-    num_partitions_per_node = partitionPlan->num_rows() == 0 ? 1 : (partitionPlan->num_rows() + 1) / this->context->getTotalNodes();
-
-    std::map<int32_t, int> temp_partitions_map;
-    for (int i = 0; i < num_partitions_per_node; i++) {
-        temp_partitions_map[i] = 0;
-    }
-    for (auto &&node : nodes) {
-        node_count.emplace(node.id(), temp_partitions_map);
-    }
-
     std::unique_ptr <ral::cache::CacheData> cache_data = this->input_.get_cache("input_a")->pullCacheData();
-    while(cache_data != nullptr){
+    std::unique_ptr <ral::cache::CacheData> partition_plan_cache_data = this->input_.get_cache("input_b")->pullCacheDataCopy();
+    assert(partition_plan_cache_data != nullptr);
+
+    // If we have no partitionPlan, its because we have no data, therefore its one partition per node
+    num_partitions_per_node = partition_plan_cache_data->num_rows() == 0 ? 1 : (partition_plan_cache_data->num_rows() + 1) / this->context->getTotalNodes();
+
+    while(cache_data != nullptr && partition_plan_cache_data != nullptr){
         std::vector<std::unique_ptr <ral::cache::CacheData> > inputs;
         inputs.push_back(std::move(cache_data));
+        inputs.push_back(std::move(partition_plan_cache_data));
 
         ral::execution::executor::get_instance()->add_task(
                 std::move(inputs),
@@ -434,6 +429,7 @@ kstatus PartitionKernel::run() {
                 this);
 
         cache_data = this->input_.get_cache("input_a")->pullCacheData();
+        partition_plan_cache_data = this->input_.get_cache("input_b")->pullCacheDataCopy();
     }
 
     if(logger) {
