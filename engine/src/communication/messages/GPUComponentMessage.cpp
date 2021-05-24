@@ -210,11 +210,15 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_arrow_message_to_host_ta
 
 		  blazingdb::transform::ColumnTransport columnTransport;
 
-
 		  return columnTransport;
 	  });
 
-  return nullptr;
+  std::unique_ptr<ral::frame::BlazingHostTable> blazingHostTable =
+	  std::make_unique<ral::frame::BlazingHostTable>(columnTransports,
+		  std::move(chunkedColumnInfos),
+		  std::move(allocationChunks));
+
+  return blazingHostTable;
 }
 
 std::unique_ptr<ral::frame::BlazingCudfTable> deserialize_from_gpu_raw_buffers(const std::vector<ColumnTransport> & columns_offsets,
