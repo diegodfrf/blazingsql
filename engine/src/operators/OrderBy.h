@@ -52,8 +52,9 @@ inline std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     const std::vector<int> & sortColIndices) const
 {
-  // TODO percy arrow
-  return nullptr;
+  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  std::shared_ptr<arrow::Table> selected = arrow_table_view->view()->SelectColumns(sortColIndices).ValueOrDie();
+  return std::make_shared<ral::frame::BlazingArrowTableView>(selected);
 }
 
 template <>
@@ -61,8 +62,8 @@ inline std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     const std::vector<int> & sortColIndices) const
 {
-  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
-  return std::make_shared<ral::frame::BlazingCudfTableView>(cudf_table_view->view().select(sortColIndices), 
+  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
+  return std::make_shared<ral::frame::BlazingCudfTableView>(cudf_table_view->view().select(sortColIndices),
                                                             cudf_table_view->column_names());
 }
 
