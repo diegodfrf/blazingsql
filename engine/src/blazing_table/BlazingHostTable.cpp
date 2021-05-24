@@ -14,6 +14,15 @@ namespace frame {
 
 // BEGIN internal utils
 
+template <class B, class D>
+static inline std::unique_ptr<B> unique_base(std::unique_ptr<D> && d) {
+	if (B * b = static_cast<B *>(d.get())) {
+		d.release();
+		return std::unique_ptr<B>(b, std::move(d.get_deleter()));
+	}
+	throw std::bad_alloc{};
+}
+
 static inline std::tuple<std::unique_ptr<arrow::ArrayBuilder>,
 	std::shared_ptr<arrow::Field>>
 MakeArrayBuilderField(
@@ -27,34 +36,44 @@ MakeArrayBuilderField(
 	// TODO: get column name
 	switch (type_id) {
 	case cudf::type_id::INT8:
-		return std::make_tuple(std::make_unique<arrow::Int8Builder>(),
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::Int8Builder>()),
 			arrow::field(columnName, arrow::int8()));
 	case cudf::type_id::INT16:
-		return std::make_tuple(std::make_unique<arrow::Int16Builder>(),
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::Int16Builder>()),
 			arrow::field(columnName, arrow::int16()));
 	case cudf::type_id::INT32:
-		return std::make_tuple(std::make_unique<arrow::Int32Builder>(),
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::Int32Builder>()),
 			arrow::field(columnName, arrow::int32()));
 	case cudf::type_id::INT64:
-		return std::make_tuple(std::make_unique<arrow::Int64Builder>(),
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::Int64Builder>()),
 			arrow::field(columnName, arrow::int64()));
 	case cudf::type_id::FLOAT32:
-		return std::make_tuple(std::make_unique<arrow::FloatBuilder>(),
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::FloatBuilder>()),
 			arrow::field(columnName, arrow::float32()));
 	case cudf::type_id::FLOAT64:
-		return std::make_tuple(std::make_unique<arrow::DoubleBuilder>(),
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::DoubleBuilder>()),
 			arrow::field(columnName, arrow::float64()));
 	case cudf::type_id::UINT8:
-		return std::make_tuple(std::make_unique<arrow::UInt8Builder>(),
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::UInt8Builder>()),
 			arrow::field(columnName, arrow::uint8()));
 	case cudf::type_id::UINT16:
-		return std::make_tuple(std::make_unique<arrow::UInt16Builder>(),
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::UInt16Builder>()),
 			arrow::field(columnName, arrow::uint16()));
 	case cudf::type_id::UINT32:
-		return std::make_tuple(std::make_unique<arrow::UInt32Builder>(),
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::UInt32Builder>()),
 			arrow::field(columnName, arrow::uint32()));
 	case cudf::type_id::UINT64:
-		return std::make_tuple(std::make_unique<arrow::UInt64Builder>(),
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::UInt64Builder>()),
 			arrow::field(columnName, arrow::uint64()));
 	default:
 		throw std::runtime_error{
@@ -65,9 +84,11 @@ MakeArrayBuilderField(
 template <class BuilderType>
 static inline void AppendNumericTypedValue(
 	std::unique_ptr<arrow::ArrayBuilder> & arrayBuilder,
-	const std::unique_ptr<ral::memory::blazing_allocation_chunk> & allocation) {
+	const std::unique_ptr<ral::memory::blazing_allocation_chunk> & allocation,
+	const std::size_t offset) {
 	using value_type = typename BuilderType::value_type;
-	value_type * data = reinterpret_cast<value_type *>(allocation->data);
+	value_type * data =
+		reinterpret_cast<value_type *>(allocation->data + offset);
 	std::size_t length = allocation->size / sizeof(value_type);
 
 	for (std::size_t i = 0; i < length; i++) {
@@ -83,40 +104,41 @@ static inline void AppendNumericTypedValue(
 static inline void AppendValues(
 	std::unique_ptr<arrow::ArrayBuilder> & arrayBuilder,
 	const blazingdb::transport::ColumnTransport & columnTransport,
-	const std::unique_ptr<ral::memory::blazing_allocation_chunk> & allocation) {
+	const std::unique_ptr<ral::memory::blazing_allocation_chunk> & allocation,
+  const std::size_t offset) {
 	const cudf::type_id type_id =
 		static_cast<cudf::type_id>(columnTransport.metadata.dtype);
 	switch (type_id) {
-	case cudf::type_id::INT8:
-		return AppendNumericTypedValue<arrow::Int8Builder>(
-			arrayBuilder, allocation);
+  case cudf::type_id::INT8:
+    return AppendNumericTypedValue<arrow::Int8Builder>(
+      arrayBuilder, allocation, offset);
 	case cudf::type_id::INT16:
 		return AppendNumericTypedValue<arrow::Int16Builder>(
-			arrayBuilder, allocation);
+			arrayBuilder, allocation, offset);
 	case cudf::type_id::INT32:
 		return AppendNumericTypedValue<arrow::Int32Builder>(
-			arrayBuilder, allocation);
-	case cudf::type_id::INT64:
-		return AppendNumericTypedValue<arrow::Int64Builder>(
-			arrayBuilder, allocation);
-	case cudf::type_id::FLOAT32:
-		return AppendNumericTypedValue<arrow::FloatBuilder>(
-			arrayBuilder, allocation);
-	case cudf::type_id::FLOAT64:
-		return AppendNumericTypedValue<arrow::DoubleBuilder>(
-			arrayBuilder, allocation);
-	case cudf::type_id::UINT8:
-		return AppendNumericTypedValue<arrow::UInt8Builder>(
-			arrayBuilder, allocation);
-	case cudf::type_id::UINT16:
-		return AppendNumericTypedValue<arrow::UInt16Builder>(
-			arrayBuilder, allocation);
-	case cudf::type_id::UINT32:
-		return AppendNumericTypedValue<arrow::UInt32Builder>(
-			arrayBuilder, allocation);
-	case cudf::type_id::UINT64:
-		return AppendNumericTypedValue<arrow::UInt64Builder>(
-			arrayBuilder, allocation);
+			arrayBuilder, allocation, offset);
+  case cudf::type_id::INT64:
+    return AppendNumericTypedValue<arrow::Int64Builder>(
+      arrayBuilder, allocation, offset);
+  case cudf::type_id::FLOAT32:
+    return AppendNumericTypedValue<arrow::FloatBuilder>(
+      arrayBuilder, allocation, offset);
+  case cudf::type_id::FLOAT64:
+    return AppendNumericTypedValue<arrow::DoubleBuilder>(
+      arrayBuilder, allocation, offset);
+  case cudf::type_id::UINT8:
+    return AppendNumericTypedValue<arrow::UInt8Builder>(
+      arrayBuilder, allocation, offset);
+  case cudf::type_id::UINT16:
+    return AppendNumericTypedValue<arrow::UInt16Builder>(
+      arrayBuilder, allocation, offset);
+  case cudf::type_id::UINT32:
+    return AppendNumericTypedValue<arrow::UInt32Builder>(
+      arrayBuilder, allocation, offset);
+  case cudf::type_id::UINT64:
+    return AppendNumericTypedValue<arrow::UInt64Builder>(
+      arrayBuilder, allocation, offset);
 	default:
 		throw std::runtime_error{
 			"Unsupported column cudf type id for append value"};
@@ -132,14 +154,14 @@ static inline std::size_t AppendChunkToArrayBuilder(
 	std::size_t position = 0;
 
 	for (std::size_t i = 0; i < chunkedColumnInfo.chunk_index.size(); i++) {
-		std::size_t chunk_index = chunkedColumnInfo.chunk_index[i];
-		// std::size_t offset = chunkedColumnInfo.offset[i];
-		std::size_t chunk_size = chunkedColumnInfo.size[i];
+		const std::size_t chunk_index = chunkedColumnInfo.chunk_index[i];
+		const std::size_t offset = chunkedColumnInfo.offset[i];
+		const std::size_t chunk_size = chunkedColumnInfo.size[i];
 
 		const std::unique_ptr<ral::memory::blazing_allocation_chunk> &
 			allocation = allocations[chunk_index];
 
-		AppendValues(arrayBuilder, columnTransport, allocation);
+		AppendValues(arrayBuilder, columnTransport, allocation, offset);
 
 		position += chunk_size;
 	}
