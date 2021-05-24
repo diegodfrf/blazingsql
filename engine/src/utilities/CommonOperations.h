@@ -16,6 +16,9 @@
 #include <cudf/filling.hpp>
 #include <cudf/concatenate.hpp>
 #include <cudf/partitioning.hpp>
+#include <arrow/array/builder_primitive.h>
+#include <arrow/array/builder_base.h>
+#include <arrow/table.h>
 
 namespace ral {
 namespace cpu {
@@ -251,8 +254,23 @@ inline std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral:
     std::vector<std::string> sortColNames,
     std::vector<int> sortColIndices) const
 {
-  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
-  return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
+  std::random_device rd;
+  auto arrow_table = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view)->view();
+  std::vector<int> population(arrow_table->num_rows());
+  std::iota(population.begin(), population.end(), 0);
+  std::vector<int> samples_indexes_raw;
+  std::sample(population.begin(),
+              population.end(),
+              samples_indexes_raw.begin(),
+              num_samples,
+              rd);
+  auto int_builder = std::make_unique<arrow::Int32Builder>();
+  int_builder->AppendValues(samples_indexes_raw);
+  std::shared_ptr<arrow::Array> samples_indexes;
+  int_builder->Finish(&samples_indexes);
+  auto input = arrow_table->SelectColumns(sortColIndices).ValueOrDie();
+  auto samples = arrow::compute::Take(*input, *samples_indexes).ValueOrDie();
+  return std::make_unique<ral::frame::BlazingArrowTable>(samples);
 }
 
 template <>
