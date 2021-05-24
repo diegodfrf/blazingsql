@@ -1,7 +1,5 @@
 #include "CacheMachine.h"
 #include "CPUCacheData.h"
-#include "GPUCacheData.h"
-#include "ArrowCacheData.h"
 #include "ConcatCacheData.h"
 #include "CacheDataLocalFile.h"
 #include "execution_graph/backend_dispatcher.h"
@@ -20,27 +18,6 @@
 
 namespace ral {
 namespace cache {
-
-
-struct make_cachedata_functor {
-	template <typename T>
-	std::unique_ptr<CacheData> operator()(std::unique_ptr<ral::frame::BlazingTable> table){
-		// TODO percy arrow thrown error
-    	return nullptr;
-	}
-};
-
-template<>
-std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::BlazingArrowTable>(std::unique_ptr<ral::frame::BlazingTable> table){
-	std::unique_ptr<ral::frame::BlazingArrowTable> arrow_table(dynamic_cast<ral::frame::BlazingArrowTable*>(table.release()));
-	return std::make_unique<ArrowCacheData>(std::move(arrow_table));
-}
-
-template<>
-std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::BlazingCudfTable>(std::unique_ptr<ral::frame::BlazingTable> table){
-	std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
-	return std::make_unique<GPUCacheData>(std::move(cudf_table));
-}
 
 std::size_t CacheMachine::cache_count(900000000);
 

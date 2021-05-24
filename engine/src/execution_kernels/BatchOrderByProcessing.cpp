@@ -5,6 +5,7 @@
 #include "parser/expression_utils.hpp"
 #include "cache_machine/CPUCacheData.h"
 #include "cache_machine/GPUCacheData.h"
+#include "cache_machine/CacheMachine.h"
 #include "execution_graph/backend_dispatcher.h"
 
 namespace ral {
@@ -252,7 +253,11 @@ ral::execution::task_result SortAndSampleKernel::do_process(std::vector< std::un
                     population_sampled += sampledTable->num_rows(); 
                     total_num_rows_for_sampling += input->to_table_view()->num_rows();
                     total_bytes_for_sampling += input->size_in_bytes();
-                    this->samples_cache_machine->put(0, std::move(sampledTable));
+
+                    std::unique_ptr<ral::cache::CacheData> cache_data = ral::execution::backend_dispatcher(sampledTable->get_execution_backend(),
+                                    ral::cache::make_cachedata_functor(), std::move(sampledTable));
+                    this->samples_cache_machine->addCacheData(std::move(cache_data));
+
                     if (population_sampled > max_order_by_samples) {
                         get_samples = false;  // we got enough samples, at least as max_order_by_samples
                     }
