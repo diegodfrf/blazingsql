@@ -16,6 +16,7 @@ namespace frame {
 
 template <class B, class D>
 static inline std::unique_ptr<B> unique_base(std::unique_ptr<D> && d) {
+  // this cast from concrete arrow builder to base keeping the deleter
 	if (B * b = static_cast<B *>(d.get())) {
 		d.release();
 		return std::unique_ptr<B>(b, std::move(d.get_deleter()));
