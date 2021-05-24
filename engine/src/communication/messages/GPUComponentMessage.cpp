@@ -1,6 +1,7 @@
 #include "GPUComponentMessage.h"
 #include "transport/ColumnTransport.h"
 
+#include <arrow/array.h>
 #include <arrow/array/concatenate.h>
 
 using namespace fmt::literals;
