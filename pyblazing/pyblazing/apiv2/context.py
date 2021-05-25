@@ -2729,9 +2729,9 @@ class BlazingContext(object):
                     kwargs,
                     extra_columns,
                     ignore_missing_paths,
+                    self.preferred_compute,
                     workers=[worker],
                     pure=False,
-                    preferred_compute=self.preferred_compute,
                 )
                 parsed_schema = connection.result()
                 if len(parsed_schema["files"]) == 0 and file_format_hint not in [
@@ -2758,9 +2758,9 @@ class BlazingContext(object):
                                 kwargs,
                                 extra_columns,
                                 ignore_missing_paths,
+                                self.preferred_compute,
                                 workers=[worker],
                                 pure=False,
-                                preferred_compute=self.preferred_compute,
                             ),
                             worker,
                         )
@@ -2836,9 +2836,9 @@ class BlazingContext(object):
                         schema,
                         file_format_hint,
                         kwargs,
+                        self.preferred_compute,
                         workers=[worker],
                         pure=False,
-                        preferred_compute=self.preferred_compute,
                     )
                     dask_futures.append(connection)
             return dask.dataframe.from_delayed(dask_futures)

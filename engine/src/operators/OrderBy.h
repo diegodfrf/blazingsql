@@ -52,8 +52,9 @@ inline std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     const std::vector<int> & sortColIndices) const
 {
-  // TODO percy arrow
-  return nullptr;
+  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  std::shared_ptr<arrow::Table> selected = arrow_table_view->view()->SelectColumns(sortColIndices).ValueOrDie();
+  return std::make_shared<ral::frame::BlazingArrowTableView>(selected);
 }
 
 template <>
@@ -61,8 +62,8 @@ inline std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     const std::vector<int> & sortColIndices) const
 {
-  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
-  return std::make_shared<ral::frame::BlazingCudfTableView>(cudf_table_view->view().select(sortColIndices), 
+  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
+  return std::make_shared<ral::frame::BlazingCudfTableView>(cudf_table_view->view().select(sortColIndices),
                                                             cudf_table_view->column_names());
 }
 
@@ -92,6 +93,7 @@ struct upper_bound_split_functor {
   {
     // TODO percy arrow thrown error
     //return nullptr;
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
   }
 };
 
@@ -106,6 +108,7 @@ upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
 {
   // TODO percy arrow
   //return nullptr;
+  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
 }
 
 template <>
@@ -154,6 +157,7 @@ struct sorted_order_gather_functor {
       std::vector<cudf::null_order> null_orders) const
   {
     // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -194,7 +198,6 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::op
 //    arrow::compute::Take();
 //  }
   // TODO percy arrow
-  return nullptr;
 }
 
 template <>

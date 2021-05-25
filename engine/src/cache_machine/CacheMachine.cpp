@@ -25,7 +25,7 @@ namespace cache {
 struct make_cachedata_functor {
 	template <typename T>
 	std::unique_ptr<CacheData> operator()(std::unique_ptr<ral::frame::BlazingTable> table){
-		// TODO percy arrow thrown error
+		throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
     	return nullptr;
 	}
 };
