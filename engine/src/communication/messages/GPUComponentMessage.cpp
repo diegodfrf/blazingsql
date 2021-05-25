@@ -235,9 +235,16 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_arrow_message_to_host_ta
 
 		  // column transport construction
 		  blazingdb::transport::ColumnTransport::MetaData metadata;
+		  metadata.size = arrayColumn->length();
 		  metadata.null_count = arrayColumn->null_count();
 		  metadata.dtype =
 			  static_cast<std::underlying_type_t<cudf::type_id>>(type_id);
+
+		  const std::string & fieldName = field->name();
+		  bzero(metadata.col_name,
+			  sizeof(
+				  blazingdb::transport::ColumnTransport::MetaData::col_name));
+      std::strcpy(metadata.col_name, fieldName.c_str());
 
 		  blazingdb::transport::ColumnTransport columnTransport;
 		  columnTransport.metadata = metadata;
