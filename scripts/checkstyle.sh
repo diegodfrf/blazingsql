@@ -1,6 +1,6 @@
 #!/bin/bash
 # CheckStyle for new and modified files
-# ./checkstyle [options] [file]
+# ./checkstyle [options]
 
 NUMARGS=$#
 ARGS=$*
@@ -32,19 +32,15 @@ function getFiles() {
     fi
 }
 function CheckStyleBlack {
-    BLACK=$(black --check "$1" --diff)
+    BLACK=$(black --check "$1" --diff --color)
 }
 
 function ApplyStyleBlack {
-    BLACK=$(black --check "$1" --diff)
+    BLACK=$(black "$1")
 }
 
 function CheckStyleFlake8 {
-    FLAKE8=$(black --check "$1" --diff)
-}
-
-function ApplyStyleFlake8 {
-    FLAKE8=$(black --check "$1" --diff)
+    FLAKE8=$(flake8 --config=pyblazing/.flake8 --check "$1")
 }
 
 function CheckStyleClangFormat {
@@ -68,15 +64,19 @@ if hasArg --check; then
             filename=$(basename -- "$file")
             extension="${filename##*.}"
             if [ "$extension" == "py" ]; then
-                StyleBlack "$file"
-                echo -e "Black check Style >>>> ${BLACK}"
-                StyleFlake8 "$file"
-                echo -e "Flake8 check Style >>>> ${FLAKE8}"
+                CheckStyleBlack "$file"
+                echo -e ">>>>>>>>BLACK BEGIN DIFF [$file]>>>>>>>"
+                echo -e "${BLACK}"
+                echo -e ">>>>>>>>BLACK END DIFF [$file]>>>>>>>"
+                CheckStyleFlake8 "$file"
+                echo -e ">>>>>>>>FLAKE8 BEGIN DIFF [$file]>>>>>>>"
+                echo -e "${FLAKE8}"
+                echo -e ">>>>>>>>FLAKE8 END DIFF [$file]>>>>>>>"
             elif [[ $extension =~ (cu|cuh|h|hpp|cpp|inl) ]]; then
-                StyleClangFormat "$file" "$tmpDir/$filename"
-                echo -e ">>>>>>>>BEGIN DIFF [$file]>>>>>>>"
+                CheckStyleClangFormat "$file" "$tmpDir/$filename"
+                echo -e ">>>>>>>>CLANG-FORMAT BEGIN DIFF [$file]>>>>>>>"
                 echo -e "${CLANG_FORMAT_DIFF}"
-                echo -e "<<<<<<<<END DIFF [$file]<<<<<<<"
+                echo -e "<<<<<<<<CLANG-FORMAT END DIFF [$file]<<<<<<<"
             fi
         fi
     done
@@ -93,7 +93,10 @@ if hasArg --fix; then
             #check extension
             filename=$(basename -- "$file")
             extension="${filename##*.}"
-            if [[ $extension =~ (cu|cuh|h|hpp|cpp|inl) ]]; then
+            if [ "$extension" == "py" ]; then
+                echo -e "Applying black style to $file"
+                ApplyStyleBlack "$file"
+            elif [[ $extension =~ (cu|cuh|h|hpp|cpp|inl) ]]; then
                 ApplyStyleClangFormat "$file"
                 echo -e "Applying clang-format to $file"
             else
@@ -101,5 +104,5 @@ if hasArg --fix; then
             fi
         fi
     done
-    echo -e "Apply clang-format complete!!!"
+    echo -e "Apply style complete!!!"
 fi
