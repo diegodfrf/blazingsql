@@ -220,9 +220,11 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_arrow_message_to_host_ta
 
   std::for_each(arrowColumnInfos.cbegin(),
 	  arrowColumnInfos.cend(),
-	  [&columnTransports, &chunkedColumnInfos, &allocationChunks](
-		  const std::pair<std::shared_ptr<arrow::Field>,
-			  std::shared_ptr<arrow::ChunkedArray>> & arrowColumnInfoPair) {
+	  [&columnTransports,
+		  &chunkedColumnInfos,
+		  &allocationChunks,
+		  n = 0 ](const std::pair<std::shared_ptr<arrow::Field>,
+		  std::shared_ptr<arrow::ChunkedArray>> & arrowColumnInfoPair) mutable {
 		  std::shared_ptr<arrow::Field> field;
 		  std::shared_ptr<arrow::ChunkedArray> chunkedArray;
 		  std::tie(field, chunkedArray) = arrowColumnInfoPair;
@@ -244,10 +246,13 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_arrow_message_to_host_ta
 		  bzero(metadata.col_name,
 			  sizeof(
 				  blazingdb::transport::ColumnTransport::MetaData::col_name));
-      std::strcpy(metadata.col_name, fieldName.c_str());
+		  std::strcpy(metadata.col_name, fieldName.c_str());
 
 		  blazingdb::transport::ColumnTransport columnTransport;
 		  columnTransport.metadata = metadata;
+		  columnTransport.strings_data = -1;
+		  columnTransport.valid = -1;
+		  columnTransport.data = n;
 		  columnTransports.push_back(columnTransport);
 
 		  // chunked columns info construction
@@ -289,6 +294,10 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_arrow_message_to_host_ta
 			  break;
 		  default: throw std::runtime_error{"unsupported arrow type "};
 		  }
+
+		  chunkedColumnInfos.emplace_back(
+			  ral::memory::blazing_chunked_column_info{
+				  {n++}, {0}, {columnSize}, columnSize});
 
 		  allocationChunks.emplace_back(
 			  std::make_unique<ral::memory::blazing_allocation_chunk>(

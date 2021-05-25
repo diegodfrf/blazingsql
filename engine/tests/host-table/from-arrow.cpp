@@ -5,25 +5,36 @@
 
 #include <bmr/initializer.h>
 
-//#include <utilities/DebuggingUtils.h>
+#include <utilities/DebuggingUtils.h>
+
 
 TEST(BlazingHostTable, FromArrowTable) {
 	BlazingRMMInitialize("cuda_memory_resource");
-	arrow::Int32Builder builder;
 
-	builder.Append(1);
-	builder.Append(3);
-	builder.Append(5);
-	builder.Append(7);
-	builder.Append(9);
+	arrow::Int32Builder int32Builder;
+	int32Builder.Append(1);
+	int32Builder.Append(3);
+	int32Builder.Append(5);
+	int32Builder.Append(7);
+	int32Builder.Append(9);
+	std::shared_ptr<arrow::Array> int32Array;
+	int32Builder.Finish(&int32Array);
 
-	std::shared_ptr<arrow::Array> array;
-	builder.Finish(&array);
+	arrow::Int64Builder int64Builder;
+	int64Builder.Append(0);
+	int64Builder.Append(2);
+	int64Builder.Append(4);
+	int64Builder.Append(6);
+	int64Builder.Append(8);
+	std::shared_ptr<arrow::Array> int64Array;
+	int64Builder.Finish(&int64Array);
 
 	std::shared_ptr<arrow::Schema> schema =
-		arrow::schema({arrow::field("col-32", arrow::int32())});
+		arrow::schema({arrow::field("col-32", arrow::int32()),
+			arrow::field("col-64", arrow::int64())});
 
-	std::shared_ptr<arrow::Table> table = arrow::Table::Make(schema, {array});
+	std::shared_ptr<arrow::Table> table =
+		arrow::Table::Make(schema, {int32Array, int64Array});
 
 	std::shared_ptr<ral::frame::BlazingArrowTableView> blazingArrowTableView =
 		std::make_shared<ral::frame::BlazingArrowTableView>(table);
@@ -41,8 +52,11 @@ TEST(BlazingHostTable, FromArrowTable) {
 		std::cout << "... " << columnName << std::endl;
 	}
 
-	// std::unique_ptr<ral::frame::BlazingCudfTable> blazingCudfTable =
-	// blazingHostTable->get_cudf_table();
+	std::unique_ptr<ral::frame::BlazingCudfTable> blazingCudfTable =
+		blazingHostTable->get_cudf_table();
+
+	ral::utilities::print_blazing_cudf_table_view(
+		blazingCudfTable->to_table_view(), "table");
 
 	BlazingRMMFinalize();
 }
