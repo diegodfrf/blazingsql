@@ -4,9 +4,11 @@ repos:
               - id: checkstyle
                 name: checkstyle
                 description: Check style black flake8 clang
-                entry: ./scripts/checkstyle.sh
+                entry: ./scripts/checkstyle.sh --check
                 language: system
                 types: [file]
+                verbose: true
+                pass_filenames: false
 
 default_language_version:
       python: python3
