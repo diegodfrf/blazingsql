@@ -33,7 +33,7 @@ struct write_orc_functor {
       std::string file_path) const
   {
     // TODO percy arrow thrown error
-    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
+    throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
   }
 };
 
@@ -43,7 +43,7 @@ inline void write_orc_functor::operator()<ral::frame::BlazingArrowTable>(
     std::string file_path) const
 {
   // TODO WSM arrow
-  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
+  throw std::runtime_error("ERROR: write_orc_functor BlazingSQL doesn't support this Arrow operator yet.");
 }
 
 template <>

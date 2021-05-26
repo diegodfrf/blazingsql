@@ -48,7 +48,7 @@ struct sorted_merger_functor {
       const std::vector<cudf::null_order> & sortOrderNulls) const
   {
     // TODO percy arrow thrown error
-    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
+    throw std::runtime_error("ERROR: sorted_merger_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -60,7 +60,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator
 		const std::vector<int> & sortColIndices, const std::vector<cudf::null_order> & sortOrderNulls) const
 {
   // TODO percy arrow
-  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
+  throw std::runtime_error("ERROR: sorted_merger_functor BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
@@ -96,7 +96,7 @@ struct gather_functor {
 		cudf::detail::negative_index_policy negative_index_policy) const
   {
     // TODO percy arrow thrown error
-    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
+    throw std::runtime_error("ERROR: gather_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -109,7 +109,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral:
 		cudf::detail::negative_index_policy negative_index_policy) const
 {
   // TODO percy arrow
-  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
+  throw std::runtime_error("ERROR: gather_functor BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
