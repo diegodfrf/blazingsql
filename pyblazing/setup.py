@@ -1,5 +1,8 @@
+import os
 from setuptools import find_packages, setup
 
+def is_conda_env():
+  return "CONDA_PREFIX" in os.environ or CONDA_BUILD in os.environ
 
 def get_version():
     import subprocess
@@ -16,8 +19,9 @@ def get_version():
         version = version.replace("v", "")
     return version
 
-
-install_requires = ["pyhive", "cudf", "dask-cudf", "dask", "distributed"]
+install_requires = []
+if not is_conda_env():
+  install_requires = ["pyhive", "cudf", "dask-cudf", "dask", "distributed"]
 
 setup(
     name="blazingsql",
