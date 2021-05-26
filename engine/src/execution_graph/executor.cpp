@@ -84,12 +84,10 @@ void task::run(cudaStream_t stream, executor * executor){
     try{
         for(auto & input : inputs){
             //if its in gpu this wont fail
-            //if its cpu or arrow and it fails the buffers arent deleted
+            //if its cpu and it fails the buffers arent deleted
             //if its disk and fails the file isnt deleted
             //so this should be safe
-            last_input_decached++;
-
-            if (this->kernel->has_limit_ && executor->get_total_rows_accumulated() > this->kernel->limit_rows_) {
+            if (this->kernel->has_limit_ && this->kernel->accumulated_rows.load() > this->kernel->limit_rows_) {
                 // enough rows for queries like 
                 // "select col_a, col_b from table limit N" or "select * from table limit N"
                 break;
@@ -99,9 +97,8 @@ void task::run(cudaStream_t stream, executor * executor){
 
             last_input_decached++;
             auto decached_input = input->decache(executor->preferred_compute());
+            this->kernel->accumulated_rows += decached_input->num_rows();
             input_tables.push_back(std::move(decached_input));
-
-            executor->accumulate_rows(input_tables.back()->num_rows());
         }
     }catch(const rmm::bad_alloc& e){
         int i = 0;
@@ -214,7 +211,7 @@ void task::set_inputs(std::vector<std::unique_ptr<ral::cache::CacheData > > inpu
 executor * executor::_instance;
 
 executor::executor(int num_threads, double processing_memory_limit_threshold, ral::execution::execution_backend preferred_compute) :
- pool(num_threads), task_id_counter(0), total_rows_accumulated(0), resource(&blazing_device_memory_resource::getInstance()), task_queue("executor_task_queue"),
+ pool(num_threads), task_id_counter(0), resource(&blazing_device_memory_resource::getInstance()), task_queue("executor_task_queue"),
  preferred_compute_(preferred_compute) {
      processing_memory_limit = resource->get_total_memory() * processing_memory_limit_threshold;
      for( int i = 0; i < num_threads; i++){

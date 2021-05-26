@@ -3,6 +3,7 @@ import cudf
 
 
 from cudf.core.column.column import build_column
+from cudf.utils.dtypes import is_decimal_dtype
 from dask.distributed import get_worker
 from datetime import datetime
 
@@ -1066,11 +1067,30 @@ class BlazingTable(object):
 
         if self.fileType == DataType.CUDF:
             self.column_names = [x for x in self.input._data.keys()]
-            data_values = self.input._data.values()
-            self.column_types = [cio.np_to_cudf_types_int(x.dtype) for x in data_values]
+            for x in self.input._data.values():
+                # for now `decimal` type is not considered from `np_to_cudf_types_int` call
+                if is_decimal_dtype(x.dtype):
+                    print(
+                        "WARNING: BlazingSQL currently does not support operations on DECIMAL datatype columns"
+                    )
+                    type_int = 26
+                else:
+                    type_int = cio.np_to_cudf_types_int(x.dtype)
+                self.column_types.append(type_int)
         elif self.fileType == DataType.DASK_CUDF:
             self.column_names = [x for x in input.columns]
-            self.column_types = [cio.np_to_cudf_types_int(x) for x in input.dtypes]
+
+            for x in input.dtypes:
+                # for now `decimal` type is not considered from `np_to_cudf_types_int` call
+                if is_decimal_dtype(x):
+                    print(
+                        "WARNING: BlazingSQL currently does not support operations on DECIMAL datatype columns"
+                    )
+                    type_int = 26
+                else:
+                    type_int = cio.np_to_cudf_types_int(x)
+                self.column_types.append(type_int)
+
         elif self.fileType == DataType.ARROW:
             self.arrow_table = input
 

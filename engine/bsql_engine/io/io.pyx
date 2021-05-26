@@ -643,8 +643,8 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
         dfs = []
         for i in range(dereference(resultSet).tables.size()):
             df = None
-            is_arrow = dereference(dereference(resultSet.get()).tables[0].get()).is_arrow
-            if resultTable.is_arrow:
+            is_arrow = dereference(dereference(resultSet.get()).tables[i].get()).is_arrow
+            if is_arrow:
                 df = pyarrow_wrap_table(dereference(dereference(resultSet.get()).tables[i].get()).arrow_table).to_pandas()
             else:
                 df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[i].get()).cudf_table), decoded_names)._data)
