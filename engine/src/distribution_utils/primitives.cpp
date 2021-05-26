@@ -34,7 +34,8 @@ typedef blazingdb::transport::Node Node;
 std::unique_ptr<BlazingTable> generatePartitionPlans(
 	cudf::size_type number_partitions,
 	const std::vector<std::unique_ptr<ral::frame::BlazingTable>> & samples,
-	const std::vector<cudf::order> & sortOrderTypes) {
+	const std::vector<cudf::order> & sortOrderTypes,
+	const std::vector<cudf::null_order> & sortOrderNulls) {
 
 	// just to call concatTables
 	std::vector<std::shared_ptr<BlazingTableView>> samplesView;
@@ -44,13 +45,8 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 
 	std::unique_ptr<BlazingTable> concatSamples = ral::utilities::concatTables(samplesView);
 
-	std::vector<cudf::null_order> null_orders(sortOrderTypes.size(), cudf::null_order::AFTER);
-	// TODO this is just a default setting. Will want to be able to properly set null_order
-	//std::unique_ptr<cudf::column> sort_indices = cudf::sorted_order( concatSamples->view(), sortOrderTypes, null_orders);
-	//std::unique_ptr<cudf::table> sortedSamples = cudf::detail::gather( concatSamples->view(), sort_indices->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED );
-
 	std::unique_ptr<ral::frame::BlazingTable> sortedSamples = ral::execution::backend_dispatcher(concatSamples->to_table_view()->get_execution_backend(), ral::operators::sorted_order_gather_functor(),
-		concatSamples->to_table_view(), concatSamples->to_table_view(), sortOrderTypes, null_orders);
+		concatSamples->to_table_view(), concatSamples->to_table_view(), sortOrderTypes, sortOrderNulls);
 
 	// lets get names from a non-empty table
 	std::vector<std::string> names;
@@ -68,13 +64,14 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 }
 
 // This function locates the pivots in the table and partitions the data on those pivot points.
-// IMPORTANT: This function expects data to already be sorted according to the searchColIndices and sortOrderTypes
+// IMPORTANT: This function expects data to already be sorted according to the searchColIndices, sortOrderTypes and sortOrderNulls
 // IMPORTANT: The TableViews of the data returned point to the same data that was input.
 std::vector<NodeColumnView> partitionData(Context * context,
 	std::shared_ptr<BlazingTableView> table,
 	std::shared_ptr<BlazingTableView> pivots,
 	const std::vector<int> & searchColIndices,
-	std::vector<cudf::order> sortOrderTypes) {
+	std::vector<cudf::order> sortOrderTypes,
+	const std::vector<cudf::null_order> & sortOrderNulls) {
 
 	RAL_EXPECTS(static_cast<size_t>(pivots->num_columns()) == searchColIndices.size(), "Mismatched pivots num_columns and searchColIndices");
 
@@ -92,7 +89,7 @@ std::vector<NodeColumnView> partitionData(Context * context,
 		sortOrderTypes.assign(searchColIndices.size(), cudf::order::ASCENDING);
 	}
 
-	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitioned_data = ral::operators::partition_table(pivots, table, sortOrderTypes, searchColIndices);
+	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitioned_data = ral::operators::partition_table(pivots, table, sortOrderTypes, searchColIndices, sortOrderNulls);
 
 	std::vector<Node> all_nodes = context->getAllNodes();
 
@@ -107,7 +104,6 @@ std::vector<NodeColumnView> partitionData(Context * context,
 
 	return partitioned_node_column_views;
 }
-
 
 std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partitions, std::shared_ptr<BlazingTableView> sortedSamples){
 

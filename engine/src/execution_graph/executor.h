@@ -77,7 +77,6 @@ public:
 			_instance = new executor(num_threads, processing_memory_limit_threshold, preferred_compute);
 			_instance->task_id_counter = 0;
 			_instance->active_tasks_counter = 0;
-			_instance->total_rows_accumulated = 0;
 			auto thread = std::thread([/*_instance*/]{
 				_instance->execute();
 			});
@@ -107,14 +106,6 @@ public:
 		memory_safety_cv.notify_all();
 	}
 
-	void accumulate_rows(int64_t n_rows_) {
-		this->total_rows_accumulated += n_rows_;
-	}
-
-	int64_t get_total_rows_accumulated() {
-		return this->total_rows_accumulated;
-	}
-
   ral::execution::execution_backend preferred_compute() const { return this->preferred_compute_; }
 
 private:
@@ -125,7 +116,6 @@ private:
 	int shutdown = 0;
 	static executor * _instance;
 	std::atomic<int> task_id_counter;
-	std::atomic<int64_t> total_rows_accumulated;
 	size_t attempts_limit = 10;
 
 	/** The exception mechanism works in this way:
