@@ -9,7 +9,7 @@
 
 
 TEST(BlazingHostTable, FromArrowTable) {
-	BlazingRMMInitialize("cuda_memory_resource");
+	BlazingRMMInitialize();
 
 	arrow::Int32Builder int32Builder;
 	int32Builder.Append(1);
