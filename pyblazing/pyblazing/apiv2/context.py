@@ -1991,12 +1991,12 @@ class BlazingContext(object):
 
                 if self.dask_client is None:
                     physical_plan = cio.runGeneratePhysicalGraphCaller(
-                        masterIndex, ["self"], ctxToken, str(algebra), output_type, preferred_compute
+                        masterIndex, ["self"], ctxToken, str(algebra), self.output_type, preferred_compute
                     )
                 else:
                     dummy_nodes = [str(i) for i in range(len(self.nodes))]
                     physical_plan = cio.runGeneratePhysicalGraphCaller(
-                        masterIndex, dummy_nodes, ctxToken, str(algebra), output_type, preferred_compute
+                        masterIndex, dummy_nodes, ctxToken, str(algebra), self.output_type, preferred_compute
                     )
 
         except SqlValidationExceptionClass as exception:
