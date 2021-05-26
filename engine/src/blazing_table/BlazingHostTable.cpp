@@ -328,5 +328,23 @@ const std::vector<ral::memory::blazing_chunked_column_info> & BlazingHostTable::
     return this->chunked_column_infos;
 }
 
+std::unique_ptr<BlazingHostTable> BlazingHostTable::clone() {
+	std::vector<ral::memory::blazing_chunked_column_info> chunked_column_infos_clone = this->chunked_column_infos;
+	std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>> allocations_clone;
+
+	for(auto& allocation : allocations){
+		auto& pool = allocation->allocation->pool;
+		std::unique_ptr<ral::memory::blazing_allocation_chunk> allocation_clone = pool->get_chunk();
+
+		allocation_clone->size = allocation->size;
+		memcpy(allocation_clone->data, allocation->data, allocation->size);
+		allocation_clone->allocation = allocation->allocation;
+
+		allocations_clone.push_back(std::move(allocation_clone));
+	}
+
+	return std::make_unique<ral::frame::BlazingHostTable>(this->columns_offsets, std::move(chunked_column_infos_clone), std::move(allocations_clone));
+}
+
 }  // namespace frame
 }  // namespace ral

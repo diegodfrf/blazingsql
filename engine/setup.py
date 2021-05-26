@@ -10,7 +10,12 @@ from Cython.Build import cythonize
 from setuptools import find_packages, setup
 from setuptools.extension import Extension
 
-install_requires = ["cudf", "numba", "cython"]
+def is_conda_env():
+  return "CONDA_PREFIX" in os.environ or "CONDA_BUILD" in os.environ
+
+install_requires = []
+if not is_conda_env():
+  install_requires = ["cudf", "numba", "cython"]
 
 conda_env_dir = os.environ["CONDA_PREFIX"]
 

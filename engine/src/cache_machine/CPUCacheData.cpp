@@ -53,7 +53,7 @@ CPUCacheData::CPUCacheData(const std::vector<blazingdb::transport::ColumnTranspo
 	this->cache_type = CacheDataType::CPU;
 	for(int i = 0; i < column_transports.size(); i++){
 		this->col_names.push_back(std::string(column_transports[i].metadata.col_name));
-		this->schema.push_back(cudf::data_type{cudf::type_id(column_transports[i].metadata.dtype)});			
+		this->schema.push_back(cudf::data_type{cudf::type_id(column_transports[i].metadata.dtype)});
 	}
 	if(column_transports.size() == 0){
 		this->n_rows = 0;
@@ -67,6 +67,11 @@ CPUCacheData::CPUCacheData(const std::vector<blazingdb::transport::ColumnTranspo
 CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingHostTable> host_table)
 	: CacheData(CacheDataType::CPU, host_table->column_names(), host_table->column_types(), host_table->num_rows()), host_table{std::move(host_table)}
 {
+}
+
+std::unique_ptr<CacheData> CPUCacheData::clone() {
+	std::unique_ptr<ral::frame::BlazingHostTable> table = this->host_table->clone();
+	return std::make_unique<CPUCacheData>(std::move(table));
 }
 
 } // namespace cache

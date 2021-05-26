@@ -25,8 +25,8 @@ BOLDGREEN="\e[1;${GREEN}"
 ITALICRED="\e[3;${RED}"
 ENDCOLOR="\e[0m"
 
-RAPIDS_VERSION=""
-CUDA_VERSION=""
+RAPIDS_VERSION="21.06"
+CUDA_VERSION="11.0"
 CHANNEL=""
 
 function hasArg {
@@ -82,7 +82,7 @@ fi
 if hasArg all || hasArg e2e; then
   echo -e "${GREEN}Install E2E test dependencies${ENDCOLOR}"
   conda install --yes -c conda-forge openjdk=8.0 maven pyspark=3.0.0 pytest
-  pip install pydrill openpyxl pymysql gitpython pynvml gspread oauth2client docker
+  pip install pydrill openpyxl pymysql gitpython pynvml gspread oauth2client docker 'sql-metadata==1.12.0' pyyaml
 fi
 
 if hasArg all || hasArg mysql; then

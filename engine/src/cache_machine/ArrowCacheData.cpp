@@ -45,6 +45,11 @@ void ArrowCacheData::set_names(const std::vector<std::string> & names) {
 	// WSM TODO need to implement
 }
 
+std::unique_ptr<CacheData> ArrowCacheData::clone() {
+  //Todo clone implementation
+  throw std::runtime_error("ArrowCacheData::clone not implemented");
+}
+
 ArrowCacheData::~ArrowCacheData() {}
 
 } // namespace cache

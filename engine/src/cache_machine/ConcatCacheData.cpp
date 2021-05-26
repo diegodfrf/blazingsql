@@ -53,6 +53,11 @@ void ConcatCacheData::set_names(const std::vector<std::string> & names) {
 	}
 }
 
+std::unique_ptr<CacheData> ConcatCacheData::clone() {
+	//Todo clone implementation
+	throw std::runtime_error("ConcatCacheData::clone not implemented");
+}
+
 std::vector<std::unique_ptr<CacheData>> ConcatCacheData::releaseCacheDatas(){
 	return std::move(_cache_datas);
 }
