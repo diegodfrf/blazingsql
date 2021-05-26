@@ -8,7 +8,7 @@ struct make_blazinghosttable_functor {
 	template <typename T>
 	std::unique_ptr<ral::frame::BlazingHostTable> operator()(std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
 		// TODO percy arrow thrown error
-		throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
+		throw std::runtime_error("ERROR: make_blazinghosttable_functor This default dispatcher operator should not be called.");
     	return nullptr;
 	}
 };

@@ -219,7 +219,7 @@ struct groupby_without_aggregations_functor {
       std::vector<int> group_column_indices) const
   {
     // TODO percy arrow thrown error
-    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
+    throw std::runtime_error("ERROR: groupby_without_aggregations_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -254,7 +254,7 @@ struct aggregations_without_groupby_functor {
       std::vector<std::string> aggregation_column_assigned_aliases) const
   {
     // TODO percy arrow thrown error
-    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
+    throw std::runtime_error("ERROR: aggregations_without_groupby_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -291,7 +291,7 @@ struct aggregations_with_groupby_functor {
       std::vector<int> group_column_indices) const
   {
     // TODO percy arrow thrown error
-    throw std::runtime_error("ERROR: This default dispatcher operator should not be called.");
+    throw std::runtime_error("ERROR: aggregations_with_groupby_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -304,7 +304,7 @@ std::unique_ptr<ral::frame::BlazingTable> aggregations_with_groupby_functor::ope
     std::vector<std::string> aggregation_column_assigned_aliases,
     std::vector<int> group_column_indices) const
 {
-  throw std::runtime_error("ERROR: BlazingSQL doesn't support this Arrow operator yet.");
+  throw std::runtime_error("ERROR: aggregations_with_groupby_functor BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
