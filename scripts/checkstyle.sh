@@ -12,13 +12,13 @@ function hasArg {
 function dependencies() {
     if ! which flake8 > /dev/null 2>&1; then
         echo -e "Installing flake8"
-        pip install flake8
+        pip install -q flake8
     elif ! which black > /dev/null 2>&1; then
         echo -e "Installing black"
-        pip install black
+        pip install -q black
     elif ! which clang-format > /dev/null 2>&1; then
         echo -e "Installing clang-format-8"
-        pip install clang-format==8.0.1
+        pip install -q clang-format==8.0.1
     fi
 }
 
