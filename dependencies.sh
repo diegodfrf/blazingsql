@@ -25,8 +25,8 @@ BOLDGREEN="\e[1;${GREEN}"
 ITALICRED="\e[3;${RED}"
 ENDCOLOR="\e[0m"
 
-RAPIDS_VERSION=""
-CUDA_VERSION=""
+RAPIDS_VERSION="21.06"
+CUDA_VERSION="11.0"
 CHANNEL=""
 
 function hasArg {
@@ -71,7 +71,7 @@ fi
 
 if [ "$RAPIDS_VERSION" ] && [ "$CUDA_VERSION" ]; then
   echo -e "${GREEN}Installing build dependencies${ENDCOLOR}"
-  conda install --yes -c conda-forge spdlog'>=1.7.0,<2.0.0a0' google-cloud-cpp=1.25 ninja mysql-connector-cpp=8.0.23 libpq=13 nlohmann_json=3.9.1 unixodbc=2.3.9
+  conda install --yes -c conda-forge spdlog'>=1.8.5,<2.0.0a0' google-cloud-cpp=1.25 ninja mysql-connector-cpp=8.0.23 libpq=13 nlohmann_json=3.9.1 unixodbc=2.3.9
   # NOTE cython must be the same of cudf (for 0.11 and 0.12 cython is >=0.29,<0.30)
   conda install --yes -c conda-forge cmake=3.18 gtest==1.10.0=h0efe328_4 gmock cppzmq cython=0.29 openjdk=8.0 maven jpype1 netifaces pyhive pytest tqdm ipywidgets boost-cpp=1.76.0
 
@@ -82,7 +82,7 @@ fi
 if hasArg all || hasArg e2e; then
   echo -e "${GREEN}Install E2E test dependencies${ENDCOLOR}"
   conda install --yes -c conda-forge openjdk=8.0 maven pyspark=3.0.0 pytest
-  pip install pydrill openpyxl pymysql gitpython pynvml gspread oauth2client docker
+  pip install pydrill openpyxl pymysql gitpython pynvml gspread oauth2client docker 'sql-metadata==1.12.0' pyyaml
 fi
 
 if hasArg all || hasArg mysql; then
