@@ -130,5 +130,10 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataLocalFile::decache(execution:
 	}
 }
 
+std::unique_ptr<CacheData> CacheDataLocalFile::clone() {
+	//Todo clone implementation
+	throw std::runtime_error("CacheDataLocalFile::clone not implemented");
+}
+
 } // namespace cache
 } // namespace ral

@@ -43,7 +43,9 @@ public:
 
     void setPartitionId(const size_t &part_id) ;
 
-    size_t get_part_id() ;
+    size_t get_part_id();
+
+    std::unique_ptr<BlazingHostTable> clone();
 
     const std::vector<ColumnTransport> & get_columns_offsets() const ;
 
@@ -58,7 +60,7 @@ private:
     std::vector<ColumnTransport> columns_offsets;
     std::vector<ral::memory::blazing_chunked_column_info> chunked_column_infos;
     std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>> allocations;
-    size_t part_id;    
+    size_t part_id;
 };
 
 }  // namespace frame

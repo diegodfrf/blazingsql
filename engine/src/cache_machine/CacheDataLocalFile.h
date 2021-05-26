@@ -55,6 +55,8 @@ public:
 		this->col_names = names;
 	}
 
+	std::unique_ptr<CacheData> clone() override;
+
 	/**
 	* Destructor
 	*/

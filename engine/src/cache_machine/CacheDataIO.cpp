@@ -108,6 +108,11 @@ void CacheDataIO::set_names(const std::vector<std::string> & names) {
 	this->schema.set_names(names);
 }
 
+std::unique_ptr<CacheData> CacheDataIO::clone() {
+	//Todo clone implementation
+	throw std::runtime_error("CacheDataIO::clone not implemented");
+}
+
 ral::io::DataType CacheDataIO::GetParserType() {
 	return this->parser->type();
 }

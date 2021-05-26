@@ -55,6 +55,8 @@ public:
 	*/
 	void set_names(const std::vector<std::string> & names) override;
 
+	std::unique_ptr<CacheData> clone() override;
+
 	/**
 	* Destructor
 	*/
