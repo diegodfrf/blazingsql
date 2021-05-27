@@ -56,7 +56,6 @@ public:
   void set_column_names(const std::vector<std::string> & column_names) override;
   unsigned long long size_in_bytes() const override;
   std::unique_ptr<BlazingTable> clone() const override;
-  std::unique_ptr<BlazingArrowTable> clone();
   std::shared_ptr<arrow::Table> view() const { return this->arrow_table; };
 
 protected:
@@ -76,7 +75,6 @@ public:
   void set_column_names(const std::vector<std::string> & column_names) { return BlazingArrowTableView::set_column_names(column_names); }
   unsigned long long size_in_bytes() const override { return BlazingArrowTableView::size_in_bytes(); }
   std::unique_ptr<BlazingTable> clone() const override;
-  std::unique_ptr<BlazingArrowTable> clone();
   std::shared_ptr<BlazingTableView> to_table_view() const override;
   std::shared_ptr<BlazingArrowTableView> to_table_view();
 };
@@ -103,7 +101,6 @@ public:
   void set_column_names(const std::vector<std::string> & column_names) override;
   unsigned long long size_in_bytes() const override;
   std::unique_ptr<BlazingTable> clone() const override;
-  std::unique_ptr<BlazingCudfTable> clone();
   cudf::table_view view() const;
 
 private:
@@ -129,7 +126,6 @@ public:
   void set_column_names(const std::vector<std::string> & column_names) override;
   unsigned long long size_in_bytes() const override;
   std::unique_ptr<BlazingTable> clone() const override;
-  std::unique_ptr<BlazingCudfTable> clone();
 	cudf::table_view view() const;
 	std::shared_ptr<ral::frame::BlazingTableView> to_table_view() const override;
   std::shared_ptr<BlazingCudfTableView> to_table_view();

@@ -46,7 +46,8 @@ void ArrowCacheData::set_names(const std::vector<std::string> & names) {
 }
 
 std::unique_ptr<CacheData> ArrowCacheData::clone() {
-  return std::make_unique<ArrowCacheData>(this->data_->clone());
+  // TODO percy arrow
+  //return std::make_unique<ArrowCacheData>(this->data_->clone());
 }
 
 ArrowCacheData::~ArrowCacheData() {}
