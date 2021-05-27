@@ -97,43 +97,6 @@ struct upper_bound_split_functor {
   }
 };
 
-template <>
-inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
-    std::shared_ptr<ral::frame::BlazingTableView> t,
-    std::shared_ptr<ral::frame::BlazingTableView> values,
-    std::vector<cudf::order> const& column_order,
-    std::vector<cudf::null_order> const& null_precedence) const
-{
-  // TODO percy arrow
-  //return nullptr;
-  throw std::runtime_error("ERROR: upper_bound_split_functor BlazingSQL doesn't support this Arrow operator yet.");
-}
-
-template <>
-inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
-    std::shared_ptr<ral::frame::BlazingTableView> t,
-    std::shared_ptr<ral::frame::BlazingTableView> values,
-    std::vector<cudf::order> const& column_order,
-    std::vector<cudf::null_order> const& null_precedence) const
-{
-  auto sortedTable = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(sortedTable_view);
-  auto columns_to_search = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(t);  
-  auto partitionPlan = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(values);  
-
-  auto pivot_indexes = cudf::upper_bound(columns_to_search->view(), partitionPlan->view(), column_order, null_precedence);
-	std::vector<cudf::size_type> split_indexes = ral::utilities::column_to_vector<cudf::size_type>(pivot_indexes->view());
-  auto tbs = cudf::split(sortedTable->view(), split_indexes);
-  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
-  for (auto tb : tbs) {
-    ret.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(tb, sortedTable_view->column_names()));
-  }
-  return ret;
-}
-
 
 
 
