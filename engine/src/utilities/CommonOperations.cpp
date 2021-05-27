@@ -148,7 +148,125 @@ void normalize_types(std::unique_ptr<ral::frame::BlazingArrowTable> & table,  co
 }  // namespace utilities
 }  // namespace cpu
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/////////// functors
+
+
+std::pair<std::shared_ptr<arrow::Table>, std::vector<cudf::size_type>>
+split_arrow(std::shared_ptr<arrow::Table> table_View,
+            std::vector<cudf::size_type> const& columns_to_hash,
+            int num_partitions)
+{
+  
+}
+
+template <>
+inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
+split_functor::operator()<ral::frame::BlazingArrowTable>(    
+    std::shared_ptr<ral::frame::BlazingTableView> table_View,
+    std::vector<cudf::size_type> const& splits) const
+{
+  /*
+  * input:   [{10, 12, 14, 16, 18, 20, 22, 24, 26, 28},
+  *           {50, 52, 54, 56, 58, 60, 62, 64, 66, 68}]
+  * splits:  {2, 5, 9}
+  * output:  [{{10, 12}, {14, 16, 18}, {20, 22, 24, 26}, {28}},
+  *           {{50, 52}, {54, 56, 58}, {60, 62, 64, 66}, {68}}]
+  */
+
+//  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> result{};
+//  if (table_View.num_columns() == 0) { return result; }
+  
+  throw std::runtime_error("ERROR: split_functor BlazingSQL doesn't support this Arrow operator yet.");
+}
+
+template <>
+inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
+split_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_View,
+    std::vector<cudf::size_type> const& splits) const
+{
+  auto cudf_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_View);
+  std::vector<std::string> names;
+  auto tbs = cudf::split(cudf_view->view(), splits);
+  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
+  for (auto tb : tbs) {
+    ret.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(tb, cudf_view->column_names()));
+  }
+  return ret;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 namespace utilities {
+
+
+
+
+
+
+
+
+
 
 bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::unique_ptr<ral::frame::BlazingTable>> & tables) {
 	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> tables_to_concat(tables.size());
