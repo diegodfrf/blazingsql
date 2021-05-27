@@ -268,7 +268,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral:
   std::vector<int> samples_indexes_raw;
   std::sample(population.begin(),
               population.end(),
-              samples_indexes_raw.begin(),
+              std::back_inserter(samples_indexes_raw),
               num_samples,
               rd);
   auto int_builder = std::make_unique<arrow::Int32Builder>();
@@ -323,6 +323,8 @@ template <>
 inline bool checkIfConcatenatingStringsWillOverflow_functor::operator()<ral::frame::BlazingArrowTable>(
     const std::vector<std::shared_ptr<ral::frame::BlazingTableView>> & tables) const
 {
+  return false;
+  // TODO percy arrow implement size
   // this check is only relevant to Cudf
   throw std::runtime_error("ERROR: checkIfConcatenatingStringsWillOverflow_functor BlazingSQL doesn't support this Arrow operator yet.");
   return false;

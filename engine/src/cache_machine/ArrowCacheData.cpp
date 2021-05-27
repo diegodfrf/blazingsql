@@ -46,8 +46,7 @@ void ArrowCacheData::set_names(const std::vector<std::string> & names) {
 }
 
 std::unique_ptr<CacheData> ArrowCacheData::clone() {
-  //Todo clone implementation
-  throw std::runtime_error("ArrowCacheData::clone not implemented");
+  return std::make_unique<ArrowCacheData>(this->data_->clone());
 }
 
 ArrowCacheData::~ArrowCacheData() {}
