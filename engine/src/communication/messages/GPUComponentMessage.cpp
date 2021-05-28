@@ -156,7 +156,7 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_tabl
 
 template <class DataType>
 void AllocateDataSize(const std::shared_ptr<arrow::Array> & arrayColumn,
-	char ** const data_,
+	std::unique_ptr<char[]> & data_,
 	std::size_t * const columnSize_) {
 	static_assert(std::is_base_of_v<arrow::DataType, DataType>);
 	using ArrayType = arrow::NumericArray<DataType>;
@@ -168,166 +168,173 @@ void AllocateDataSize(const std::shared_ptr<arrow::Array> & arrayColumn,
 	const value_type * raw_values = numericArray->raw_values();
 	const std::size_t length = numericArray->length();
 
-	value_type * data = new value_type[length];
-	std::copy_n(raw_values, length, data);
+	std::unique_ptr<value_type[]> data = std::make_unique<value_type[]>(length);
+	std::copy_n(raw_values, length, data.get());
 
-	*data_ = reinterpret_cast<char *>(data);
+	data_.reset(reinterpret_cast<char *>(data.release()));
 	*columnSize_ = length * sizeof(value_type);
 }
 
-std::unique_ptr<ral::frame::BlazingHostTable> serialize_arrow_message_to_host_table(std::shared_ptr<ral::frame::BlazingArrowTableView> table_view, bool use_pinned) {
+std::unique_ptr<ral::frame::BlazingHostTable>
+serialize_arrow_message_to_host_table(
+	std::shared_ptr<ral::frame::BlazingArrowTableView> table_view,
+	bool use_pinned) {
 	std::shared_ptr<arrow::Table> table = table_view->view();
 	std::shared_ptr<arrow::Schema> schema = table->schema();
 
-  // create column transports from schema
+	// create column transports from schema
 	const std::size_t columnLength = schema->num_fields();
 
-  // arguments for blazing host table creation
+	// arguments for blazing host table creation
 	std::vector<blazingdb::transport::ColumnTransport> columnTransports;
 	std::vector<ral::memory::blazing_chunked_column_info> chunkedColumnInfos;
 	std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>>
 		allocationChunks;
 
-  columnTransports.reserve(columnLength);
-  chunkedColumnInfos.reserve(columnLength);
-  allocationChunks.reserve(columnLength);
+	columnTransports.reserve(columnLength);
+	chunkedColumnInfos.reserve(columnLength);
+	allocationChunks.reserve(columnLength);
 
-  // get info from arrow columns to host table
-  static std::unordered_map<arrow::Type::type, cudf::type_id> typeMap{
-	  {arrow::Type::type::INT8, cudf::type_id::INT8},
-	  {arrow::Type::type::INT16, cudf::type_id::INT16},
-	  {arrow::Type::type::INT32, cudf::type_id::INT32},
-	  {arrow::Type::type::INT64, cudf::type_id::INT64},
-	  {arrow::Type::type::FLOAT, cudf::type_id::FLOAT32},
-	  {arrow::Type::type::DOUBLE, cudf::type_id::FLOAT64},
-	  {arrow::Type::type::UINT8, cudf::type_id::UINT8},
-	  {arrow::Type::type::UINT16, cudf::type_id::UINT16},
-	  {arrow::Type::type::UINT32, cudf::type_id::UINT32},
-	  {arrow::Type::type::UINT64, cudf::type_id::UINT64}};
+	// get info from arrow columns to host table
+	static std::unordered_map<arrow::Type::type, cudf::type_id> typeMap{
+		{arrow::Type::type::INT8, cudf::type_id::INT8},
+		{arrow::Type::type::INT16, cudf::type_id::INT16},
+		{arrow::Type::type::INT32, cudf::type_id::INT32},
+		{arrow::Type::type::INT64, cudf::type_id::INT64},
+		{arrow::Type::type::FLOAT, cudf::type_id::FLOAT32},
+		{arrow::Type::type::DOUBLE, cudf::type_id::FLOAT64},
+		{arrow::Type::type::UINT8, cudf::type_id::UINT8},
+		{arrow::Type::type::UINT16, cudf::type_id::UINT16},
+		{arrow::Type::type::UINT32, cudf::type_id::UINT32},
+		{arrow::Type::type::UINT64, cudf::type_id::UINT64}};
 
-  std::vector<std::shared_ptr<arrow::Field>> fields = schema->fields();
-  std::vector<std::shared_ptr<arrow::ChunkedArray>> columns = table->columns();
+	std::vector<std::shared_ptr<arrow::Field>> fields = schema->fields();
+	std::vector<std::shared_ptr<arrow::ChunkedArray>> columns =
+		table->columns();
 
-  std::vector<std::pair<std::shared_ptr<arrow::Field>,
-	  std::shared_ptr<arrow::ChunkedArray>>>
-	  arrowColumnInfos;
-  arrowColumnInfos.reserve(columnLength);
-  std::transform(fields.cbegin(),
-	  fields.cend(),
-	  columns.cbegin(),
-	  std::back_inserter(arrowColumnInfos),
-	  std::make_pair<const std::shared_ptr<arrow::Field> &,
-		  const std::shared_ptr<arrow::ChunkedArray> &>);
+	std::vector<std::pair<std::shared_ptr<arrow::Field>,
+		std::shared_ptr<arrow::ChunkedArray>>>
+		arrowColumnInfos;
+	arrowColumnInfos.reserve(columnLength);
+	std::transform(fields.cbegin(),
+		fields.cend(),
+		columns.cbegin(),
+		std::back_inserter(arrowColumnInfos),
+		std::make_pair<const std::shared_ptr<arrow::Field> &,
+			const std::shared_ptr<arrow::ChunkedArray> &>);
 
-  std::shared_ptr<ral::memory::allocation_pool> pool =
-	  use_pinned ? ral::memory::buffer_providers::get_pinned_buffer_provider()
-				 : ral::memory::buffer_providers::get_host_buffer_provider();
+	std::shared_ptr<ral::memory::allocation_pool> pool =
+		use_pinned ? ral::memory::buffer_providers::get_pinned_buffer_provider()
+				   : ral::memory::buffer_providers::get_host_buffer_provider();
 
-  std::size_t chunkIndex = 0;
+	std::size_t chunkIndex = 0;
 
-  std::for_each(arrowColumnInfos.cbegin(),
-	  arrowColumnInfos.cend(),
-	  [&columnTransports,
-		  &chunkedColumnInfos,
-		  &allocationChunks,
-		  &pool,
-		  &chunkIndex](const std::pair<std::shared_ptr<arrow::Field>,
-		  std::shared_ptr<arrow::ChunkedArray>> & arrowColumnInfoPair) mutable {
-		  std::shared_ptr<arrow::Field> field;
-		  std::shared_ptr<arrow::ChunkedArray> chunkedArray;
-		  std::tie(field, chunkedArray) = arrowColumnInfoPair;
+	std::for_each(arrowColumnInfos.cbegin(),
+		arrowColumnInfos.cend(),
+		[&columnTransports,
+			&chunkedColumnInfos,
+			&allocationChunks,
+			&pool,
+			&chunkIndex](const std::pair<std::shared_ptr<arrow::Field>,
+			std::shared_ptr<arrow::ChunkedArray>> &
+				arrowColumnInfoPair) mutable {
+			std::shared_ptr<arrow::Field> field;
+			std::shared_ptr<arrow::ChunkedArray> chunkedArray;
+			std::tie(field, chunkedArray) = arrowColumnInfoPair;
 
-		  arrow::Type::type arrowTypeId = field->type()->id();
-		  cudf::type_id type_id = typeMap.at(arrowTypeId);
+			arrow::Type::type arrowTypeId = field->type()->id();
+			cudf::type_id type_id = typeMap.at(arrowTypeId);
 
-		  std::shared_ptr<arrow::Array> arrayColumn = *arrow::Concatenate(
-			  chunkedArray->chunks(), arrow::default_memory_pool());
+			std::shared_ptr<arrow::Array> arrayColumn = *arrow::Concatenate(
+				chunkedArray->chunks(), arrow::default_memory_pool());
 
-		  // column transport construction
-		  blazingdb::transport::ColumnTransport::MetaData metadata;
-		  metadata.size = arrayColumn->length();
-		  metadata.null_count = arrayColumn->null_count();
-		  metadata.dtype =
-			  static_cast<std::underlying_type_t<cudf::type_id>>(type_id);
+			// column transport construction
+			blazingdb::transport::ColumnTransport::MetaData metadata;
+			metadata.size = arrayColumn->length();
+			metadata.null_count = arrayColumn->null_count();
+			metadata.dtype =
+				static_cast<std::underlying_type_t<cudf::type_id>>(type_id);
 
-		  const std::string & fieldName = field->name();
-		  bzero(metadata.col_name,
-			  sizeof(
-				  blazingdb::transport::ColumnTransport::MetaData::col_name));
-		  std::strcpy(metadata.col_name, fieldName.c_str());
+			const std::string & fieldName = field->name();
+			bzero(metadata.col_name,
+				sizeof(
+					blazingdb::transport::ColumnTransport::MetaData::col_name));
+			std::strcpy(metadata.col_name, fieldName.c_str());
 
-		  blazingdb::transport::ColumnTransport columnTransport;
-		  columnTransport.metadata = metadata;
-		  columnTransport.strings_data = -1;
-		  columnTransport.valid = -1;
-		  columnTransport.data = chunkIndex;
-		  columnTransports.push_back(columnTransport);
+			blazingdb::transport::ColumnTransport columnTransport;
+			columnTransport.metadata = metadata;
+			columnTransport.strings_data = -1;
+			columnTransport.valid = -1;
+			columnTransport.data = chunkIndex;
+			columnTransports.push_back(columnTransport);
 
-		  // chunked columns construction
-		  std::size_t columnSize;
-		  char * data;
+			// chunked columns construction
+			std::size_t columnSize;
+			std::unique_ptr<char[]> data;
 
-		  switch (arrowTypeId) {
-		  case arrow::Type::type::INT8:
-			  AllocateDataSize<arrow::Int8Type>(
-				  arrayColumn, &data, &columnSize);
-			  break;
-		  case arrow::Type::type::INT16:
-			  AllocateDataSize<arrow::Int16Type>(
-				  arrayColumn, &data, &columnSize);
-			  break;
-		  case arrow::Type::type::INT32:
-			  AllocateDataSize<arrow::Int32Type>(
-				  arrayColumn, &data, &columnSize);
-			  break;
-		  case arrow::Type::type::INT64:
-			  AllocateDataSize<arrow::Int64Type>(
-				  arrayColumn, &data, &columnSize);
-			  break;
-		  default: throw std::runtime_error{"unsupported arrow type "};
-		  }
+			switch (arrowTypeId) {
+			case arrow::Type::type::INT8:
+				AllocateDataSize<arrow::Int8Type>(
+					arrayColumn, data, &columnSize);
+				break;
+			case arrow::Type::type::INT16:
+				AllocateDataSize<arrow::Int16Type>(
+					arrayColumn, data, &columnSize);
+				break;
+			case arrow::Type::type::INT32:
+				AllocateDataSize<arrow::Int32Type>(
+					arrayColumn, data, &columnSize);
+				break;
+			case arrow::Type::type::INT64:
+				AllocateDataSize<arrow::Int64Type>(
+					arrayColumn, data, &columnSize);
+				break;
+			default: throw std::runtime_error{"unsupported arrow type "};
+			}
 
-		  std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>>
-			  allocationChunks;
-		  ral::memory::blazing_chunked_column_info chunkedColumnInfo;
-		  std::size_t allocationSize = 0;
-		  std::size_t chunkOffset = 0;
+			std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>>
+				allocationChunks;
+			ral::memory::blazing_chunked_column_info chunkedColumnInfo;
+			std::size_t allocationSize = 0;
+			std::size_t chunkOffset = 0;
 
-		  chunkedColumnInfo.use_size = columnSize;
+			chunkedColumnInfo.use_size = columnSize;
 
-		  while (allocationSize < columnSize) {
-			  std::unique_ptr<ral::memory::blazing_allocation_chunk>
-				  allocationChunk = pool->get_chunk();
+			while (allocationSize < columnSize) {
+				std::unique_ptr<ral::memory::blazing_allocation_chunk>
+					allocationChunk = pool->get_chunk();
 
-			  char * allocationChunkData = allocationChunk->data;
-			  const std::size_t allocationChunkSize = allocationChunk->size;
-			  allocationSize += allocationChunkSize;
+				char * allocationChunkData = allocationChunk->data;
+				const std::size_t allocationChunkSize = allocationChunk->size;
+				allocationSize += allocationChunkSize;
 
-			  const std::size_t dataChunkSize =
-				  std::min(columnSize, allocationChunkSize);
+				const std::size_t dataChunkSize =
+					std::min(columnSize, allocationChunkSize);
 
-			  char * allocationChunkTail = std::copy_n(
-				  data + chunkOffset, dataChunkSize, allocationChunkData);
-			  const std::size_t chunkSize =
-				  std::distance(allocationChunkData, allocationChunkTail);
+				char * allocationChunkTail =
+					std::copy_n(data.get() + chunkOffset,
+						dataChunkSize,
+						allocationChunkData);
+				const std::size_t chunkSize =
+					std::distance(allocationChunkData, allocationChunkTail);
 
-			  allocationChunks.emplace_back(std::move(allocationChunk));
+				allocationChunks.emplace_back(std::move(allocationChunk));
 
-			  chunkedColumnInfo.chunk_index.emplace_back(chunkIndex++);
-			  chunkedColumnInfo.offset.emplace_back(chunkOffset);
-			  chunkedColumnInfo.size.emplace_back(chunkSize);
+				chunkedColumnInfo.chunk_index.emplace_back(chunkIndex++);
+				chunkedColumnInfo.offset.emplace_back(chunkOffset);
+				chunkedColumnInfo.size.emplace_back(chunkSize);
 
-			  chunkOffset += chunkSize;
-		  }
-		  chunkedColumnInfos.push_back(chunkedColumnInfo);
-	  });
+				chunkOffset += chunkSize;
+			}
+			chunkedColumnInfos.push_back(chunkedColumnInfo);
+		});
 
-  std::unique_ptr<ral::frame::BlazingHostTable> blazingHostTable =
-	  std::make_unique<ral::frame::BlazingHostTable>(columnTransports,
-		  std::move(chunkedColumnInfos),
-		  std::move(allocationChunks));
+	std::unique_ptr<ral::frame::BlazingHostTable> blazingHostTable =
+		std::make_unique<ral::frame::BlazingHostTable>(columnTransports,
+			std::move(chunkedColumnInfos),
+			std::move(allocationChunks));
 
-  return blazingHostTable;
+	return blazingHostTable;
 }
 
 std::unique_ptr<ral::frame::BlazingCudfTable> deserialize_from_gpu_raw_buffers(const std::vector<ColumnTransport> & columns_offsets,

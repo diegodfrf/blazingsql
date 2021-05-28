@@ -76,6 +76,10 @@ MakeArrayBuilderField(
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::UInt64Builder>()),
 			arrow::field(columnName, arrow::uint64()));
+	case cudf::type_id::STRING:
+		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
+								   std::make_unique<arrow::StringBuilder>()),
+			arrow::field(columnName, arrow::utf8()));
 	default:
 		throw std::runtime_error{
 			"Unsupported column cudf type id for array builder"};
