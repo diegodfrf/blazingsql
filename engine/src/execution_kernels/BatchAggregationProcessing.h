@@ -45,6 +45,9 @@ public:
 
     virtual kstatus run();
 
+    std::vector<std::shared_ptr<ral::frame::BlazingTableView>> prepare_partitions(std::shared_ptr<ral::frame::BlazingTableView> input,
+                                                                                                            int num_partitions,
+                                                                                  std::unique_ptr<ral::frame::BlazingTable> &hashed_data);
 private:
     std::vector<int> group_column_indices;
     std::vector<std::string> aggregation_input_expressions, aggregation_column_assigned_aliases; // not used in this kernel

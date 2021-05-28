@@ -13,6 +13,7 @@
 #include <cudf/aggregation.hpp>
 #include <cudf/reduction.hpp>
 #include <cudf/detail/interop.hpp>
+#include "utilities/DebuggingUtils.h"
 
 namespace ral {
 namespace cpu {
@@ -435,16 +436,15 @@ std::pair<bool, uint64_t> ComputeAggregateKernel::get_estimated_output_num_rows(
 // END ComputeAggregateKernel
 
 
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>> prepare_partitions(std::shared_ptr<ral::frame::BlazingTableView> table_view,
+std::vector<std::shared_ptr<ral::frame::BlazingTableView>> DistributeAggregateKernel::prepare_partitions(std::shared_ptr<ral::frame::BlazingTableView> table_view,
                                                                                                         int num_partitions,
-                                                                              std::vector<cudf::size_type> columns_to_hash)
+                                                                                                         std::unique_ptr<ral::frame::BlazingTable> &hashed_data)
 {
     std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitioned;
-    std::unique_ptr<ral::frame::BlazingTable> hashed_data; // Keep table alive in this scope
     if (table_view->num_rows() > 0) {
         std::vector<cudf::size_type> hashed_data_offsets;
         std::tie(hashed_data, hashed_data_offsets) = ral::execution::backend_dispatcher(table_view->get_execution_backend(),
-                                                                                       hash_partition_functor(), table_view, columns_to_hash, num_partitions);
+                                                                                       hash_partition_functor(), table_view, this->columns_to_hash, num_partitions);
         
         // the offsets returned by hash_partition will always start at 0, which is a value we want to ignore for cudf::split
         std::vector<cudf::size_type> split_indexes(hashed_data_offsets.begin() + 1, hashed_data_offsets.end());
@@ -518,7 +518,19 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
     } else {
 
         try{
-            auto partitions = prepare_partitions(input->to_table_view(), num_partitions, this->columns_to_hash);
+            auto tvv = input->to_table_view();
+            
+            std::cout << "NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO IMPUT\n";
+            ral::utilities::print_blazing_cudf_table_view(tvv);
+            
+            std::unique_ptr<ral::frame::BlazingTable> hashed_data; // Keep table alive in this scope
+            
+            auto partitions = this->prepare_partitions(tvv, num_partitions, hashed_data);
+            
+            std::cout << "NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n";
+            for (auto t : partitions) {
+              ral::utilities::print_blazing_cudf_table_view(t);
+            }
 
             scatter(partitions,
                 output.get(),
