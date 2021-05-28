@@ -2,9 +2,10 @@
 #include "bmr/BlazingMemoryResource.h"
 #include "bmr/BufferProvider.h"
 #include "communication/CommunicationInterface/serializer.hpp"
+#include "cudf/types.hpp"
+#include <arrow/array/builder_binary.h>
 #include <arrow/array/builder_primitive.h>
 #include <arrow/table.h>
-#include "cudf/types.hpp"
 
 
 using namespace fmt::literals;
