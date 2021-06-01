@@ -42,7 +42,6 @@ struct select_functor {
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
       const std::vector<int> & sortColIndices) const
   {
-    // TODO percy arrow thrown error
     return nullptr;
   }
 };
@@ -91,8 +90,6 @@ struct upper_bound_split_functor {
       std::vector<cudf::order> const& column_order,
       std::vector<cudf::null_order> const& null_precedence) const
   {
-    // TODO percy arrow thrown error
-    //return nullptr;
     throw std::runtime_error("ERROR: upper_bound_split_functor This default dispatcher operator should not be called.");
   }
 };
@@ -119,7 +116,6 @@ struct sorted_order_gather_functor {
       const std::vector<cudf::order> & sortOrderTypes,
       std::vector<cudf::null_order> null_orders) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: sorted_order_gather_functor This default dispatcher operator should not be called.");
     return nullptr;
   }

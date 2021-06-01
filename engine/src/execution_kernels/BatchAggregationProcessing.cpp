@@ -219,7 +219,6 @@ struct groupby_without_aggregations_functor {
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
       std::vector<int> group_column_indices) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: groupby_without_aggregations_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -254,7 +253,6 @@ struct aggregations_without_groupby_functor {
       std::vector<AggregateKind> aggregation_types,
       std::vector<std::string> aggregation_column_assigned_aliases) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: aggregations_without_groupby_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -291,7 +289,6 @@ struct aggregations_with_groupby_functor {
       std::vector<std::string> aggregation_column_assigned_aliases,
       std::vector<int> group_column_indices) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: aggregations_with_groupby_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -520,14 +517,12 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
         try{
             auto tvv = input->to_table_view();
             
-            std::cout << "NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO IMPUT\n";
             ral::utilities::print_blazing_cudf_table_view(tvv);
             
             std::unique_ptr<ral::frame::BlazingTable> hashed_data; // Keep table alive in this scope
             
             auto partitions = this->prepare_partitions(tvv, num_partitions, hashed_data);
             
-            std::cout << "NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n";
             for (auto t : partitions) {
               ral::utilities::print_blazing_cudf_table_view(t);
             }

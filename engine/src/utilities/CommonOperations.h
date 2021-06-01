@@ -133,7 +133,6 @@ struct create_empty_table_like_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: create_empty_table_like_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -165,7 +164,6 @@ struct create_empty_table_functor {
       const std::vector<std::string> &column_names,
 	    const std::vector<cudf::data_type> &dtypes) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: create_empty_table_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -197,7 +195,6 @@ struct from_table_view_to_table_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: from_table_view_to_table_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -248,7 +245,6 @@ struct sample_functor {
       std::vector<std::string> sortColNames,
       std::vector<int> sortColIndices) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: sample_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -313,7 +309,6 @@ struct checkIfConcatenatingStringsWillOverflow_functor {
   template <typename T>
   bool operator()(const std::vector<std::shared_ptr<ral::frame::BlazingTableView>> & tables) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: checkIfConcatenatingStringsWillOverflow_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -371,7 +366,6 @@ struct concat_functor {
       size_t empty_count,
       std::vector<std::string> names) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: concat_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -393,10 +387,6 @@ inline std::unique_ptr<ral::frame::BlazingTable> concat_functor::operator()<ral:
   }
 
   std::shared_ptr<arrow::Table> concatenated_tables = arrow::ConcatenateTables(arrow_tables_to_concat).ValueOrDie();
-  
-  std::cout << "------->>>>>>>>>>AROW CONCAT: \n" << "\t" << concatenated_tables->ToString() << "\n\n";
-  std::cout << "FINDELGATO!!!!\n\n"; 
-  
   return std::make_unique<ral::frame::BlazingArrowTable>(concatenated_tables);
 }
 
@@ -441,8 +431,6 @@ struct split_functor {
       std::shared_ptr<ral::frame::BlazingTableView> table_View,
       std::vector<cudf::size_type> const& splits) const
   {
-    // TODO percy arrow thrown error
-    //return nullptr;
     throw std::runtime_error("ERROR: split_functor This default dispatcher operator should not be called.");
   }
 };
@@ -574,8 +562,6 @@ struct normalize_types_functor {
       const std::vector<cudf::data_type> & types,
       std::vector<cudf::size_type> column_indices) const
   {
-    // TODO percy arrow thrown error
-    //return nullptr;
     throw std::runtime_error("ERROR: normalize_types_functor This default dispatcher operator should not be called.");
   }
 };
@@ -587,8 +573,6 @@ normalize_types_functor::operator()<ral::frame::BlazingArrowTable>(
     const std::vector<cudf::data_type> & types,
     std::vector<cudf::size_type> column_indices) const
 {
-  // TODO percy arrow
-  //return std::make_pair(nullptr, {});
   throw std::runtime_error("ERROR: normalize_types_functor BlazingSQL doesn't support this Arrow operator yet.");
 }
 
@@ -625,8 +609,6 @@ struct hash_partition_functor {
       std::vector<cudf::size_type> const& columns_to_hash,
       int num_partitions) const
   {
-    // TODO percy arrow thrown error
-    //return nullptr;
     throw std::runtime_error("ERROR: hash_partition_functor This default dispatcher operator should not be called.");
   }
 };
@@ -638,8 +620,6 @@ hash_partition_functor::operator()<ral::frame::BlazingArrowTable>(
     std::vector<cudf::size_type> const& columns_to_hash,
     int num_partitions) const
 {
-  // TODO percy arrow
-  //return std::make_pair(nullptr, {});
   throw std::runtime_error("ERROR: hash_partition_functor BlazingSQL doesn't support this Arrow operator yet.");
 }
 

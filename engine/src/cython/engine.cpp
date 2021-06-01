@@ -298,11 +298,6 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
       assert(cudf_table != nullptr);
       result->tables.emplace_back(std::make_unique<ResultTable>(cudf_table->releaseCudfTable()));
     }
-
-    if (is_arrow) {
-      std::cout << "ASDASDAAAAAAAAAAAAAAAAAAAAAAAAAA \n\n" << arrow_table->view()->ToString() << "\n\n";
-      std::cout << "LISTO!\n" << std::flush;
-    }
 	}
 
 	result->skipdata_analysis_fail = false;
