@@ -70,20 +70,21 @@ inline std::unique_ptr<ral::frame::BlazingCudfTable> applyBooleanFilter(
 struct build_only_schema {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view) const {
-    throw std::runtime_error("ERROR: build_only_schema BlazingSQL doesn't support this Arrow operator yet.");
+    throw std::runtime_error("ERROR: build_only_schema This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
 
 template <>
-inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingArrowTableView>(
+inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingArrowTable>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
+  throw std::runtime_error("ERROR: build_only_schema BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
 template <>
-inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingCudfTableView>(
+inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingCudfTable>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   auto *table_view_ptr = dynamic_cast<ral::frame::BlazingCudfTableView*>(table_view.get());
