@@ -23,7 +23,6 @@
 #include "parser/expression_utils.hpp"
 #include "execution_graph/executor.h"
 #include <cudf/types.hpp>
-#include <src/utilities/DebuggingUtils.h>
 #include "execution_kernels/LogicalFilter.h"
 #include "execution_kernels/LogicalProject.h"
 #include "io/data_provider/sql/AbstractSQLDataProvider.h"
