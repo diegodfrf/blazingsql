@@ -1,6 +1,6 @@
 #pragma once
 
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 #include "execution_kernels/BatchOrderByProcessing.h"
 #include "execution_kernels/BatchAggregationProcessing.h"
 #include "execution_kernels/BatchJoinProcessing.h"

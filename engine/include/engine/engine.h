@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include <execution_kernels/LogicPrimitives.h>
+#include "blazing_table/BlazingTableView.h"
 #include <execution_graph/graph.h>
 #include "../../src/utilities/error.hpp"
 

@@ -3,6 +3,7 @@
 #include "compute/cudf/detail/interops.h"
 
 #include "parser/expression_utils.hpp"
+#include "blazing_table/BlazingCudfTable.h"
 #include "parser/CalciteExpressionParsing.h"
 #include "utilities/CodeTimer.h"
 #include "distribution_utils/primitives.h"

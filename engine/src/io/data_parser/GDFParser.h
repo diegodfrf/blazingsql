@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 
 namespace ral {
 namespace io {

@@ -9,7 +9,8 @@
 #include <set>
 #include <arrow/table.h>
 #include <memory>
-#include <execution_kernels/LogicPrimitives.h>
+#include "blazing_table/BlazingTableView.h"
+#include "blazing_table/BlazingCudfTableView.h"
 #include "../../src/utilities/error.hpp"
 
 typedef ral::io::DataType DataType;

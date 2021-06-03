@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 #include "utilities/CommonOperations.h"
 #include <cudf/copying.hpp>
 #include <cudf/sorting.hpp>

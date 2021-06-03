@@ -3,7 +3,7 @@
 #include "execution_graph/Context.h"
 #include "communication/factory/MessageFactory.h"
 #include <vector>
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTableView.h"
 #include <cudf/merge.hpp>
 #include "cudf/detail/gather.hpp"
 
@@ -38,10 +38,6 @@ namespace distribution {
 		const std::vector<cudf::null_order> & sortOrderNulls);
 
 	std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_pivots, std::shared_ptr<BlazingTableView> sortedSamples);
-
-
-
-
 
 }  // namespace distribution
 }  // namespace ral

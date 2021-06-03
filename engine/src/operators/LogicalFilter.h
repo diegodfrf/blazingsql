@@ -1,11 +1,11 @@
 #pragma once
 
 #include <execution_graph/Context.h>
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 #include <arrow/compute/api.h>
+#include <arrow/table.h>
 
 namespace ral{
-
 namespace cpu {
 
 inline bool check_if_has_nulls(std::shared_ptr<arrow::Table> input, std::vector<cudf::size_type> const& keys){

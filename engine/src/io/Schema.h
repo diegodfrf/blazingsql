@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "cudf/types.hpp"
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingCudfTable.h"
 namespace ral {
 namespace io {
 

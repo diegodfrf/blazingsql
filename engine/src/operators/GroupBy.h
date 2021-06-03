@@ -5,7 +5,6 @@
 #include <vector>
 #include <tuple>
 
-#include "execution_kernels/LogicPrimitives.h"
 #include <cudf/aggregation.hpp>
 #include <cudf/groupby.hpp>
 #include <cudf/detail/aggregation/aggregation.hpp>

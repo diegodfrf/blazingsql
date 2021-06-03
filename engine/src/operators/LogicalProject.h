@@ -1,7 +1,7 @@
 #pragma once
 
 #include <execution_graph/Context.h>
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 #include "blazing_table/BlazingColumn.h"
 #include "compute/backend_dispatcher.h"
 #include <cudf/copying.hpp>

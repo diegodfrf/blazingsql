@@ -1,6 +1,6 @@
 #pragma once
 
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 #include <cudf/aggregation.hpp>
 #include "Util/StringUtil.h"
 #include <regex>

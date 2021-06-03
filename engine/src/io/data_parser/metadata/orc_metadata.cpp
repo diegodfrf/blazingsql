@@ -7,6 +7,7 @@
 #include <cudf/column/column_factories.hpp>
 #include <cudf/detail/utilities/vector_factories.hpp>
 #include <cudf/io/orc_metadata.hpp>
+#include "blazing_table/BlazingCudfTable.h"
 
 #include <numeric>
 

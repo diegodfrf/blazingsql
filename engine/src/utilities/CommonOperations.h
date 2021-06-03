@@ -2,7 +2,8 @@
 
 #include <string>
 #include <vector>
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
+#include "blazing_table/BlazingCudfTableView.h"
 #include "cudf/column/column_factories.hpp"
 #include <random>
 #include <arrow/scalar.h>

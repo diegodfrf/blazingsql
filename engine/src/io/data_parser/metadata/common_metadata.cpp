@@ -3,6 +3,7 @@
 
 #include "orc_metadata.h"
 #include "utilities/CommonOperations.h"
+#include "blazing_table/BlazingCudfTable.h"
 
 std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_names(std::vector<std::string> col_names) {
 	const int ncols = col_names.size();

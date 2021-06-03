@@ -13,7 +13,7 @@
 #include "cudf/types.hpp"
 #include "utilities/error.hpp"
 #include "utilities/CodeTimer.h"
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 #include "execution_graph/Context.h"
 #include <bmr/BlazingMemoryResource.h>
 #include "communication/CommunicationData.h"
@@ -200,6 +200,4 @@ std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::Blazin
 }
 
 }  // namespace cache
-
-
-} // namespace ral
+}  // namespace ral

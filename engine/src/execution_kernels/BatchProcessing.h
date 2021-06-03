@@ -7,7 +7,7 @@
 #include "io/Schema.h"
 #include "io/DataLoader.h"
 #include "execution_kernels/kernel.h"
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 
 #include "cache_machine/CacheDataIO.h"
 #include "cache_machine/ArrowCacheData.h"

@@ -2,6 +2,7 @@
 #define ORC_METADATA_H_
         
 #include "common_metadata.h"
+#include "blazing_table/BlazingTable.h"
 #include <cudf/io/orc_metadata.hpp>
 
 void set_min_max(

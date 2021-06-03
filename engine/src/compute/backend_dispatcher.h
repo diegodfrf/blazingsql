@@ -1,6 +1,7 @@
 #pragma once
 
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingCudfTable.h"
+#include "blazing_table/BlazingArrowTable.h"
 
 namespace ral{
 namespace execution {

@@ -9,6 +9,7 @@
 #include "ExceptionHandling/BlazingThread.h"
 #include "utilities/CommonOperations.h"
 #include <cudf/column/column_factories.hpp>
+#include "blazing_table/BlazingCudfTable.h"
 
 void set_min_max(
 	std::vector<std::vector<int64_t>> &minmax_metadata_table,

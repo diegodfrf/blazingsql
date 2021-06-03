@@ -29,7 +29,7 @@
 
 #include "compute/cudf/detail/interops.h"
 #include "utilities/error.hpp"
-
+#include "blazing_table/BlazingCudfTable.h"
 
 
 

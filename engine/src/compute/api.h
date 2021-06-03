@@ -1,6 +1,6 @@
 #pragma once
 
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 
 // TODO percy arrow delete all cudf related stuff
 #include <cudf/detail/rolling.hpp>
