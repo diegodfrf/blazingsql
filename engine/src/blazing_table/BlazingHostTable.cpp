@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "BlazingHostTable.h"
 #include "bmr/BlazingMemoryResource.h"
 #include "bmr/BufferProvider.h"
@@ -88,7 +90,7 @@ MakeArrayBuilderField(
 }
 
 template <class BuilderType>
-static inline void AppendNumericTypedValue(
+static inline void AppendNumericTypedValue(const std::size_t columnIndex,
 	std::unique_ptr<arrow::ArrayBuilder> & arrayBuilder,
 	const std::unique_ptr<ral::memory::blazing_allocation_chunk> & allocation,
 	const std::size_t offset) {
@@ -102,49 +104,53 @@ static inline void AppendNumericTypedValue(
 		BuilderType & builder = *static_cast<BuilderType *>(arrayBuilder.get());
 		arrow::Status status = builder.Append(data[i]);
 		if (!status.ok()) {
-			throw std::runtime_error{"Builder appending"};
+			std::ostringstream oss;
+			oss << "Error appending a numeric value to column index="
+				<< columnIndex << " with data position i=" << i
+				<< " for builder type " << builder.type()->name();
+			throw std::runtime_error{oss.str()};
 		}
 	}
 }
 
-static inline void AppendValues(
+static inline void AppendValues(const std::size_t columnIndex,
 	std::unique_ptr<arrow::ArrayBuilder> & arrayBuilder,
 	const blazingdb::transport::ColumnTransport & columnTransport,
 	const std::unique_ptr<ral::memory::blazing_allocation_chunk> & allocation,
-  const std::size_t offset) {
+	const std::size_t offset) {
 	const cudf::type_id type_id =
 		static_cast<cudf::type_id>(columnTransport.metadata.dtype);
 	switch (type_id) {
-  case cudf::type_id::INT8:
-    return AppendNumericTypedValue<arrow::Int8Builder>(
-      arrayBuilder, allocation, offset);
+	case cudf::type_id::INT8:
+		return AppendNumericTypedValue<arrow::Int8Builder>(
+			columnIndex, arrayBuilder, allocation, offset);
 	case cudf::type_id::INT16:
 		return AppendNumericTypedValue<arrow::Int16Builder>(
-			arrayBuilder, allocation, offset);
+			columnIndex, arrayBuilder, allocation, offset);
 	case cudf::type_id::INT32:
 		return AppendNumericTypedValue<arrow::Int32Builder>(
-			arrayBuilder, allocation, offset);
-  case cudf::type_id::INT64:
-    return AppendNumericTypedValue<arrow::Int64Builder>(
-      arrayBuilder, allocation, offset);
-  case cudf::type_id::FLOAT32:
-    return AppendNumericTypedValue<arrow::FloatBuilder>(
-      arrayBuilder, allocation, offset);
-  case cudf::type_id::FLOAT64:
-    return AppendNumericTypedValue<arrow::DoubleBuilder>(
-      arrayBuilder, allocation, offset);
-  case cudf::type_id::UINT8:
-    return AppendNumericTypedValue<arrow::UInt8Builder>(
-      arrayBuilder, allocation, offset);
-  case cudf::type_id::UINT16:
-    return AppendNumericTypedValue<arrow::UInt16Builder>(
-      arrayBuilder, allocation, offset);
-  case cudf::type_id::UINT32:
-    return AppendNumericTypedValue<arrow::UInt32Builder>(
-      arrayBuilder, allocation, offset);
-  case cudf::type_id::UINT64:
-    return AppendNumericTypedValue<arrow::UInt64Builder>(
-      arrayBuilder, allocation, offset);
+			columnIndex, arrayBuilder, allocation, offset);
+	case cudf::type_id::INT64:
+		return AppendNumericTypedValue<arrow::Int64Builder>(
+			columnIndex, arrayBuilder, allocation, offset);
+	case cudf::type_id::FLOAT32:
+		return AppendNumericTypedValue<arrow::FloatBuilder>(
+			columnIndex, arrayBuilder, allocation, offset);
+	case cudf::type_id::FLOAT64:
+		return AppendNumericTypedValue<arrow::DoubleBuilder>(
+			columnIndex, arrayBuilder, allocation, offset);
+	case cudf::type_id::UINT8:
+		return AppendNumericTypedValue<arrow::UInt8Builder>(
+			columnIndex, arrayBuilder, allocation, offset);
+	case cudf::type_id::UINT16:
+		return AppendNumericTypedValue<arrow::UInt16Builder>(
+			columnIndex, arrayBuilder, allocation, offset);
+	case cudf::type_id::UINT32:
+		return AppendNumericTypedValue<arrow::UInt32Builder>(
+			columnIndex, arrayBuilder, allocation, offset);
+	case cudf::type_id::UINT64:
+		return AppendNumericTypedValue<arrow::UInt64Builder>(
+			columnIndex, arrayBuilder, allocation, offset);
 	default:
 		throw std::runtime_error{
 			"Unsupported column cudf type id for append value"};
@@ -167,7 +173,7 @@ static inline std::size_t AppendChunkToArrayBuilder(
 		const std::unique_ptr<ral::memory::blazing_allocation_chunk> &
 			allocation = allocations[chunk_index];
 
-		AppendValues(arrayBuilder, columnTransport, allocation, offset);
+		AppendValues(i, arrayBuilder, columnTransport, allocation, offset);
 
 		position += chunk_size;
 	}
@@ -257,7 +263,6 @@ std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
 
 	for (const ral::memory::blazing_chunked_column_info & chunked_column_info :
 		chunked_column_infos) {
-		std::size_t position = 0;
 
 		const blazingdb::transport::ColumnTransport & column_offset =
 			columns_offsets[buffer_index];
@@ -268,13 +273,17 @@ std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
 
 		fields.emplace_back(field);
 
-		position += AppendChunkToArrayBuilder(
+		AppendChunkToArrayBuilder(
 			arrayBuilder, column_offset, chunked_column_info, allocations);
 
 		std::shared_ptr<arrow::Array> array;
 		arrow::Status status = arrayBuilder->Finish(&array);
 		if (!status.ok()) {
-			throw std::runtime_error{"Building array"};
+			std::ostringstream oss;
+			oss << "Error building array with builder type "
+				<< arrayBuilder->type()->name() << " and buffer index "
+				<< buffer_index;
+			throw std::runtime_error{oss.str()};
 		}
 		arrays.push_back(array);
 
