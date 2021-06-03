@@ -87,29 +87,17 @@ upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
   thrust::host_vector<int32_t> sortedTable_vals(sortedTable_col->raw_values(), sortedTable_col->raw_values() + sortedTable_col->length());
   thrust::host_vector<int32_t> partitionPlan_vals(partitionPlan_col->raw_values(), partitionPlan_col->raw_values() + partitionPlan_col->length());
 
-//  std::cout << "INICIOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO upper_bound_split_functor arrow: " << a.size() << "\n";
-//  for (int i = 0; i < a.size(); ++i) {
-//    std::cout << a[i] << "\n";
-//  }
-//  std::cout << "FINNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN upper_bound_split_functor arrow\n";
   std::vector<int32_t> out;
   out.resize(sortedTable_vals.size()+1);
   thrust::upper_bound(sortedTable_vals.begin(), sortedTable_vals.end(),
                       sortedTable_vals.begin(), sortedTable_vals.end(),
                       out.begin());
 
-//    std::cout << "INICIOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO upper_bound_split_functor arrow: " << out.size() << "\n";
-//    for (int i = 0; i < out.size(); ++i) {
-//      std::cout << out[i] << "\n";
-//    }
-//    std::cout << "FINNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN upper_bound_split_functor arrow\n";
-
   auto int_builder = std::make_unique<arrow::Int32Builder>();
   int_builder->AppendValues(out);
   std::shared_ptr<arrow::Array> pivot_vals;
   int_builder->Finish(&pivot_vals);
-  
-  
+
   std::vector<std::shared_ptr<arrow::Array>> cols;
   cols.push_back(pivot_vals);
   auto pivot_indexes = arrow::Table::Make(sortedTable->schema(), cols);

@@ -32,7 +32,6 @@ struct write_orc_functor {
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
       std::string file_path) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
   }
 };
@@ -42,7 +41,6 @@ inline void write_orc_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::string file_path) const
 {
-  // TODO WSM arrow
   throw std::runtime_error("ERROR: write_orc_functor BlazingSQL doesn't support this Arrow operator yet.");
 }
 

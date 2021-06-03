@@ -26,8 +26,6 @@ inline std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
 inline std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluate_expressions(
     std::shared_ptr<arrow::Table> table,
     const std::vector<std::string> & expressions) {
-  std::cout << "FILTERRRRRRRRRRRRRRRRRR ARROWWWWWWWWWWWWWWWWWWWWWWWWWWWWW!!!!!!!\n";
-  
   // TODO percy arrow
   return table->columns();
 }
@@ -72,7 +70,6 @@ inline std::unique_ptr<ral::frame::BlazingCudfTable> applyBooleanFilter(
 struct build_only_schema {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view) const {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: build_only_schema BlazingSQL doesn't support this Arrow operator yet.");
     return nullptr;
   }
@@ -103,7 +100,6 @@ struct evaluate_expressions_wo_filter_functor {
   const std::vector<std::string> & expressions, 
   const std::vector<std::string> column_names) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: evaluate_expressions_wo_filter_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -117,7 +113,6 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_wo_filter_
   //ral::frame::BlazingArrowTableView *table_view_ptr = dynamic_cast<ral::frame::BlazingArrowTableView*>(table_view.get());
   //std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluated_table = ral::cpu::evaluate_expressions(table_view_ptr->view(), expressions);
 
-  // TODO percy arrow
   throw std::runtime_error("ERROR: evaluate_expressions_wo_filter_functor BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
@@ -136,7 +131,6 @@ struct evaluate_expressions_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view,
   const std::vector<std::string> & expressions) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: evaluate_expressions_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -154,8 +148,6 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::o
 
   //return ral::cpu::applyBooleanFilter(table_view_ptr->view(), evaluated_table[0]);
   // TODO percy arrow
-  
-  std::cout << "ANTTTTTTTTTTTTTTTTTTTTTTTTTT\n\n\n" << table_view_ptr->view()->ToString() << "\n\n";
   
   return std::make_unique<ral::frame::BlazingArrowTable>(table_view_ptr->view());
 }

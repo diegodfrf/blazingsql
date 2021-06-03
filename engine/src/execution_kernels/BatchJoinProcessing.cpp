@@ -396,7 +396,6 @@ struct cross_join_functor {
       std::shared_ptr<ral::frame::BlazingTableView> left,
       std::shared_ptr<ral::frame::BlazingTableView> right) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: cross_join_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -407,7 +406,6 @@ std::unique_ptr<ral::frame::BlazingTable> cross_join_functor::operator()<ral::fr
     std::shared_ptr<ral::frame::BlazingTableView> left,
     std::shared_ptr<ral::frame::BlazingTableView> right) const
 {
-  // TODO percy arrow
   throw std::runtime_error("ERROR: cross_join_functor BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
@@ -430,7 +428,6 @@ struct check_if_has_nulls_functor {
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::vector<cudf::size_type> const& keys) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: check_if_has_nulls_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -465,7 +462,6 @@ struct inner_join_functor {
       std::vector<cudf::size_type> const& right_column_indices,
       cudf::null_equality equalityType) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: inner_join_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -512,7 +508,6 @@ struct drop_nulls_functor {
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
       std::vector<cudf::size_type> const& keys) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: drop_nulls_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -547,7 +542,6 @@ struct left_join_functor {
       std::vector<cudf::size_type> const& left_column_indices,
       std::vector<cudf::size_type> const& right_column_indices) const
   {
-    // TODO percy arrow thrown error
 	throw std::runtime_error("ERROR: left_join_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -599,7 +593,6 @@ struct full_join_functor {
       std::vector<cudf::size_type> const& left_column_indices,
       std::vector<cudf::size_type> const& right_column_indices) const
   {
-    // TODO percy arrow thrown error
 	throw std::runtime_error("ERROR: full_join_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
@@ -650,7 +643,6 @@ struct reordering_columns_due_to_right_join_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(std::unique_ptr<ral::frame::BlazingTable> table_ptr, size_t right_columns) const
   {
-    // TODO percy arrow thrown error
     throw std::runtime_error("ERROR: reordering_columns_due_to_right_join_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
