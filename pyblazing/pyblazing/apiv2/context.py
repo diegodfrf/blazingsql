@@ -1991,12 +1991,12 @@ class BlazingContext(object):
 
                 if self.dask_client is None:
                     physical_plan = cio.runGeneratePhysicalGraphCaller(
-                        masterIndex, ["self"], ctxToken, str(algebra), output_type, preferred_compute
+                        masterIndex, ["self"], ctxToken, str(algebra), self.output_type, self.preferred_compute
                     )
                 else:
                     dummy_nodes = [str(i) for i in range(len(self.nodes))]
                     physical_plan = cio.runGeneratePhysicalGraphCaller(
-                        masterIndex, dummy_nodes, ctxToken, str(algebra), output_type, preferred_compute
+                        masterIndex, dummy_nodes, ctxToken, str(algebra), self.output_type, self.preferred_compute
                     )
 
         except SqlValidationExceptionClass as exception:
@@ -2749,9 +2749,9 @@ class BlazingContext(object):
                     kwargs,
                     extra_columns,
                     ignore_missing_paths,
+                    self.preferred_compute,
                     workers=[worker],
                     pure=False,
-                    preferred_compute=self.preferred_compute,
                 )
                 parsed_schema = connection.result()
                 if len(parsed_schema["files"]) == 0 and file_format_hint not in [
@@ -2778,9 +2778,9 @@ class BlazingContext(object):
                                 kwargs,
                                 extra_columns,
                                 ignore_missing_paths,
+                                self.preferred_compute,
                                 workers=[worker],
                                 pure=False,
-                                preferred_compute=self.preferred_compute,
                             ),
                             worker,
                         )
@@ -2856,9 +2856,9 @@ class BlazingContext(object):
                         schema,
                         file_format_hint,
                         kwargs,
+                        self.preferred_compute,
                         workers=[worker],
                         pure=False,
-                        preferred_compute=self.preferred_compute,
                     )
                     dask_futures.append(connection)
             return dask.dataframe.from_delayed(dask_futures)

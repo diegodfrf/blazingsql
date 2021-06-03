@@ -7,7 +7,7 @@
  * - the build type is Release or
  * - the build type is RelWithDebInfo or
  * - we are in a conda build process
- * So, when 'SQLDBGUTILS' is defined the ral will link against gtest and 
+ * So, when 'SQLDBGUTILS' is defined the ral will link against gtest and
  * cudf test utils and we will be able to use print_* functions
 */
 

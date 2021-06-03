@@ -298,11 +298,6 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
       assert(cudf_table != nullptr);
       result->tables.emplace_back(std::make_unique<ResultTable>(cudf_table->releaseCudfTable()));
     }
-
-    if (is_arrow) {
-      std::cout << "ASDASDAAAAAAAAAAAAAAAAAAAAAAAAAA \n\n" << arrow_table->view()->ToString() << "\n\n";
-      std::cout << "LISTO!\n" << std::flush;
-    }
 	}
 
 	result->skipdata_analysis_fail = false;
@@ -370,6 +365,7 @@ std::unique_ptr<ResultSet> performPartition(int32_t masterIndex,
 
 std::unique_ptr<ResultSet> runSkipData(std::shared_ptr<ral::frame::BlazingTableView> metadata,
 	std::vector<std::string> all_column_names, std::string query) {
+	throw std::runtime_error("ERROR: BlazingSQL doesn't support this feature yet.");
 // TODO percy arrow
 // 	try {
 

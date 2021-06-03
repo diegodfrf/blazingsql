@@ -92,15 +92,15 @@ struct tree_processor {
 		} else if (is_generate_overlaps(expr)) {
       // TODO percy arrow
 			//k = std::make_shared<OverlapGeneratorKernel>(kernel_id,expr, kernel_context, query_graph);
-		
+			throw std::runtime_error("ERROR: BlazingSQL doesn't support this feature yet.");
 		} else if (is_accumulate_overlaps(expr)) {
       // TODO percy arrow
 			//k = std::make_shared<OverlapAccumulatorKernel>(kernel_id,expr, kernel_context, query_graph);
-		
+			throw std::runtime_error("ERROR: BlazingSQL doesn't support this feature yet.");
 		} else if (is_window_compute(expr)) {
       // TODO percy arrow
 			//k = std::make_shared<ComputeWindowKernel>(kernel_id,expr, kernel_context, query_graph);
-
+			throw std::runtime_error("ERROR: BlazingSQL doesn't support this feature yet.");
 		} else if (is_merge(expr)) {
 			k = std::make_shared<MergeStreamKernel>(kernel_id,expr, kernel_context, query_graph);
 

@@ -4,7 +4,7 @@ from pyblazing.apiv2.context import BlazingContext
 
 from cio import getProductDetailsCaller
 
-
+"""
 __version__ = getProductDetailsCaller()["BLAZINGSQL_GIT_COMMIT_HASH"]
 __branch_name__ = getProductDetailsCaller()["BLAZINGSQL_GIT_BRANCH"]
 __branch_tag__ = getProductDetailsCaller()["BLAZINGSQL_GIT_DESCRIBE_TAG"]
@@ -19,9 +19,11 @@ __cuda_flags__ = getProductDetailsCaller()["CMAKE_CUDA_FLAGS"]
 __os_kernel__ = getProductDetailsCaller()["SYSTEM"]
 __os_arch__ = getProductDetailsCaller()["SYSTEM_PROCESSOR"]
 __os_release__ = getProductDetailsCaller()["OS_RELEASE"]
-
+"""
 
 def __info__():
+    print("TODO percy arrow romulo mario: renable this when blazingsql will be deployed again")
+"""
     print("BlazingSQL version (git hash): %s" % __version__)
     print("BlazingSQL branch name: %s" % __branch_name__)
     print("BlazingSQL branch tag: %s" % __branch_tag__)
@@ -32,3 +34,4 @@ def __info__():
     print("BlazingSQL Operating system architecture: %s" % __os_arch__)
     print("BlazingSQL Linux Operating system release: %s" % __os_release__,
           flush=True)
+"""

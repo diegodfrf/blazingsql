@@ -52,4 +52,5 @@ configure_bsqlengine_config_header()
 
 # NOTE percy when build ral cpp
 # Each time we build the target we update the config-bsql-engine.h file and thus always have the last git commit hash (without run cmake again)
-add_dependencies(blazingsql-engine UpdateBSQLEngineInternalConfig)
+# TODO percy arrow romulo mario enable this when we want to deploy the blazing arrow flavor in conda
+#add_dependencies(blazingsql-engine UpdateBSQLEngineInternalConfig)

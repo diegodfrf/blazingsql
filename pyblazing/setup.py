@@ -2,7 +2,7 @@ import os
 from setuptools import find_packages, setup
 
 def is_conda_env():
-  return "CONDA_PREFIX" in os.environ or CONDA_BUILD in os.environ
+  return "CONDA_PREFIX" in os.environ or "CONDA_BUILD" in os.environ
 
 def get_version():
     import subprocess

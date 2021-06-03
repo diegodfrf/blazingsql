@@ -47,7 +47,7 @@ struct sorted_merger_functor {
 		const std::vector<int> & sortColIndices,
       const std::vector<cudf::null_order> & sortOrderNulls) const
   {
-    // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: sorted_merger_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -58,7 +58,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator
 		const std::vector<cudf::order> & sortOrderTypes,
 		const std::vector<int> & sortColIndices, const std::vector<cudf::null_order> & sortOrderNulls) const
 {
-  // TODO percy arrow
+  throw std::runtime_error("ERROR: sorted_merger_functor BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
@@ -93,35 +93,11 @@ struct gather_functor {
 		cudf::out_of_bounds_policy out_of_bounds_policy,
 		cudf::detail::negative_index_policy negative_index_policy) const
   {
-    // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: gather_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
 
-template <>
-inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingArrowTable>(
-		std::shared_ptr<BlazingTableView> table,
-		std::unique_ptr<cudf::column> column,
-		cudf::out_of_bounds_policy out_of_bounds_policy,
-		cudf::detail::negative_index_policy negative_index_policy) const
-{
-  // TODO percy arrow
-  return nullptr;
-}
-
-template <>
-inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingCudfTable>(
-		std::shared_ptr<BlazingTableView> table,
-		std::unique_ptr<cudf::column> column,
-		cudf::out_of_bounds_policy out_of_bounds_policy,
-		cudf::detail::negative_index_policy negative_index_policy) const
-{
-	// TODO percy rommel arrow
-	ral::frame::BlazingCudfTableView *table_ptr = dynamic_cast<ral::frame::BlazingCudfTableView*>(table.get());
-	std::unique_ptr<cudf::table> pivots = cudf::detail::gather(table_ptr->view(), column->view(), out_of_bounds_policy, negative_index_policy);
-
-	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(pivots), table->column_names());
-}
 
 }  // namespace distribution
 }  // namespace ral

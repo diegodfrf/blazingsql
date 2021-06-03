@@ -23,7 +23,6 @@
 #include "parser/expression_utils.hpp"
 #include "execution_graph/executor.h"
 #include <cudf/types.hpp>
-#include <src/utilities/DebuggingUtils.h>
 #include "execution_kernels/LogicalFilter.h"
 #include "execution_kernels/LogicalProject.h"
 #include "io/data_provider/sql/AbstractSQLDataProvider.h"
@@ -65,7 +64,8 @@ std::unique_ptr<ral::cache::CacheData> BatchSequence::next() {
         return cache->pullCacheData();
     } else {
       // TODO percy arrow william
-        //return cache->pullUnorderedFromCache();
+      throw std::runtime_error("ERROR: BatchSequence::next BlazingSQL doesn't support this Arrow operator yet.");
+      //return cache->pullUnorderedFromCache();
     }
 }
 

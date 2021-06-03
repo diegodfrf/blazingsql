@@ -32,8 +32,7 @@ struct write_orc_functor {
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
       std::string file_path) const
   {
-    // TODO percy arrow thrown error
-    
+    throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
   }
 };
 
@@ -42,8 +41,7 @@ inline void write_orc_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::string file_path) const
 {
-  // TODO WSM arrow
-  
+  throw std::runtime_error("ERROR: write_orc_functor BlazingSQL doesn't support this Arrow operator yet.");
 }
 
 template <>
@@ -128,6 +126,11 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataLocalFile::decache(execution:
 	} else {
 		// WSM TODO need to implement this
 	}
+}
+
+std::unique_ptr<CacheData> CacheDataLocalFile::clone() {
+	//Todo clone implementation
+	throw std::runtime_error("CacheDataLocalFile::clone not implemented");
 }
 
 } // namespace cache

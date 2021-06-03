@@ -74,9 +74,32 @@ unsigned long long BlazingArrowTableView::size_in_bytes() const {
 //	return size;
 }
 
+std::shared_ptr<arrow::Table> clone_arrow_table(std::shared_ptr<arrow::Table> arrow_table) {
+  std::vector<std::shared_ptr<arrow::ChunkedArray>> the_cols;
+  the_cols.resize(arrow_table->columns().size());
+  int icol = 0;
+  for (auto col : arrow_table->columns()) {
+    arrow::ArrayVector the_chunks;
+    the_chunks.resize(col->chunks().size());
+    int ichunk = 0;
+    for (auto chunk : col->chunks()) {
+      the_chunks[ichunk] = arrow::MakeArray(chunk->data()->Copy());
+      ++ichunk;
+    }
+    the_cols[icol] = std::make_shared<arrow::ChunkedArray>(the_chunks, col->type());
+    ++icol;
+  }
+  auto new_schema = arrow_table->schema()->WithMetadata(arrow_table->schema()->metadata());
+  auto new_table = arrow::Table::Make(new_schema, the_cols, arrow_table->num_rows());
+  return new_table;
+}
+
 std::unique_ptr<BlazingTable> BlazingArrowTableView::clone() const {
-  // TODO percy arrow depth copy
-  return nullptr;
+  return std::make_unique<BlazingArrowTable>(clone_arrow_table(this->arrow_table));  
+}
+
+std::unique_ptr<BlazingArrowTable> BlazingArrowTableView::clone() {
+  return std::make_unique<BlazingArrowTable>(clone_arrow_table(this->arrow_table));
 }
 
 // END BlazingArrowTableView
@@ -100,6 +123,10 @@ BlazingArrowTable::BlazingArrowTable(std::unique_ptr<BlazingCudfTable> blazing_c
 }
 
 std::unique_ptr<BlazingTable> BlazingArrowTable::clone() const {
+  return this->to_table_view()->clone();
+}
+
+std::unique_ptr<BlazingArrowTable> BlazingArrowTable::clone() {
   return this->to_table_view()->clone();
 }
 
@@ -213,6 +240,11 @@ unsigned long long BlazingCudfTableView::size_in_bytes() const {
 }
 
 std::unique_ptr<BlazingTable> BlazingCudfTableView::clone() const {
+	std::unique_ptr<cudf::table> cudfTable = std::make_unique<cudf::table>(this->table);
+	return std::make_unique<BlazingCudfTable>(std::move(cudfTable), this->columnNames);
+}
+
+std::unique_ptr<BlazingCudfTable> BlazingCudfTableView::clone() {
 	std::unique_ptr<cudf::table> cudfTable = std::make_unique<cudf::table>(this->table);
 	return std::make_unique<BlazingCudfTable>(std::move(cudfTable), this->columnNames);
 }
@@ -351,6 +383,10 @@ unsigned long long BlazingCudfTable::size_in_bytes() const {
 }
 
 std::unique_ptr<BlazingTable> BlazingCudfTable::clone() const {
+	return this->to_table_view()->clone();
+}
+
+std::unique_ptr<BlazingCudfTable> BlazingCudfTable::clone() {
 	return this->to_table_view()->clone();
 }
 

@@ -198,7 +198,7 @@ public:
 	*/
 	virtual ~CacheData() {}
 
-	virtual std::unique_ptr<CacheData> clone() {};//TODO Rommel make virtual pure and implement all methods
+	virtual std::unique_ptr<CacheData> clone() = 0;
 
 	/**
 	* Get the names of the columns.

@@ -14,6 +14,9 @@
 #include <cudf/copying.hpp>
 #include <cudf/sorting.hpp>
 #include <cudf/search.hpp>
+#include <arrow/array/builder_primitive.h>
+#include <arrow/api.h>
+#include <arrow/compute/api.h>
 
 namespace ral {
 
@@ -39,7 +42,6 @@ struct select_functor {
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
       const std::vector<int> & sortColIndices) const
   {
-    // TODO percy arrow thrown error
     return nullptr;
   }
 };
@@ -49,8 +51,9 @@ inline std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     const std::vector<int> & sortColIndices) const
 {
-  // TODO percy arrow
-  return nullptr;
+  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  std::shared_ptr<arrow::Table> selected = arrow_table_view->view()->SelectColumns(sortColIndices).ValueOrDie();
+  return std::make_shared<ral::frame::BlazingArrowTableView>(selected);
 }
 
 template <>
@@ -58,8 +61,8 @@ inline std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     const std::vector<int> & sortColIndices) const
 {
-  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
-  return std::make_shared<ral::frame::BlazingCudfTableView>(cudf_table_view->view().select(sortColIndices), 
+  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
+  return std::make_shared<ral::frame::BlazingCudfTableView>(cudf_table_view->view().select(sortColIndices),
                                                             cudf_table_view->column_names());
 }
 
@@ -87,46 +90,9 @@ struct upper_bound_split_functor {
       std::vector<cudf::order> const& column_order,
       std::vector<cudf::null_order> const& null_precedence) const
   {
-    // TODO percy arrow thrown error
-    //return nullptr;
+    throw std::runtime_error("ERROR: upper_bound_split_functor This default dispatcher operator should not be called.");
   }
 };
-
-template <>
-inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
-    std::shared_ptr<ral::frame::BlazingTableView> t,
-    std::shared_ptr<ral::frame::BlazingTableView> values,
-    std::vector<cudf::order> const& column_order,
-    std::vector<cudf::null_order> const& null_precedence) const
-{
-  // TODO percy arrow
-  //return nullptr;
-}
-
-template <>
-inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
-    std::shared_ptr<ral::frame::BlazingTableView> t,
-    std::shared_ptr<ral::frame::BlazingTableView> values,
-    std::vector<cudf::order> const& column_order,
-    std::vector<cudf::null_order> const& null_precedence) const
-{
-  auto sortedTable = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(sortedTable_view);
-  auto columns_to_search = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(t);  
-  auto partitionPlan = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(values);  
-
-  auto pivot_indexes = cudf::upper_bound(columns_to_search->view(), partitionPlan->view(), column_order, null_precedence);
-	std::vector<cudf::size_type> split_indexes = ral::utilities::column_to_vector<cudf::size_type>(pivot_indexes->view());
-  auto tbs = cudf::split(sortedTable->view(), split_indexes);
-  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
-  for (auto tb : tbs) {
-    ret.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(tb, sortedTable_view->column_names()));
-  }
-  return ret;
-}
 
 
 
@@ -142,8 +108,6 @@ upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
 
 ////////////////////////////// sorted_order_grather functor
 
-
-
 struct sorted_order_gather_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
@@ -152,7 +116,7 @@ struct sorted_order_gather_functor {
       const std::vector<cudf::order> & sortOrderTypes,
       std::vector<cudf::null_order> null_orders) const
   {
-    // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: sorted_order_gather_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -164,8 +128,35 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::op
     const std::vector<cudf::order> & sortOrderTypes,
     std::vector<cudf::null_order> null_orders) const
 {
+  auto table = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  auto sortColumns = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(sortColumns_view);
+  //std::unique_ptr<cudf::column> output = cudf::sorted_order( sortColumns->view(), sortOrderTypes, null_orders );
+  auto col = table->view()->column(0); // TODO percy arrow
+  std::shared_ptr<arrow::Array> vals = arrow::Concatenate(col->chunks()).ValueOrDie();
+  std::shared_ptr<arrow::Array> output = arrow::compute::SortToIndices(*vals).ValueOrDie();
+  std::shared_ptr<arrow::Table> gathered = arrow::compute::Take(*table->view(), *output).ValueOrDie();
+  return std::make_unique<ral::frame::BlazingArrowTable>(gathered);
+
+  
+  /*
+  auto table = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+  auto arrow_table = table->view();
+  for (int c = 0; c < arrow_table->columns().size(); ++c) {
+    auto col = arrow_table->column(c);
+    std::shared_ptr<arrow::Array> flecha = arrow::Concatenate(col->chunks()).ValueOrDie();
+    std::shared_ptr<arrow::Array> sorted_indx = arrow::compute::SortToIndices(*flecha).ValueOrDie();
+    arrow::compute::Take(sorted_indx);
+  }
+*/
+//    std::unique_ptr<> arrayBuilder;
+//    arrow::ArrayBuilder()
+//    arrayBuilder->
+//    std::shared_ptr<arrow::Array> temp = std::make_shared<arrow::Array>(col);
+    //arrow::compute::SortToIndices();
+  //arrow::compute::SortToIndices(
+//    arrow::compute::Take();
+//  }
   // TODO percy arrow
-  return nullptr;
 }
 
 template <>

@@ -181,7 +181,6 @@ public:
 struct make_cachedata_functor {
 	template <typename T>
 	std::unique_ptr<CacheData> operator()(std::unique_ptr<ral::frame::BlazingTable> table){
-		// TODO percy arrow thrown error
 		return nullptr;
 	}
 };
@@ -199,7 +198,6 @@ std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::Blazin
 	std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
 	return std::make_unique<GPUCacheData>(std::move(cudf_table));
 }
-
 
 }  // namespace cache
 

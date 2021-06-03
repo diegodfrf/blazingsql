@@ -15,6 +15,10 @@
 #include <cudf/strings/strings_column_view.hpp>
 #include <cudf/filling.hpp>
 #include <cudf/concatenate.hpp>
+#include <cudf/partitioning.hpp>
+#include <arrow/array/builder_primitive.h>
+#include <arrow/array/builder_base.h>
+#include <arrow/table.h>
 
 namespace ral {
 namespace cpu {
@@ -129,7 +133,7 @@ struct create_empty_table_like_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view) const
   {
-    // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: create_empty_table_like_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -140,6 +144,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor
 {
   auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
   // TODO percy
+  throw std::runtime_error("ERROR: create_empty_table_like_functor BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
 }
 
@@ -159,7 +164,7 @@ struct create_empty_table_functor {
       const std::vector<std::string> &column_names,
 	    const std::vector<cudf::data_type> &dtypes) const
   {
-    // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: create_empty_table_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -170,6 +175,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::ope
 	  const std::vector<cudf::data_type> &dtypes) const
 {
   // TODO percy
+  throw std::runtime_error("ERROR: create_empty_table_functor BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
 }
 
@@ -189,7 +195,7 @@ struct from_table_view_to_table_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view) const
   {
-    // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: from_table_view_to_table_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -200,6 +206,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> from_table_view_to_table_functo
 {
   auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
   // TODO percy
+  throw std::runtime_error("ERROR: from_table_view_to_table_functor BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
 }
 
@@ -238,7 +245,7 @@ struct sample_functor {
       std::vector<std::string> sortColNames,
       std::vector<int> sortColIndices) const
   {
-    // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: sample_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -250,8 +257,23 @@ inline std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral:
     std::vector<std::string> sortColNames,
     std::vector<int> sortColIndices) const
 {
-  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
-  return nullptr; //return ral::cpu::empty_like(arrow_table_view->view());
+  std::random_device rd;
+  auto arrow_table = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view)->view();
+  std::vector<int> population(arrow_table->num_rows());
+  std::iota(population.begin(), population.end(), 0);
+  std::vector<int> samples_indexes_raw;
+  std::sample(population.begin(),
+              population.end(),
+              std::back_inserter(samples_indexes_raw),
+              num_samples,
+              rd);
+  auto int_builder = std::make_unique<arrow::Int32Builder>();
+  int_builder->AppendValues(samples_indexes_raw);
+  std::shared_ptr<arrow::Array> samples_indexes;
+  int_builder->Finish(&samples_indexes);
+  auto input = arrow_table->SelectColumns(sortColIndices).ValueOrDie();
+  auto samples = arrow::compute::Take(*input, *samples_indexes).ValueOrDie();
+  return std::make_unique<ral::frame::BlazingArrowTable>(samples);
 }
 
 template <>
@@ -287,7 +309,7 @@ struct checkIfConcatenatingStringsWillOverflow_functor {
   template <typename T>
   bool operator()(const std::vector<std::shared_ptr<ral::frame::BlazingTableView>> & tables) const
   {
-    // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: checkIfConcatenatingStringsWillOverflow_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -296,7 +318,10 @@ template <>
 inline bool checkIfConcatenatingStringsWillOverflow_functor::operator()<ral::frame::BlazingArrowTable>(
     const std::vector<std::shared_ptr<ral::frame::BlazingTableView>> & tables) const
 {
+  return false;
+  // TODO percy arrow implement size
   // this check is only relevant to Cudf
+  throw std::runtime_error("ERROR: checkIfConcatenatingStringsWillOverflow_functor BlazingSQL doesn't support this Arrow operator yet.");
   return false;
 }
 
@@ -341,7 +366,7 @@ struct concat_functor {
       size_t empty_count,
       std::vector<std::string> names) const
   {
-    // TODO percy arrow thrown error
+    throw std::runtime_error("ERROR: concat_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -362,10 +387,6 @@ inline std::unique_ptr<ral::frame::BlazingTable> concat_functor::operator()<ral:
   }
 
   std::shared_ptr<arrow::Table> concatenated_tables = arrow::ConcatenateTables(arrow_tables_to_concat).ValueOrDie();
-  
-  std::cout << "------->>>>>>>>>>AROW CONCAT: \n" << "\t" << concatenated_tables->ToString() << "\n\n";
-  std::cout << "FINDELGATO!!!!\n\n"; 
-  
   return std::make_unique<ral::frame::BlazingArrowTable>(concatenated_tables);
 }
 
@@ -410,10 +431,18 @@ struct split_functor {
       std::shared_ptr<ral::frame::BlazingTableView> table_View,
       std::vector<cudf::size_type> const& splits) const
   {
-    // TODO percy arrow thrown error
-    //return nullptr;
+    throw std::runtime_error("ERROR: split_functor This default dispatcher operator should not be called.");
   }
 };
+
+
+
+
+
+std::pair<std::shared_ptr<arrow::Table>, std::vector<cudf::size_type>>
+split_arrow(std::shared_ptr<arrow::Table> table_View,
+            std::vector<cudf::size_type> const& columns_to_hash,
+            int num_partitions);
 
 template <>
 inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
@@ -421,8 +450,18 @@ split_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_View,
     std::vector<cudf::size_type> const& splits) const
 {
-  // TODO percy arrow
-  //return std::make_pair(nullptr, {});
+  /*
+  * input:   [{10, 12, 14, 16, 18, 20, 22, 24, 26, 28},
+  *           {50, 52, 54, 56, 58, 60, 62, 64, 66, 68}]
+  * splits:  {2, 5, 9}
+  * output:  [{{10, 12}, {14, 16, 18}, {20, 22, 24, 26}, {28}},
+  *           {{50, 52}, {54, 56, 58}, {60, 62, 64, 66}, {68}}]
+  */
+
+//  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> result{};
+//  if (table_View.num_columns() == 0) { return result; }
+  
+  throw std::runtime_error("ERROR: split_functor BlazingSQL doesn't support this Arrow operator yet.");
 }
 
 template <>
@@ -440,6 +479,66 @@ split_functor::operator()<ral::frame::BlazingCudfTable>(
   }
   return ret;
 }
+
+/*
+std::vector<std::shared_ptr<ral::frame::BlazingTableView>> slice(
+    std::shared_ptr<ral::frame::BlazingTableView> input,
+    std::vector<cudf::size_type> const& indices)
+{
+  //CUDF_FUNC_RANGE();
+  //CUDF_EXPECTS(indices.size() % 2 == 0, "indices size must be even");
+  if (indices.empty()) { return {}; }
+
+  // 2d arrangement of column_views that represent the outgoing table_views sliced_table[i][j]
+  // where i is the i'th column of the j'th table_view
+  auto op = [&indices](std::shared_ptr<arrow::ChunkedArray> c) {
+    //return cudf::slice(c, indices);
+    c->Slice()
+  };
+  auto f  = thrust::make_transform_iterator(input.begin(), op);
+
+  auto sliced_table = std::vector<std::vector<cudf::column_view>>(f, f + input.num_columns());
+  sliced_table.reserve(indices.size() + 1);
+
+  std::vector<cudf::table_view> result{};
+  // distribute columns into outgoing table_views
+  size_t num_output_tables = indices.size() / 2;
+  for (size_t i = 0; i < num_output_tables; i++) {
+    std::vector<cudf::column_view> table_columns;
+    for (size_type j = 0; j < input.num_columns(); j++) {
+      table_columns.emplace_back(sliced_table[j][i]);
+    }
+    result.emplace_back(table_view{table_columns});
+  }
+
+  return result;
+};
+
+std::vector<std::shared_ptr<ral::frame::BlazingTableView>> split(
+    std::shared_ptr<ral::frame::BlazingTableView> input,
+    cudf::size_type column_size,
+    std::vector<cudf::size_type> const& splits)
+{
+  if (splits.empty() or column_size == 0) { 
+    std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
+    ret.push_back(input);
+    return ret;
+  }
+  //CUDF_EXPECTS(splits.back() <= column_size, "splits can't exceed size of input columns");
+
+  // If the size is not zero, the split will always start at `0`
+  std::vector<cudf::size_type> indices{0};
+  std::for_each(splits.begin(), splits.end(), [&indices](auto split) {
+    indices.push_back(split);  // This for end
+    indices.push_back(split);  // This for the start
+  });
+
+  indices.push_back(column_size);  // This to include rest of the elements
+
+  return cudf::slice(input, indices);
+}
+*/
+
 
 
 
@@ -463,20 +562,18 @@ struct normalize_types_functor {
       const std::vector<cudf::data_type> & types,
       std::vector<cudf::size_type> column_indices) const
   {
-    // TODO percy arrow thrown error
-    //return nullptr;
+    throw std::runtime_error("ERROR: normalize_types_functor This default dispatcher operator should not be called.");
   }
 };
 
 template <>
 inline void
-normalize_types_functor::operator()<ral::frame::BlazingArrowTable>(    
+normalize_types_functor::operator()<ral::frame::BlazingArrowTable>(
     std::unique_ptr<ral::frame::BlazingTable> & table,
     const std::vector<cudf::data_type> & types,
     std::vector<cudf::size_type> column_indices) const
 {
-  // TODO percy arrow
-  //return std::make_pair(nullptr, {});
+  throw std::runtime_error("ERROR: normalize_types_functor BlazingSQL doesn't support this Arrow operator yet.");
 }
 
 template <>
@@ -487,6 +584,55 @@ normalize_types_functor::operator()<ral::frame::BlazingCudfTable>(
     std::vector<cudf::size_type> column_indices) const
 {
   ral::utilities::normalize_types_gpu(table, types, column_indices);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////// hash_partition functor
+
+
+
+struct hash_partition_functor {
+  template <typename T>
+  inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>> operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_View,
+      std::vector<cudf::size_type> const& columns_to_hash,
+      int num_partitions) const
+  {
+    throw std::runtime_error("ERROR: hash_partition_functor This default dispatcher operator should not be called.");
+  }
+};
+
+template <>
+inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>>
+hash_partition_functor::operator()<ral::frame::BlazingArrowTable>(    
+    std::shared_ptr<ral::frame::BlazingTableView> table_View,
+    std::vector<cudf::size_type> const& columns_to_hash,
+    int num_partitions) const
+{
+  throw std::runtime_error("ERROR: hash_partition_functor BlazingSQL doesn't support this Arrow operator yet.");
+}
+
+template <>
+inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>>
+hash_partition_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_View,
+    std::vector<cudf::size_type> const& columns_to_hash,
+    int num_partitions) const
+{
+  auto batch_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_View);
+  auto tb = cudf::hash_partition(batch_view->view(), columns_to_hash, num_partitions);
+  return std::make_pair(std::make_unique<ral::frame::BlazingCudfTable>(std::move(tb.first), table_View->column_names()), tb.second);
 }
 
 }  // namespace ral

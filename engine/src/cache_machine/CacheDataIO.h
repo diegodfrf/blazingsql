@@ -51,6 +51,8 @@ public:
 	*/
 	void set_names(const std::vector<std::string> & names) override;
 
+	std::unique_ptr<CacheData> clone() override;
+
 	/**
 	 * Returns the data type of the parser
 	 * @return the DataType of the parser

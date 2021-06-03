@@ -80,6 +80,8 @@ public:
 		host_table->set_column_names(names);
 	}
 
+	std::unique_ptr<CacheData> clone() override;
+
 	/**
 	* Destructor
 	*/

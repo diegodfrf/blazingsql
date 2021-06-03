@@ -45,6 +45,10 @@ void ArrowCacheData::set_names(const std::vector<std::string> & names) {
 	// WSM TODO need to implement
 }
 
+std::unique_ptr<CacheData> ArrowCacheData::clone() {
+  return std::make_unique<ArrowCacheData>(this->data_->clone());
+}
+
 ArrowCacheData::~ArrowCacheData() {}
 
 } // namespace cache
