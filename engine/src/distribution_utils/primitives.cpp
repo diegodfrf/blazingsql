@@ -20,6 +20,8 @@
 #include <cudf/detail/interop.hpp>
 #include <spdlog/spdlog.h>
 
+#include "compute/api.h"
+
 using namespace fmt::literals;
 
 namespace ral {
@@ -29,65 +31,6 @@ typedef ral::frame::BlazingTable BlazingTable;
 typedef ral::frame::BlazingTableView BlazingTableView;
 typedef blazingdb::manager::Context Context;
 typedef blazingdb::transport::Node Node;
-
-
-
-
-
-
-
-
-
-
-////functors
-
-template <>
-inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingArrowTable>(
-		std::shared_ptr<BlazingTableView> table,
-		std::unique_ptr<cudf::column> column,
-		cudf::out_of_bounds_policy out_of_bounds_policy,
-		cudf::detail::negative_index_policy negative_index_policy) const
-{
-  // TODO percy arrow
-  //throw std::runtime_error("ERROR: gather_functor BlazingSQL doesn't support this Arrow operator yet.");
-
-  std::vector<std::unique_ptr<cudf::column>> cs;
-  cs.push_back(std::make_unique<cudf::column>(column->view()));
-  auto ct = std::make_unique<cudf::table>(std::move(cs));
-  std::vector<cudf::column_metadata> mt;
-  mt.push_back(cudf::column_metadata("any"));
-  auto indexes = cudf::detail::to_arrow(ct->view(), mt);
-  auto idx = indexes->column(0);
-  auto at = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table);
-  auto arrow_table = at->view();
-  std::shared_ptr<arrow::Table> ret = arrow::compute::Take(*arrow_table, *idx).ValueOrDie();
-  return std::make_unique<ral::frame::BlazingArrowTable>(ret);
-}
-
-template <>
-inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingCudfTable>(
-		std::shared_ptr<BlazingTableView> table,
-		std::unique_ptr<cudf::column> column,
-		cudf::out_of_bounds_policy out_of_bounds_policy,
-		cudf::detail::negative_index_policy negative_index_policy) const
-{
-	// TODO percy rommel arrow
-	ral::frame::BlazingCudfTableView *table_ptr = dynamic_cast<ral::frame::BlazingCudfTableView*>(table.get());
-	std::unique_ptr<cudf::table> pivots = cudf::detail::gather(table_ptr->view(), column->view(), out_of_bounds_policy, negative_index_policy);
-
-	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(pivots), table->column_names());
-}
-
-
-
-
-
-
-
-
-
-
-
 
 std::unique_ptr<BlazingTable> generatePartitionPlans(
 	cudf::size_type number_partitions,
@@ -103,7 +46,7 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 
 	std::unique_ptr<BlazingTable> concatSamples = ral::utilities::concatTables(samplesView);
 
-	std::unique_ptr<ral::frame::BlazingTable> sortedSamples = ral::execution::backend_dispatcher(concatSamples->to_table_view()->get_execution_backend(), ral::operators::sorted_order_gather_functor(),
+	std::unique_ptr<ral::frame::BlazingTable> sortedSamples = ral::execution::backend_dispatcher(concatSamples->to_table_view()->get_execution_backend(), sorted_order_gather_functor(),
 		concatSamples->to_table_view(), concatSamples->to_table_view(), sortOrderTypes, sortOrderNulls);
 
 	// lets get names from a non-empty table

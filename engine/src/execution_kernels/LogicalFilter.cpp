@@ -9,7 +9,7 @@
 #include "blazing_table/BlazingColumn.h"
 #include "blazing_table/BlazingColumnView.h"
 
-
+#include "compute/api.h"
 
 
 namespace ral {
@@ -56,14 +56,6 @@ std::unique_ptr<ral::frame::BlazingTable> process_filter(
   }
 
   
-bool check_if_has_nulls(cudf::table_view const& input, std::vector<cudf::size_type> const& keys){
-  auto keys_view = input.select(keys);
-  if (keys_view.num_columns() != 0 && keys_view.num_rows() != 0 && cudf::has_nulls(keys_view)) {
-      return true;
-  }
-
-  return false;
-}
 
 } // namespace processor
 } // namespace ral

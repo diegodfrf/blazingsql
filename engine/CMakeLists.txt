@@ -284,8 +284,22 @@ else()
 endif()
 
 
+
+set(COMPUTE_CUDF_SRC_FILES
+    #${PROJECT_SOURCE_DIR}/src/compute/api_cudf.cpp
+)
+
+set(COMPUTE_ARROW_SRC_FILES
+    #${PROJECT_SOURCE_DIR}/src/compute/api_arrow.cpp
+)
+
 ## Target source files
-set(SRC_FILES ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
+set(SRC_FILES
+    # COMPUTE
+    ${COMPUTE_CUDF_SRC_FILES}
+    ${COMPUTE_ARROW_SRC_FILES}
+
+              ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
               ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheData.cpp
               ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheDataIO.cpp
               ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheDataLocalFile.cpp
@@ -370,6 +384,8 @@ set(SRC_FILES ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
               ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/messageSender.cpp
 
               ${PROJECT_SOURCE_DIR}/src/transport/Node.cpp
+              
+              ${PROJECT_SOURCE_DIR}/src/compute/api.h
 
               # SQL
               ${MYSQL_DATABASE_SRC_FILES}

@@ -14,28 +14,11 @@
 #include "execution_graph/backend_dispatcher.h"
 #include <thrust/binary_search.h>
 #include <thrust/host_vector.h>
+#include "compute/api.h"
 
 using namespace fmt::literals;
 
 namespace ral {
-namespace cpu {
-namespace operators {
-
-std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t>
-limit_table(std::shared_ptr<arrow::Table> table, int64_t num_rows_limit) {
-	cudf::size_type table_rows = table->num_rows();
-	if (num_rows_limit <= 0) {
-		return std::make_tuple(std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns(), 0)), false, 0);
-	} else if (num_rows_limit >= table_rows) {
-		return std::make_tuple(std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns())), true, num_rows_limit - table_rows);
-	} else {
-		return std::make_tuple(ral::cpu::utilities::getLimitedRows(table, num_rows_limit), false, 0);
-	}
-}
-
-}  // namespace operators
-}  // namespace cpu
-
 namespace operators {
 
 using blazingdb::manager::Context;
@@ -48,112 +31,6 @@ const std::string ASCENDING_ORDER_SORT_TEXT = "ASC";
 const std::string ASCENDING_ORDER_SORT_TEXT_NULLS_FIRST = "ASC-nulls-first";
 const std::string DESCENDING_ORDER_SORT_TEXT = "DESC";
 const std::string DESCENDING_ORDER_SORT_TEXT_NULLS_LAST = "DESC-nulls-last";
-
-
-
-
-
-
-
-////////////////functors
-
-template <>
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
-    std::shared_ptr<ral::frame::BlazingTableView> t,
-    std::shared_ptr<ral::frame::BlazingTableView> values,
-    std::vector<cudf::order> const& column_order,
-    std::vector<cudf::null_order> const& null_precedence) const
-{
-  auto sortedTable = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(sortedTable_view)->view();
-  auto columns_to_search = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(t)->view();  
-  auto partitionPlan = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(values)->view();  
-  //thrust::host_vector<unsigned int> output(6);
-
-  std::shared_ptr<arrow::Array> sortedTable_array = *arrow::Concatenate(
-    sortedTable->column(0)->chunks(), arrow::default_memory_pool());
-  std::shared_ptr<arrow::Int32Array> sortedTable_col = std::dynamic_pointer_cast<arrow::Int32Array>(sortedTable_array);
-
-
-  std::shared_ptr<arrow::Array> columns_to_search_array = *arrow::Concatenate(
-    sortedTable->column(0)->chunks(), arrow::default_memory_pool());
-  std::shared_ptr<arrow::Int32Array> columns_to_search_col = std::dynamic_pointer_cast<arrow::Int32Array>(columns_to_search_array);
-
-  std::shared_ptr<arrow::Array> partitionPlan_array = *arrow::Concatenate(
-    sortedTable->column(0)->chunks(), arrow::default_memory_pool());
-  std::shared_ptr<arrow::Int32Array> partitionPlan_col = std::dynamic_pointer_cast<arrow::Int32Array>(partitionPlan_array);
-
-  thrust::host_vector<int32_t> sortedTable_vals(sortedTable_col->raw_values(), sortedTable_col->raw_values() + sortedTable_col->length());
-  thrust::host_vector<int32_t> partitionPlan_vals(partitionPlan_col->raw_values(), partitionPlan_col->raw_values() + partitionPlan_col->length());
-
-  std::vector<int32_t> out;
-  out.resize(sortedTable_vals.size()+1);
-  thrust::upper_bound(sortedTable_vals.begin(), sortedTable_vals.end(),
-                      sortedTable_vals.begin(), sortedTable_vals.end(),
-                      out.begin());
-
-  auto int_builder = std::make_unique<arrow::Int32Builder>();
-  int_builder->AppendValues(out);
-  std::shared_ptr<arrow::Array> pivot_vals;
-  int_builder->Finish(&pivot_vals);
-
-  std::vector<std::shared_ptr<arrow::Array>> cols;
-  cols.push_back(pivot_vals);
-  auto pivot_indexes = arrow::Table::Make(sortedTable->schema(), cols);
-  
-  auto split_indexes = pivot_indexes;
-
-//  auto pivot_indexes = cudf::upper_bound(columns_to_search, partitionPlan->view(), column_order, null_precedence);
-//	std::vector<cudf::size_type> split_indexes = ral::utilities::column_to_vector<cudf::size_type>(pivot_indexes->view());
-//  auto tbs = cudf::split(sortedTable->view(), split_indexes);
-//  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
-//  for (auto tb : tbs) {
-//    ret.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(tb, sortedTable_view->column_names()));
-//  }
-//  return ret;
-  
-  // TODO percy arrow
-  //return nullptr;
-  throw std::runtime_error("ERROR: upper_bound_split_functor BlazingSQL doesn't support this Arrow operator yet.");
-}
-
-template <>
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
-    std::shared_ptr<ral::frame::BlazingTableView> t,
-    std::shared_ptr<ral::frame::BlazingTableView> values,
-    std::vector<cudf::order> const& column_order,
-    std::vector<cudf::null_order> const& null_precedence) const
-{
-  auto sortedTable = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(sortedTable_view);
-  auto columns_to_search = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(t);  
-  auto partitionPlan = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(values);  
-
-  auto pivot_indexes = cudf::upper_bound(columns_to_search->view(), partitionPlan->view(), column_order, null_precedence);
-	std::vector<cudf::size_type> split_indexes = ral::utilities::column_to_vector<cudf::size_type>(pivot_indexes->view());
-  auto tbs = cudf::split(sortedTable->view(), split_indexes);
-  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
-  for (auto tb : tbs) {
-    ret.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(tb, sortedTable_view->column_names()));
-  }
-  return ret;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**---------------------------------------------------------------------------*
  * @brief Sorts the columns of the input table according the sortOrderTypes

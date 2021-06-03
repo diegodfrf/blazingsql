@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <arrow/scalar.h>
+#include "operators/operators_definitions.h"
 
 bool is_type_float(cudf::type_id type);
 bool is_type_integer(cudf::type_id type);

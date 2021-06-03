@@ -2,7 +2,6 @@
 #include "execution_graph/executor.h"
 #include "utilities/CommonOperations.h"
 #include <cudf/partitioning.hpp>
-#include <arrow/compute/api.h>
 
 // TODO percy arrow move code
 #include "utilities/CommonOperations.h"
@@ -12,195 +11,9 @@
 #include "parser/CalciteExpressionParsing.h"
 #include <cudf/aggregation.hpp>
 #include <cudf/reduction.hpp>
-#include <cudf/detail/interop.hpp>
 #include "utilities/DebuggingUtils.h"
 
-namespace ral {
-namespace cpu {
-
-std::unique_ptr<ral::frame::BlazingTable> compute_groupby_without_aggregations(
- 	std::shared_ptr<arrow::Table> table, const std::vector<int> & group_column_indices) {
-
-   std::vector<std::shared_ptr<arrow::Array>> result;
-   result.resize(group_column_indices.size());
- 
-   auto f = [&table] (int col_idx) -> std::shared_ptr<arrow::Array> {
-     auto uniques = arrow::compute::Unique(table->column(col_idx));
-     if (!uniques.ok()) {
-       // TODO throw/handle error here
-       return nullptr;
-     }
-     return std::move(uniques.ValueOrDie());
-   };
-
-   std::transform(group_column_indices.begin(), group_column_indices.end(), result.begin(), f);
-
-   return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(
-     table->schema(),
-     std::move(result),
-     table->num_rows()));
- }
-
-std::shared_ptr<arrow::Scalar> arrow_reduce(std::shared_ptr<arrow::ChunkedArray> col,
-                                std::unique_ptr<cudf::aggregation> const &agg,
-                                cudf::data_type output_dtype)
-{
- switch (agg->kind) {
-   case cudf::aggregation::SUM: {
-     auto result = arrow::compute::Sum(col);
-     // TODO percy arrow error
-     return result.ValueOrDie().scalar();
-   } break;
-   case cudf::aggregation::PRODUCT: {
-    
-   } break;
-   case cudf::aggregation::MIN: {
-    
-   } break;
-   case cudf::aggregation::MAX: {
-    
-   } break;
-   case cudf::aggregation::COUNT_VALID: {
-    
-   } break;
-   case cudf::aggregation::COUNT_ALL: {
-    
-   } break;
-   case cudf::aggregation::ANY: {
-    
-   } break;
-   case cudf::aggregation::ALL: {
-    
-   } break;
-   case cudf::aggregation::SUM_OF_SQUARES: {
-    
-   } break;
-   case cudf::aggregation::MEAN: {
-    
-   } break;
-   case cudf::aggregation::VARIANCE: {
-    
-   } break;
-   case cudf::aggregation::STD: {
-    
-   } break;
-   case cudf::aggregation::MEDIAN: {
-    
-   } break;
-   case cudf::aggregation::QUANTILE: {
-    
-   } break;
-   case cudf::aggregation::ARGMAX: {
-    
-   } break;
-   case cudf::aggregation::ARGMIN: {
-    
-   } break;
-   case cudf::aggregation::NUNIQUE: {
-    
-   } break;
-   case cudf::aggregation::NTH_ELEMENT: {
-    
-   } break;
-   case cudf::aggregation::ROW_NUMBER: {
-    
-   } break;
-   case cudf::aggregation::COLLECT_LIST: {
-    
-   } break;
-   case cudf::aggregation::COLLECT_SET: {
-    
-   } break;
-   case cudf::aggregation::LEAD: {
-    
-   } break;
-   case cudf::aggregation::LAG: {
-    
-   } break;
-   case cudf::aggregation::PTX: {
-    
-   } break;
-   case cudf::aggregation::CUDA: {
-    
-   } break;
-  };
-  return nullptr;
-}
-
-std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
- 		std::shared_ptr<ral::frame::BlazingArrowTableView> table_view, const std::vector<std::string> & aggregation_input_expressions,
- 		const std::vector<AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases)
-{
-  using namespace ral::operators;
-  
-    std::shared_ptr<arrow::Table> table = table_view->view();
-
- 	std::vector<std::shared_ptr<arrow::Scalar>> reductions;
- 	std::vector<std::string> agg_output_column_names;
- 	for (size_t i = 0; i < aggregation_types.size(); i++){
- 		if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
-            std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(table->num_rows());
- 			reductions.emplace_back(std::move(scalar));
- 		} else {
- 			std::vector<std::unique_ptr<ral::frame::BlazingColumn>> aggregation_input_scope_holder;
-            std::shared_ptr<arrow::ChunkedArray> aggregation_input;
- 			if(is_var_column(aggregation_input_expressions[i]) || is_number(aggregation_input_expressions[i])) {
- 				aggregation_input = table->column(get_index(aggregation_input_expressions[i]));
-
- 			} else {
-         //TODO percy rommel arrow
- 				//aggregation_input_scope_holder = ral::processor::evaluate_expressions(table.view(), {aggregation_input_expressions[i]});
- 				//aggregation_input = aggregation_input_scope_holder[0]->view();
- 			}
-
- 			if( aggregation_types[i] == AggregateKind::COUNT_VALID) {
-                std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(aggregation_input->length() - aggregation_input->null_count());
- 				reductions.emplace_back(std::move(scalar));
- 			} else {
-                std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation<cudf::aggregation>(aggregation_types[i]);
-                cudf::type_id theinput_type = cudf::detail::arrow_to_cudf_type(*aggregation_input->type()).id();
- 				cudf::type_id output_type = get_aggregation_output_type(theinput_type, aggregation_types[i], false);
-
- 				std::shared_ptr<arrow::Scalar> reduction_out = arrow_reduce(aggregation_input, agg, cudf::data_type(output_type));
-
- 				if (aggregation_types[i] == AggregateKind::SUM0 && !reduction_out->is_valid){ // if this aggregation was a SUM0, and it was not valid, we want it to be a valid 0 instead
-                    auto dt = cudf::detail::arrow_to_cudf_type(*reduction_out->type);
- 					std::shared_ptr<arrow::Int64Scalar> zero_scalar = std::make_shared<arrow::Int64Scalar>(0);
- 					reductions.emplace_back(std::move(zero_scalar));
- 				} else {
- 					reductions.emplace_back(std::move(reduction_out));
- 				}
- 			}
- 		}
- 		// if the aggregation was given an alias lets use it, otherwise we'll name it based on the aggregation and input
- 		if(aggregation_column_assigned_aliases[i] == "") {
- 			if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
- 				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(*)");
- 			} else {
- 				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(" + table_view->column_names().at(get_index(aggregation_input_expressions[i])) + ")");
- 			}
- 		} else {
- 			agg_output_column_names.push_back(aggregation_column_assigned_aliases[i]);
- 		}
- 	}
- 	// convert scalars into columns
- 	std::vector<std::shared_ptr<arrow::ChunkedArray>> output_columns;
- 	for (size_t i = 0; i < reductions.size(); i++){
- 		std::shared_ptr<arrow::Array> temp = arrow::MakeArrayFromScalar((*reductions[i].get()), 1).ValueOrDie();
- 		output_columns.emplace_back(std::make_shared<arrow::ChunkedArray>(temp));
- 	}
-  
-  auto new_schema = ral::cpu::utilities::build_arrow_schema(
-        output_columns,
-        agg_output_column_names,
-        table->schema()->metadata());
-  
-  auto tt = arrow::Table::Make(new_schema, output_columns);
-  return std::make_unique<ral::frame::BlazingArrowTable>(tt);
-}
-
-} // namespace cpu
-} // namespace ral
+#include "compute/api.h"
 
 namespace ral {
 namespace batch {
@@ -213,110 +26,19 @@ ComputeAggregateKernel::ComputeAggregateKernel(std::size_t kernel_id, const std:
 }
 
 
-struct groupby_without_aggregations_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> table_view,
-      std::vector<int> group_column_indices) const
-  {
-    throw std::runtime_error("ERROR: groupby_without_aggregations_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
 
-template <>
-std::unique_ptr<ral::frame::BlazingTable> groupby_without_aggregations_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<int> group_column_indices) const
-{
-  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
-  return ral::cpu::compute_groupby_without_aggregations(arrow_table_view->view(), group_column_indices);
-}
 
-template <>
-std::unique_ptr<ral::frame::BlazingTable> groupby_without_aggregations_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<int> group_column_indices) const
-{
-  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
-  return ral::operators::compute_groupby_without_aggregations(cudf_table_view, group_column_indices);
-}
+
+
 
 /// compute_aggregations_without_groupby
 
 
-struct aggregations_without_groupby_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> table_view,
-      std::vector<std::string> aggregation_input_expressions,
-      std::vector<AggregateKind> aggregation_types,
-      std::vector<std::string> aggregation_column_assigned_aliases) const
-  {
-    throw std::runtime_error("ERROR: aggregations_without_groupby_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
 
-template <>
-std::unique_ptr<ral::frame::BlazingTable> aggregations_without_groupby_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<std::string> aggregation_input_expressions,
-    std::vector<AggregateKind> aggregation_types,
-    std::vector<std::string> aggregation_column_assigned_aliases) const
-{
-  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
-  return ral::cpu::compute_aggregations_without_groupby(arrow_table_view, aggregation_input_expressions, aggregation_types, aggregation_column_assigned_aliases);
-}
 
-template <>
-std::unique_ptr<ral::frame::BlazingTable> aggregations_without_groupby_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<std::string> aggregation_input_expressions,
-    std::vector<AggregateKind> aggregation_types,
-    std::vector<std::string> aggregation_column_assigned_aliases) const
-{
-  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
-  return ral::operators::compute_aggregations_without_groupby(cudf_table_view, aggregation_input_expressions, aggregation_types, aggregation_column_assigned_aliases);
-}
 
-struct aggregations_with_groupby_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> table_view,
-      std::vector<std::string> aggregation_input_expressions,
-      std::vector<AggregateKind> aggregation_types,
-      std::vector<std::string> aggregation_column_assigned_aliases,
-      std::vector<int> group_column_indices) const
-  {
-    throw std::runtime_error("ERROR: aggregations_with_groupby_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
 
-template <>
-std::unique_ptr<ral::frame::BlazingTable> aggregations_with_groupby_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<std::string> aggregation_input_expressions,
-    std::vector<AggregateKind> aggregation_types,
-    std::vector<std::string> aggregation_column_assigned_aliases,
-    std::vector<int> group_column_indices) const
-{
-  throw std::runtime_error("ERROR: aggregations_with_groupby_functor BlazingSQL doesn't support this Arrow operator yet.");
-  return nullptr;
-}
 
-template <>
-std::unique_ptr<ral::frame::BlazingTable> aggregations_with_groupby_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<std::string> aggregation_input_expressions,
-    std::vector<AggregateKind> aggregation_types,
-    std::vector<std::string> aggregation_column_assigned_aliases,
-    std::vector<int> group_column_indices) const
-{
-  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
-  return ral::operators::compute_aggregations_with_groupby(cudf_table_view, aggregation_input_expressions, aggregation_types, aggregation_column_assigned_aliases, group_column_indices);
-}
 
 ral::execution::task_result ComputeAggregateKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,

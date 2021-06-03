@@ -7,6 +7,8 @@
 #include "cache_machine/GPUCacheData.h"
 #include "cache_machine/CacheMachine.h"
 #include "execution_graph/backend_dispatcher.h"
+#include "compute/api.h"
+#include "operators/OrderBy.h"
 
 namespace ral {
 namespace batch {

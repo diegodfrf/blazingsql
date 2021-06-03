@@ -36,13 +36,6 @@ cudf::null_equality parseJoinConditionToEqualityTypes(const std::string & condit
 
 void split_inequality_join_into_join_and_filter(const std::string & join_statement, std::string & new_join_statement, std::string & filter_statement);
 
-template<typename T>
-inline std::vector<T> merge_vectors(std::vector<T> first, std::vector<T> second){
-	std::vector<T> merged(first);
-	merged.insert(merged.end(), second.begin(), second.end());
-	return merged;
-}
-
 class PartwiseJoin : public kernel {
 public:
 	PartwiseJoin(std::size_t kernel_id, const std::string & queryString, std::shared_ptr<Context> context, std::shared_ptr<ral::cache::graph> query_graph);
