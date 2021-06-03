@@ -6,7 +6,7 @@
 #include <cudf/detail/interop.hpp>
 
 
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
 
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <execution_graph/Context.h>
-#include "LogicPrimitives.h"
+#include "execution_kernels/LogicPrimitives.h"
 #include <arrow/compute/api.h>
 
 namespace ral{
@@ -20,9 +20,8 @@ inline bool check_if_has_nulls(std::shared_ptr<arrow::Table> input, std::vector<
 
 } // namespace cpu
 
-namespace processor{
+namespace operators{
 
-bool is_logical_filter(const std::string & query_part);
 
 std::unique_ptr<ral::frame::BlazingTable> process_filter(
   std::shared_ptr<ral::frame::BlazingTableView> table_view,
@@ -38,5 +37,5 @@ std::unique_ptr<ral::frame::BlazingTable> process_distribution_table(
     std::vector<int> & columnIndices,
     blazingdb::manager::Context * context);
 
-} // namespace processor
+} // namespace operators
 } // namespace ral

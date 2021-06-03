@@ -4,7 +4,7 @@
 #include "cudf/table/table.hpp"
 #include "cudf/table/table_view.hpp"
 
-#include "execution_graph/backend.hpp"
+#include "compute/backend.h"
 #include "blazing_table/BlazingColumn.h"
 
 namespace ral {

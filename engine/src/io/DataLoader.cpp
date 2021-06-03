@@ -10,7 +10,7 @@
 #include <cudf/filling.hpp>
 #include <cudf/column/column_factories.hpp>
 #include "parser/CalciteExpressionParsing.h"
-#include "execution_kernels/LogicalFilter.h"
+#include "operators/LogicalFilter.h"
 
 #include <spdlog/spdlog.h>
 using namespace fmt::literals;

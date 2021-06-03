@@ -15,7 +15,7 @@
 #include "blazing_table/BlazingColumnOwner.h"
 #include <cudf/detail/interop.hpp>
 #include <arrow/type.h>
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
 #include "compute/api.h"
 
 

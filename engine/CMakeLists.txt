@@ -283,10 +283,9 @@ else()
   message(STATUS "SnowFlake support is disabled!")
 endif()
 
-
-
 set(COMPUTE_CUDF_SRC_FILES
-    #${PROJECT_SOURCE_DIR}/src/compute/api_cudf.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/interops.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/aggregations.cpp
 )
 
 set(COMPUTE_ARROW_SRC_FILES
@@ -309,8 +308,6 @@ set(SRC_FILES
               ${PROJECT_SOURCE_DIR}/src/cache_machine/ArrowCacheData.cpp
               ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheMachine.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_kernels/LogicPrimitives.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/LogicalFilter.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/LogicalProject.cpp
               ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingColumnOwner.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_graph/port.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_kernels/kernel.cpp
@@ -326,12 +323,17 @@ set(SRC_FILES
               ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchJoinProcessing.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchOrderByProcessing.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchUnionProcessing.cpp
+              ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchFilterProcessing.cpp
+              ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchProjectionProcessing.cpp
+              ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchScanProcessing.cpp
               # TODO percy arrow
               #${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchWindowFunctionProcessing.cpp
               ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchProcessing.cpp
               ${PROJECT_SOURCE_DIR}/src/config/GPUManager.cu
               ${PROJECT_SOURCE_DIR}/src/operators/OrderBy.cpp
               ${PROJECT_SOURCE_DIR}/src/operators/GroupBy.cpp
+              ${PROJECT_SOURCE_DIR}/src/operators/LogicalFilter.cpp
+              ${PROJECT_SOURCE_DIR}/src/operators/LogicalProject.cpp
               ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/compatibility/SQLTranspiler.cpp
               ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/AbstractSQLDataProvider.cpp
               ${PROJECT_SOURCE_DIR}/src/io/data_provider/UriDataProvider.cpp
@@ -359,7 +361,12 @@ set(SRC_FILES
               ${PROJECT_SOURCE_DIR}/src/execution_graph/CalciteInterpreter.cpp
               ${PROJECT_SOURCE_DIR}/src/parser/expression_utils.cpp
               ${PROJECT_SOURCE_DIR}/src/parser/expression_tree.cpp
-              
+
+              ${PROJECT_SOURCE_DIR}/src/parser/filter_parser_utils.cpp
+              ${PROJECT_SOURCE_DIR}/src/parser/groupby_parser_utils.cpp
+              ${PROJECT_SOURCE_DIR}/src/parser/project_parser_utils.cpp
+              ${PROJECT_SOURCE_DIR}/src/parser/orderby_parser_utils.cpp
+
               # TODO percy arrow
               #${PROJECT_SOURCE_DIR}/src/skip_data/SkipDataProcessor.cpp
               #${PROJECT_SOURCE_DIR}/src/skip_data/utils.cpp

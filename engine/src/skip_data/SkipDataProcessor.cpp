@@ -8,8 +8,8 @@
 #include "blazing_table/BlazingColumnView.h"
 #include <cudf/column/column_factories.hpp>
 #include "parser/CalciteExpressionParsing.h"
-#include "execution_kernels/LogicalFilter.h"
-#include "execution_kernels/LogicalProject.h"
+#include "operators/LogicalFilter.h"
+#include "operators/LogicalProject.h"
 #include "utilities/error.hpp"
 
 #include <numeric>

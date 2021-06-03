@@ -343,5 +343,5 @@ struct upper_bound_split_functor {
 //} // voltron
 
 
-#include "api_cudf.cpp"
-#include "api_arrow.cpp"
+#include "compute/cudf/api_cudf.cpp"
+#include "compute/arrow/api_arrow.cpp"

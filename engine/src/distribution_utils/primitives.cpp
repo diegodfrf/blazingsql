@@ -12,7 +12,7 @@
 
 #include "utilities/CommonOperations.h"
 #include "operators/OrderBy.h"
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
 
 #include "utilities/error.hpp"
 #include "utilities/ctpl_stl.h"

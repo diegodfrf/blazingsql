@@ -1,4 +1,5 @@
-#include <spdlog/spdlog.h>
+#include "project_parser_utils.h"
+
 #include <cudf/copying.hpp>
 #include <cudf/replace.hpp>
 #include <cudf/strings/capitalize.hpp>
@@ -15,32 +16,10 @@
 #include <cudf/strings/convert/convert_integers.hpp>
 #include <cudf/unary.hpp>
 #include "blazing_table/BlazingColumnOwner.h"
-#include "LogicalProject.h"
 #include "utilities/transform.hpp"
 #include "Interpreter/interpreter_cpp.h"
 #include "parser/expression_utils.hpp"
 #include "compute/api.h"
-
-namespace ral {
-namespace processor {
-
-// forward declaration
-std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(const cudf::table_view & table, const std::vector<std::string> & expressions);
-
-namespace strings {
-
-
-
-
-
-
-
-} // namespace strings
-
-
-
-
-
 
 
 std::string like_expression_to_regex_str(const std::string & like_exp) {
@@ -138,65 +117,21 @@ cudf::data_type expr_output_type_visitor::get_expr_output_type() { return expr_o
 
 const std::vector<cudf::size_type> & expr_output_type_visitor::get_variable_indices() { return variable_indices_; }
 
+// Use get_projections and if there are no projections or expression is empty
+// then returns a filled array with the sequence of all columns (0, 1, ..., n)
+std::vector<int> get_projections_wrapper(size_t num_columns, const std::string &expression)
+{
+  if (expression.empty()) {
+    std::vector<int> projections(num_columns);
+    std::iota(projections.begin(), projections.end(), 0);
+return projections;
+  }
 
-
-
-
-
-std::unique_ptr<ral::frame::BlazingTable> process_project(
-  std::unique_ptr<ral::frame::BlazingTable> blazing_table_in,
-  const std::string & query_part,
-  blazingdb::manager::Context * context) {
-    std::string combined_expression = get_query_part(query_part);
-
-    std::vector<std::string> named_expressions = get_expressions_from_expression_list(combined_expression);
-    std::vector<std::string> expressions(named_expressions.size());
-    std::vector<std::string> out_column_names(named_expressions.size());
-    for(size_t i = 0; i < named_expressions.size(); i++) {
-        const std::string & named_expr = named_expressions[i];
-
-        std::string name = named_expr.substr(0, named_expr.find("=["));
-        std::string expression = named_expr.substr(named_expr.find("=[") + 2 , (named_expr.size() - named_expr.find("=[")) - 3);
-        expression = fill_minus_op_with_zero(expression);
-        expression = convert_concat_expression_into_multiple_binary_concat_ops(expression);
-        expression = get_current_date_or_timestamp(expression, context);
-        expression = convert_ms_to_ns_units(expression);
-        expression = reinterpret_timestamp(expression, blazing_table_in->column_types());
-        expression = apply_interval_conversion(expression, blazing_table_in->column_types());
-
-        expressions[i] = expression;
-        out_column_names[i] = name;
-    }
-
-    
-    // TODO percy arrow delete these comments ltr
-    // cudf functor
-//    auto blazing_table_in_cudf = dynamic_cast<ral::frame::BlazingCudfTable*>(blazing_table_in.get());
-//    std::unique_ptr<ral::frame::BlazingTable> evaluated_table = ral::execution::backend_dispatcher(
-//      blazing_table_in->get_execution_backend(),
-//      evaluate_expressions_wo_filter_functor(),
-//      blazing_table_in_cudf->view(), expressions, out_column_names);
-    
-//    //auto evaluated_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(evaluated_table.get());
-//    //return std::make_unique<ral::frame::BlazingCudfTable>(evaluated_table_ptr->view(), out_column_names);
-//    return evaluated_table;
-    
-//    return ral::execution::backend_dispatcher(
-//        blazing_table_in->get_execution_backend(),
-//        evaluate_expressions_functor(),
-//        blazing_table_in->to_table_view(), expressions);
-
-        return ral::execution::backend_dispatcher(
-          blazing_table_in->get_execution_backend(),
-          evaluate_expressions_wo_filter_functor(),
-          blazing_table_in->to_table_view(), expressions, out_column_names);
-    
-// original    
-//    return ral::execution::backend_dispatcher(
-//      blazing_table_in->get_execution_backend(),
-//      process_project_functor(),
-//      std::move(blazing_table_in), expressions, out_column_names);
+  std::vector<int> projections = get_projections(expression);
+  if(projections.size() == 0){
+      projections.resize(num_columns);
+      std::iota(projections.begin(), projections.end(), 0);
+  }
+  return projections;
 }
 
-} // namespace processor
-} // namespace ral

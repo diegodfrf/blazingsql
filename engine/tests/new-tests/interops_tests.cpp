@@ -13,7 +13,7 @@
 #include "cudf_test/type_lists.hpp"
 #include "cudf_test/type_list_utilities.hpp"
 #include "Interpreter/interpreter_cpp.h"
-#include "execution_kernels/LogicalProject.h"
+#include "operators/LogicalProject.h"
 #include "tests/utilities/BlazingUnitTest.h"
 #include <thrust/host_vector.h>
 
@@ -436,7 +436,7 @@ TYPED_TEST(InteropsTestTimestamp, test_day_of_week_project) {
 
     std::unique_ptr<ral::frame::BlazingTable> blazing_table = std::make_unique<ral::frame::BlazingTable>(in_table_view,
                                                                                                          out_column_names);
-    std::unique_ptr<ral::frame::BlazingTable> out_table_view = ral::processor::process_project(std::move(blazing_table),
+    std::unique_ptr<ral::frame::BlazingTable> out_table_view = ral::operators::process_project(std::move(blazing_table),
                                                                                                query_part, nullptr);
 
     if (cudf::type_to_id<T>() == cudf::type_id::TIMESTAMP_DAYS) {

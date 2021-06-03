@@ -1,9 +1,7 @@
 #pragma once
 
 #include <execution_graph/Context.h>
-#include "LogicPrimitives.h"
 #include "blazing_table/BlazingColumn.h"
-#include "execution_graph/backend_dispatcher.h"
 #include <cudf/copying.hpp>
 #include "utilities/error.hpp"
 #include <cudf/stream_compaction.hpp>
@@ -25,13 +23,6 @@
 #include <cudf/unary.hpp>
 #include "parser/expression_tree.hpp"
 #include "parser/expression_utils.hpp"
-
-
-namespace ral{
-namespace processor{
-
-
-
 
 std::string like_expression_to_regex_str(const std::string & like_exp);
 
@@ -96,60 +87,8 @@ private:
 	cudf::table_view table_;
 };
 
+// Use get_projections and if there are no projections or expression is empty
+// then returns a filled array with the sequence of all columns (0, 1, ..., n)
+std::vector<int> get_projections_wrapper(size_t num_columns, const std::string &expression = "");
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// se vaa
-std::unique_ptr<ral::frame::BlazingTable> process_project(
-  std::unique_ptr<ral::frame::BlazingTable> blazing_table_in,
-  const std::string & query_part,
-  blazingdb::manager::Context * context);
-
-
-//struct evaluate_expressions_vector_functor {
-//  template <typename T>
-//  std::vector<std::unique_ptr<ral::frame::BlazingTable>> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view,
-//  const std::vector<std::string> & expressions) const
-//  {
-//    // TODO percy arrow thrown error
-//    return nullptr;
-//  }
-//};
-
-//template <>
-//std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_vector_functor::operator()<ral::frame::BlazingArrowTable>(
-//  std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::vector<std::string> & expressions) const
-//{
-//  ral::frame::BlazingArrowTableView *table_view_ptr = dynamic_cast<ral::frame::BlazingArrowTableView*>(table_view.get());
-//  std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluated_table = ral::cpu::evaluate_expressions(table_view_ptr->view(), expressions);
-
-//  // TODO percy arrow
-//  //RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression does not evaluate to a boolean mask");
-
-//  return ral::cpu::applyBooleanFilter(table_view_ptr->view(), evaluated_table[0]);
-//}
-
-//template <>
-//std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_vector_functor::operator()<ral::frame::BlazingCudfTable>(
-//  std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::vector<std::string> & expressions) const
-//{
-//    auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
-//    std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluated_table = evaluate_expressions(cudf_table_view->view(), expressions);
-//    RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression does not evaluate to a boolean mask");
-//    return applyBooleanFilter(cudf_table_view, evaluated_table[0]->view());
-//}
-
-} // namespace processor
-} // namespace ral
+std::string get_current_date_or_timestamp(std::string expression, blazingdb::manager::Context * context);

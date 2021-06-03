@@ -6,13 +6,13 @@
 // TODO percy arrow move code
 #include "utilities/CommonOperations.h"
 #include "parser/expression_utils.hpp"
-#include "execution_kernels/LogicalProject.h"
+#include "operators/LogicalProject.h"
 #include "operators/GroupBy.h"
 #include "parser/CalciteExpressionParsing.h"
 #include <cudf/aggregation.hpp>
 #include <cudf/reduction.hpp>
 #include "utilities/DebuggingUtils.h"
-
+#include "parser/groupby_parser_utils.h"
 #include "compute/api.h"
 
 namespace ral {
@@ -88,7 +88,7 @@ kstatus ComputeAggregateKernel::run() {
 
     // in case UNION exists, we want to know the num of columns
     std::tie(this->group_column_indices, this->aggregation_input_expressions, this->aggregation_types,
-        aggregation_column_assigned_aliases) = ral::operators::parseGroupByExpression(this->expression, cache_data->num_columns());
+        aggregation_column_assigned_aliases) = parseGroupByExpression(this->expression, cache_data->num_columns());
 
     while(cache_data != nullptr ){
         std::vector<std::unique_ptr <ral::cache::CacheData> > inputs;
@@ -271,10 +271,10 @@ kstatus DistributeAggregateKernel::run() {
 
     // in case UNION exists, we want to know the num of columns
     std::tie(group_column_indices, aggregation_input_expressions, aggregation_types,
-        aggregation_column_assigned_aliases) = ral::operators::parseGroupByExpression(this->expression, cache_data->num_columns());
+        aggregation_column_assigned_aliases) = parseGroupByExpression(this->expression, cache_data->num_columns());
 
     // we want to update the `columns_to_hash` because the input could have more columns after ComputeAggregateKernel
-    std::tie(columns_to_hash, std::ignore, std::ignore, std::ignore) = ral::operators::modGroupByParametersPostComputeAggregations(group_column_indices,
+    std::tie(columns_to_hash, std::ignore, std::ignore, std::ignore) = modGroupByParametersPostComputeAggregations(group_column_indices,
                                                                                              aggregation_types, cache_data->column_names());
 
     while(cache_data != nullptr ){
@@ -366,13 +366,13 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
         std::vector<std::string> aggregation_input_expressions, aggregation_column_assigned_aliases;
         std::vector<AggregateKind> aggregation_types;
         std::tie(group_column_indices, aggregation_input_expressions, aggregation_types,
-            aggregation_column_assigned_aliases) = ral::operators::parseGroupByExpression(this->expression,concatenated->num_columns());
+            aggregation_column_assigned_aliases) = parseGroupByExpression(this->expression,concatenated->num_columns());
 
         std::vector<int> mod_group_column_indices;
         std::vector<std::string> mod_aggregation_input_expressions, mod_aggregation_column_assigned_aliases, merging_column_names;
         std::vector<AggregateKind> mod_aggregation_types;
         std::tie(mod_group_column_indices, mod_aggregation_input_expressions, mod_aggregation_types,
-            mod_aggregation_column_assigned_aliases) = ral::operators::modGroupByParametersPostComputeAggregations(
+            mod_aggregation_column_assigned_aliases) = modGroupByParametersPostComputeAggregations(
             group_column_indices, aggregation_types, concatenated->column_names());
 
         std::unique_ptr<ral::frame::BlazingTable> columns = nullptr;

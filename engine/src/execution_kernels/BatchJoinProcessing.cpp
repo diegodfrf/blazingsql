@@ -6,10 +6,10 @@
 #include <cudf/partitioning.hpp>
 #include <cudf/join.hpp>
 #include <cudf/stream_compaction.hpp>
-#include <src/execution_kernels/LogicalFilter.h>
+#include <src/operators/LogicalFilter.h>
 #include "execution_graph/executor.h"
 #include "cache_machine/CPUCacheData.h"
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
 #include "compute/api.h"
 
 namespace ral {
@@ -461,7 +461,7 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 		auto log_output_num_bytes = joined->size_in_bytes();
 
 		if (filter_statement != "") {
-			auto filter_table = ral::processor::process_filter(joined->to_table_view(), filter_statement, this->context.get());
+			auto filter_table = ral::operators::process_filter(joined->to_table_view(), filter_statement, this->context.get());
 			eventTimer.stop();
 
 			log_output_num_rows = filter_table->num_rows();
@@ -1209,8 +1209,6 @@ kstatus JoinPartitionKernel::run() {
 std::string JoinPartitionKernel::get_join_type() {
 	return join_type;
 }
-
-// END JoinPartitionKernel
 
 } // namespace batch
 } // namespace ral

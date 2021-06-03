@@ -9,7 +9,7 @@
 #include "cudf_test/column_wrapper.hpp"
 #include "cudf_test/table_utilities.hpp"
 #include "cudf_test/type_lists.hpp"
-#include "execution_kernels/LogicalFilter.h"
+#include "operators/LogicalFilter.h"
 #include "utilities/DebuggingUtils.h"
 #include "tests/utilities/BlazingUnitTest.h"
 
@@ -31,7 +31,7 @@ TYPED_TEST(LogicalFilterTest, filter_input_table_empty)
   cudf::table_view in_table_view ({col1});
   std::vector<std::string> column_names(in_table_view.num_columns());
 
-  auto out_table = ral::processor::process_filter(BlazingTableView{in_table_view, column_names},
+  auto out_table = ral::operators::process_filter(BlazingTableView{in_table_view, column_names},
                                                   "LogicalFilter(condition=[<(+($0, $1), 0)])",
                                                   nullptr);
   
@@ -61,7 +61,7 @@ TYPED_TEST(LogicalFilterTest, filter_out_table_empty)
   cudf::table_view in_table_view {{col1, col2}};
   std::vector<std::string> column_names(in_table_view.num_columns());
 
-  auto out_table = ral::processor::process_filter(BlazingTableView{in_table_view, column_names},
+  auto out_table = ral::operators::process_filter(BlazingTableView{in_table_view, column_names},
                                                   "LogicalFilter(condition=[<(+($0, $1), 0)])",
                                                   nullptr);
   
@@ -92,7 +92,7 @@ TYPED_TEST(LogicalFilterTest, filter_table)
   cudf::table_view in_table_view {{col1, col2}};
   std::vector<std::string> column_names(in_table_view.num_columns());
 
-  auto out_table = ral::processor::process_filter(BlazingTableView{in_table_view, column_names},
+  auto out_table = ral::operators::process_filter(BlazingTableView{in_table_view, column_names},
                                                   "LogicalFilter(condition=[=(MOD(+($0, $1), 2), 0)])",
                                                   nullptr);
 
@@ -141,7 +141,7 @@ TYPED_TEST(LogicalFilterTest, filter_table_with_nulls)
   cudf::table_view in_table_view {{col1, col2}};
   std::vector<std::string> column_names(in_table_view.num_columns());
 
-  auto out_table = ral::processor::process_filter(BlazingTableView{in_table_view, column_names},
+  auto out_table = ral::operators::process_filter(BlazingTableView{in_table_view, column_names},
                                                   "LogicalFilter(condition=[=(MOD(+($0, $1), 2), 0)])",
                                                   nullptr);
 
@@ -183,7 +183,7 @@ TEST_F(LogicalFilterWithStringsTest, NoNulls)
   cudf::table_view in_table_view ({col1, col2});
   std::vector<std::string> column_names{"col1", "col2"};
 
-  auto out_table = ral::processor::process_filter(ral::frame::BlazingTableView{in_table_view, column_names},
+  auto out_table = ral::operators::process_filter(ral::frame::BlazingTableView{in_table_view, column_names},
                                                   "LogicalFilter(condition=[=($0, 'bar')])", nullptr);
   
   cudf::test::strings_column_wrapper expected_col1({"bar"});
@@ -202,7 +202,7 @@ TEST_F(LogicalFilterWithStringsTest, IneqWithNulls)
   cudf::table_view in_table_view ({col1, col2});
   std::vector<std::string> column_names{"col1", "col2"};
 
-  auto out_table = ral::processor::process_filter(ral::frame::BlazingTableView{in_table_view, column_names},
+  auto out_table = ral::operators::process_filter(ral::frame::BlazingTableView{in_table_view, column_names},
                                                   "LogicalFilter(condition=[>($0, 'd')])", nullptr);
 
   cudf::test::strings_column_wrapper expected_col1({"foo", "hello", "l"}, {1, 1, 1});

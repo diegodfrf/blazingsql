@@ -5,7 +5,7 @@
 #include "LogicalProject.h"
 #include "parser/expression_utils.hpp"
 #include "utilities/error.hpp"
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
 #include "blazing_table/BlazingColumn.h"
 #include "blazing_table/BlazingColumnView.h"
 
@@ -13,17 +13,7 @@
 
 
 namespace ral {
-namespace processor {
-namespace {
-
-const std::string LOGICAL_FILTER = "LogicalFilter";
-
-} // namespace
-
-bool is_logical_filter(const std::string & query_part) {
-  return query_part.find(LOGICAL_FILTER) != std::string::npos;
-}
-
+namespace operators {
 std::unique_ptr<ral::frame::BlazingTable> process_filter(
   std::shared_ptr<ral::frame::BlazingTableView> table_view,
   const std::string & query_part,
@@ -57,5 +47,5 @@ std::unique_ptr<ral::frame::BlazingTable> process_filter(
 
   
 
-} // namespace processor
+} // namespace operators
 } // namespace ral

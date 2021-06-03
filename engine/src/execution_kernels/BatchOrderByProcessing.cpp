@@ -6,9 +6,10 @@
 #include "cache_machine/CPUCacheData.h"
 #include "cache_machine/GPUCacheData.h"
 #include "cache_machine/CacheMachine.h"
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
 #include "compute/api.h"
 #include "operators/OrderBy.h"
+#include "parser/orderby_parser_utils.h"
 
 namespace ral {
 namespace batch {
@@ -22,12 +23,12 @@ PartitionSingleNodeKernel::PartitionSingleNodeKernel(std::size_t kernel_id, cons
 
     if (is_window_function(this->expression)) {
         if (window_expression_contains_partition_by(this->expression)){
-            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = ral::operators::get_vars_to_partition(this->expression);
+            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_partition(this->expression);
         } else {
-            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = ral::operators::get_vars_to_orders(this->expression);
+            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_orders(this->expression);
 		}
     } else {
-        std::tie(sortColIndices, sortOrderTypes, sortOrderNulls, std::ignore) = ral::operators::get_sort_vars(this->expression);
+        std::tie(sortColIndices, sortOrderTypes, sortOrderNulls, std::ignore) = get_sort_vars(this->expression);
     }
 }
 
@@ -375,12 +376,12 @@ PartitionKernel::PartitionKernel(std::size_t kernel_id, const std::string & quer
 
     if (is_window_function(this->expression)) {
         if (window_expression_contains_partition_by(this->expression)){
-            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = ral::operators::get_vars_to_partition(this->expression);
+            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_partition(this->expression);
         } else {
-            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = ral::operators::get_vars_to_orders(this->expression);
+            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_orders(this->expression);
 		}
     } else {
-        std::tie(sortColIndices, sortOrderTypes, sortOrderNulls, std::ignore) = ral::operators::get_sort_vars(this->expression);
+        std::tie(sortColIndices, sortOrderTypes, sortOrderNulls, std::ignore) = get_sort_vars(this->expression);
     }
 }
 
@@ -650,7 +651,7 @@ kstatus LimitKernel::run() {
     }
 
     cudf::size_type limitRows;
-    std::tie(std::ignore, std::ignore, std::ignore, limitRows) = ral::operators::get_sort_vars(this->expression);
+    std::tie(std::ignore, std::ignore, std::ignore, limitRows) = get_sort_vars(this->expression);
     rows_limit = limitRows;
 
     if(this->context->getTotalNodes() > 1 && rows_limit >= 0) {

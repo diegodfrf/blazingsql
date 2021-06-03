@@ -1,7 +1,7 @@
 #pragma once
 
+#include "compute/backend.h"
 #include "kernel_type.h"
-#include "execution_graph/backend.hpp"
 #include "execution_graph/port.h"
 #include "execution_graph/graph.h"
 

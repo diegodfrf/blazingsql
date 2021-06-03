@@ -1,5 +1,6 @@
 #pragma once
 
+
 enum AggregateKind{
 	SUM,
 	SUM0,
@@ -14,5 +15,3 @@ enum AggregateKind{
 	LEAD,
 	NTH_ELEMENT
 };
-
-

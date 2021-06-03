@@ -1,8 +1,8 @@
 #include <spdlog/spdlog.h>
 #include "tests/utilities/BlazingUnitTest.h"
 
-#include <src/execution_kernels/LogicalFilter.h>
-#include <src/execution_kernels/LogicalProject.h>
+#include <src/operators/LogicalFilter.h>
+#include <src/operators/LogicalProject.h>
 #include <src/cache_machine/CacheMachine.h>
 #include <src/utilities/DebuggingUtils.h>
 
