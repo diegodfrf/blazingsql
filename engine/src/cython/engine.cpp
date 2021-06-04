@@ -78,7 +78,6 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
     auto _name = tableSchema.names;
     auto _calcite_to_file_indices = tableSchema.calcite_to_file_indices;
     auto _in_file = tableSchema.in_file;
-    std::cout << tableSchema.row_groups_ids.size() << "\n";
     auto _row_groups_ids = tableSchema.row_groups_ids;
     
     ral::io::Schema schema;
