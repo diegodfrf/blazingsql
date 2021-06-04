@@ -228,7 +228,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_wo_filter_
 //}
 
 template <>
-inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingCudfTableView>(
+inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingCudfTable>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
   auto *table_view_ptr = dynamic_cast<ral::frame::BlazingCudfTableView*>(table_view.get());

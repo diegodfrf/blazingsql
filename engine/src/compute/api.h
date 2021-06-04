@@ -178,7 +178,7 @@ struct reordering_columns_due_to_right_join_functor {
 struct build_only_schema {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view) const {
-    throw std::runtime_error("ERROR: build_only_schema BlazingSQL doesn't support this Arrow operator yet.");
+    throw std::runtime_error("ERROR: build_only_schema This default dispatcher operator should not be called.");
     return nullptr;
   }
 };

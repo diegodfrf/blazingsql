@@ -302,9 +302,10 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::o
 //}
 
 template <>
-inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingArrowTableView>(
+inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<ral::frame::BlazingArrowTable>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view) const
 {
+  throw std::runtime_error("ERROR: build_only_schema BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
 }
 
