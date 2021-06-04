@@ -3,11 +3,11 @@
 #include "utilities/CommonOperations.h"
 #include <cudf/partitioning.hpp>
 
-// TODO percy arrow move code
 #include "utilities/CommonOperations.h"
 #include "parser/expression_utils.hpp"
 #include "operators/LogicalProject.h"
 #include "operators/GroupBy.h"
+#include "operators/Concatenate.h"
 #include "parser/CalciteExpressionParsing.h"
 #include <cudf/aggregation.hpp>
 #include <cudf/reduction.hpp>
@@ -24,21 +24,6 @@ ComputeAggregateKernel::ComputeAggregateKernel(std::size_t kernel_id, const std:
     : kernel{kernel_id, queryString, context, kernel_type::ComputeAggregateKernel} {
     this->query_graph = query_graph;
 }
-
-
-
-
-
-
-
-/// compute_aggregations_without_groupby
-
-
-
-
-
-
-
 
 ral::execution::task_result ComputeAggregateKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
@@ -153,7 +138,6 @@ std::pair<bool, uint64_t> ComputeAggregateKernel::get_estimated_output_num_rows(
 }
 
 // END ComputeAggregateKernel
-
 
 std::vector<std::shared_ptr<ral::frame::BlazingTableView>> DistributeAggregateKernel::prepare_partitions(std::shared_ptr<ral::frame::BlazingTableView> table_view,
                                                                                                         int num_partitions,
@@ -341,7 +325,7 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
         }
 
         CodeTimer eventTimer;
-        if( ral::utilities::checkIfConcatenatingStringsWillOverflow(tableViewsToConcat)) {
+        if( checkIfConcatenatingStringsWillOverflow(tableViewsToConcat)) {
             if(logger) {
                 logger->warn("{query_id}|{step}|{substep}|{info}",
                                 "query_id"_a=(context ? std::to_string(context->getContextToken()) : ""),
@@ -350,7 +334,7 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
                                 "info"_a="In MergeAggregateKernel::run Concatenating Strings will overflow strings length");
             }
         }
-        auto concatenated = ral::utilities::concatTables(tableViewsToConcat);
+        auto concatenated = concatTables(tableViewsToConcat);
 
         auto log_input_num_rows = concatenated ? concatenated->num_rows() : 0;
         auto log_input_num_bytes = concatenated ? concatenated->size_in_bytes() : 0;

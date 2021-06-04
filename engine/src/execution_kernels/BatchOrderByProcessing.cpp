@@ -9,6 +9,7 @@
 #include "compute/backend_dispatcher.h"
 #include "compute/api.h"
 #include "operators/OrderBy.h"
+#include "operators/Concatenate.h"
 #include "parser/orderby_parser_utils.h"
 
 namespace ral {
@@ -174,7 +175,7 @@ void SortAndSampleKernel::compute_partition_plan(
             total_num_rows_for_sampling, final_avg_bytes_per_row, this->expression, this->context.get());
         this->add_to_output_cache(std::move(partitionPlan), "output_b");
     } else { // distributed mode
-        if( ral::utilities::checkIfConcatenatingStringsWillOverflow(inputSamples)) {
+        if( checkIfConcatenatingStringsWillOverflow(inputSamples)) {
             if(logger){
                 logger->warn("{query_id}|{step}|{substep}|{info}",
                                 "query_id"_a=(context ? std::to_string(context->getContextToken()) : ""),
@@ -204,7 +205,7 @@ void SortAndSampleKernel::compute_partition_plan(
             for (std::size_t i = 0; i < inputSamples.size(); i++){
                 sampledTableViews.push_back(inputSamples[i]->to_table_view());
             }
-            auto concatSamples = ral::utilities::concatTables(sampledTableViews);
+            auto concatSamples = concatTables(sampledTableViews);
             concatSamples->ensureOwnership();
 
             ral::cache::MetadataDictionary extra_metadata;

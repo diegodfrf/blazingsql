@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include "blazing_table/BlazingTable.h"
-#include "blazing_table/BlazingCudfTableView.h"
 #include "cudf/column/column_factories.hpp"
 #include <random>
 #include <arrow/scalar.h>
@@ -33,14 +32,6 @@ namespace utilities {
 
 using namespace ral::frame;
 
-bool checkIfConcatenatingStringsWillOverflow_gpu(const std::vector<std::shared_ptr<BlazingCudfTableView>> & tables);
-
-bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<BlazingTableView>> & tables);
-bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::unique_ptr<BlazingTable>> & tables);
-
-std::unique_ptr<BlazingTable> concatTables(const std::vector<std::shared_ptr<BlazingTableView>> & tables);
-
-std::unique_ptr<BlazingTable> getLimitedRows(std::shared_ptr<BlazingTableView> table_view, cudf::size_type num_rows, bool front=true);
 
 std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
 	const std::vector<cudf::data_type> &dtypes, std::vector<size_t> column_indices = std::vector<size_t>());

@@ -32,6 +32,7 @@
 #include "compute/cudf/detail/filter.h"
 #include "compute/cudf/detail/nulls.h"
 #include "compute/cudf/detail/search.h"
+#include "compute/cudf/detail/concatenate.h"
 #include "utilities/error.hpp"
 #include "blazing_table/BlazingCudfTable.h"
 
@@ -302,7 +303,7 @@ inline bool checkIfConcatenatingStringsWillOverflow_functor::operator()<ral::fra
   for (auto tv : tables) {
     in.push_back(std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(tv));
   }
-  return ral::utilities::checkIfConcatenatingStringsWillOverflow_gpu(in);
+  return checkIfConcatenatingStringsWillOverflow_gpu(in);
 }
 
 template <>

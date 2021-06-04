@@ -12,6 +12,7 @@
 
 #include "utilities/CommonOperations.h"
 #include "operators/OrderBy.h"
+#include "operators/Concatenate.h"
 #include "compute/backend_dispatcher.h"
 
 #include "utilities/error.hpp"
@@ -44,7 +45,7 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 		samplesView.push_back(samples[i]->to_table_view());
 	}
 
-	std::unique_ptr<BlazingTable> concatSamples = ral::utilities::concatTables(samplesView);
+	std::unique_ptr<BlazingTable> concatSamples = concatTables(samplesView);
 
 	std::unique_ptr<ral::frame::BlazingTable> sortedSamples = ral::execution::backend_dispatcher(concatSamples->to_table_view()->get_execution_backend(), sorted_order_gather_functor(),
 		concatSamples->to_table_view(), concatSamples->to_table_view(), sortOrderTypes, sortOrderNulls);

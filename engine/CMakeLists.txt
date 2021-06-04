@@ -292,6 +292,7 @@ set(COMPUTE_CUDF_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/join.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/nulls.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/search.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/concatenate.cpp
 
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTableView.cpp
@@ -348,6 +349,7 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/operators/GroupBy.cpp
         ${PROJECT_SOURCE_DIR}/src/operators/LogicalFilter.cpp
         ${PROJECT_SOURCE_DIR}/src/operators/LogicalProject.cpp
+        ${PROJECT_SOURCE_DIR}/src/operators/Concatenate.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/compatibility/SQLTranspiler.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/AbstractSQLDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/UriDataProvider.cpp

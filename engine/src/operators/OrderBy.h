@@ -42,6 +42,8 @@ std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partition_table(std::
 	std::shared_ptr<ral::frame::BlazingTableView> sortedTable, const std::vector<cudf::order> & sortOrderTypes,	const std::vector<int> & sortColIndices,
   const std::vector<cudf::null_order> & sortOrderNulls);
 
+std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<ral::frame::BlazingTableView> table_view, cudf::size_type num_rows, bool front=true);
+
 std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t> limit_table(std::shared_ptr<ral::frame::BlazingTableView> table_view, int64_t num_rows_limit);
 
 std::unique_ptr<ral::frame::BlazingTable> merge(std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitions_to_merge, const std::string & query_part);

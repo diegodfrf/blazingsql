@@ -16,6 +16,7 @@
 #include <thrust/host_vector.h>
 #include "compute/api.h"
 #include "parser/orderby_parser_utils.h"
+#include "operators/Concatenate.h"
 
 using namespace fmt::literals;
 
@@ -52,8 +53,29 @@ std::unique_ptr<ral::frame::BlazingTable> logicalSort(
     table_view, sortColumns, sortOrderTypes, sortOrderNulls);
 }
 
-
-
+std::unique_ptr<BlazingTable> getLimitedRows(std::shared_ptr<BlazingTableView> table, cudf::size_type num_rows, bool front){
+	if (num_rows == 0) {
+    return ral::execution::backend_dispatcher(
+          table->get_execution_backend(),
+          create_empty_table_like_functor(),
+          table);
+	} else if (num_rows < table->num_rows()) {
+		std::unique_ptr<ral::frame::BlazingTable> cudf_table;
+		if (front){
+			std::vector<cudf::size_type> splits = {num_rows};
+			auto split_table = ral::execution::backend_dispatcher(table->get_execution_backend(), split_functor(), table, splits);
+			cudf_table = ral::execution::backend_dispatcher(split_table[0]->get_execution_backend(), from_table_view_to_table_functor(), split_table[0]);
+		} else { // back
+			std::vector<cudf::size_type> splits;
+      splits.push_back(table->num_rows() - num_rows);
+      auto split_table = ral::execution::backend_dispatcher(table->get_execution_backend(), split_functor(), table, splits);
+      cudf_table = ral::execution::backend_dispatcher(split_table[1]->get_execution_backend(), from_table_view_to_table_functor(), split_table[1]);
+		}
+		return cudf_table;
+	} else {
+    return ral::execution::backend_dispatcher(table->get_execution_backend(), from_table_view_to_table_functor(), table);
+	}
+}
 
 std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t>
 limit_table(std::shared_ptr<ral::frame::BlazingTableView> table_view, int64_t num_rows_limit) {
@@ -72,7 +94,7 @@ limit_table(std::shared_ptr<ral::frame::BlazingTableView> table_view, int64_t nu
                                                         table_view);
 		return std::make_tuple(std::move(temp), true, num_rows_limit - table_rows);
 	} else {
-		return std::make_tuple(ral::utilities::getLimitedRows(table_view, num_rows_limit), false, 0);
+		return std::make_tuple(getLimitedRows(table_view, num_rows_limit), false, 0);
 	}
 }
 
@@ -199,7 +221,7 @@ std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(
                                     "info"_a="Determining Number of Order By Partitions " + info);
     }
 
-	if( ral::utilities::checkIfConcatenatingStringsWillOverflow(samples)) {
+	if( checkIfConcatenatingStringsWillOverflow(samples)) {
 	    if(logger){
             logger->warn("{query_id}|{step}|{substep}|{info}",
                             "query_id"_a=(context ? std::to_string(context->getContextToken()) : ""),

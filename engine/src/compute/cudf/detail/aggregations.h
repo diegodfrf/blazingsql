@@ -1,6 +1,6 @@
 #pragma once
 
-#include "blazing_table/BlazingTable.h"
+#include "blazing_table/BlazingCudfTable.h"
 #include <cudf/aggregation.hpp>
 #include "Util/StringUtil.h"
 #include <regex>
