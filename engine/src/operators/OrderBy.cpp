@@ -2,7 +2,6 @@
 #include "parser/CalciteExpressionParsing.h"
 #include "utilities/CodeTimer.h"
 #include "communication/CommunicationData.h"
-#include "distribution_utils/primitives.h"
 #include <blazingdb/io/Library/Logging/Logger.h>
 #include <cudf/copying.hpp>
 #include <cudf/sorting.hpp>
@@ -17,6 +16,7 @@
 #include "compute/api.h"
 #include "parser/orderby_parser_utils.h"
 #include "operators/Concatenate.h"
+#include "operators/Distribution.h"
 
 using namespace fmt::literals;
 

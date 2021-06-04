@@ -300,7 +300,6 @@ set(COMPUTE_CUDF_SRC_FILES
     
     ${PROJECT_SOURCE_DIR}/src/cache_machine/GPUCacheData.cpp
     ${PROJECT_SOURCE_DIR}/src/config/GPUManager.cu
-
 )
 
 set(COMPUTE_ARROW_SRC_FILES
@@ -350,6 +349,8 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/operators/LogicalFilter.cpp
         ${PROJECT_SOURCE_DIR}/src/operators/LogicalProject.cpp
         ${PROJECT_SOURCE_DIR}/src/operators/Concatenate.cpp
+        ${PROJECT_SOURCE_DIR}/src/operators/Distribution.cpp
+
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/compatibility/SQLTranspiler.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/AbstractSQLDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/UriDataProvider.cpp
@@ -390,7 +391,6 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/cython/io.cpp
         ${PROJECT_SOURCE_DIR}/src/cython/errors.cpp
         ${PROJECT_SOURCE_DIR}/src/cython/engine.cpp
-        ${PROJECT_SOURCE_DIR}/src/distribution_utils/primitives.cpp
 
         ${PROJECT_SOURCE_DIR}/src/communication/factory/MessageFactory.cpp
         ${PROJECT_SOURCE_DIR}/src/communication/CommunicationData.cpp

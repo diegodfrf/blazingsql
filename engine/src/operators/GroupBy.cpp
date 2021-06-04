@@ -7,10 +7,10 @@
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
 #include "utilities/CodeTimer.h"
-#include "distribution_utils/primitives.h"
 #include "utilities/CommonOperations.h"
 #include <blazingdb/io/Util/StringUtil.h>
 #include "operators/LogicalProject.h"
+#include "operators/Distribution.h"
 #include <regex>
 
 #include <cudf/aggregation.hpp>

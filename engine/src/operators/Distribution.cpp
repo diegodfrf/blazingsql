@@ -1,4 +1,4 @@
-#include "distribution_utils/primitives.h"
+#include "operators/Distribution.h"
 #include "parser/CalciteExpressionParsing.h"
 #include "communication/CommunicationData.h"
 

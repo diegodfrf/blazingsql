@@ -3,7 +3,6 @@
 #include "parser/CalciteExpressionParsing.h"
 #include "utilities/CodeTimer.h"
 #include "communication/CommunicationData.h"
-#include "distribution_utils/primitives.h"
 #include <blazingdb/io/Library/Logging/Logger.h>
 #include <cudf/copying.hpp>
 #include <cudf/sorting.hpp>
