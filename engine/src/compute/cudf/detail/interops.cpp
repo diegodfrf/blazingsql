@@ -41,7 +41,7 @@ using namespace ral;
  * arithmetic operations and cast between primitive types
  */
 
-inline std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
+std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
     const cudf::table_view & table,
     const std::vector<std::string> & expressions);
 
@@ -52,7 +52,7 @@ inline std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressi
  * @param op The string function to evaluate
  * @param arg_tokens The parsed function arguments
  */
-inline std::unique_ptr<cudf::column> evaluate_string_case_when_else(const cudf::table_view & table,
+std::unique_ptr<cudf::column> evaluate_string_case_when_else(const cudf::table_view & table,
                                                             const std::string & condition_expr,
                                                             const std::string & expr1,
                                                             const std::string & expr2)
@@ -110,7 +110,7 @@ inline std::unique_ptr<cudf::column> evaluate_string_case_when_else(const cudf::
  * @param op The string function to evaluate
  * @param arg_tokens The parsed function arguments
  */
-inline std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view & table,
+std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view & table,
                                                         operator_type op,
                                                         const std::vector<std::string> & arg_tokens)
 {
@@ -624,9 +624,9 @@ class function_evaluator_transformer : public parser::node_transformer {
 public:
     function_evaluator_transformer(const cudf::table_view & table) : table{table} {}
 
-    inline parser::node * transform(parser::operad_node& node) override { return &node; }
+    parser::node * transform(parser::operad_node& node) override { return &node; }
 
-    inline parser::node * transform(parser::operator_node& node) override {
+    parser::node * transform(parser::operator_node& node) override {
         operator_type op = map_to_operator_type(node.value);
 
         std::unique_ptr<cudf::column> computed_col;
@@ -678,7 +678,7 @@ public:
         return &node;
     }
 
-    inline cudf::table_view computed_columns_view() {
+    cudf::table_view computed_columns_view() {
         std::vector<cudf::column_view> computed_views(computed_columns.size());
         std::transform(std::cbegin(computed_columns), std::cend(computed_columns), computed_views.begin(), [](auto & col){
             return col->view();
@@ -694,7 +694,7 @@ private:
 };
 
 
-inline std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
+std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
     const cudf::table_view & table,
     const std::vector<std::string> & expressions) {
     using interops::column_index_type;

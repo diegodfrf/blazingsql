@@ -289,7 +289,7 @@ set(COMPUTE_CUDF_SRC_FILES
 )
 
 set(COMPUTE_ARROW_SRC_FILES
-    #${PROJECT_SOURCE_DIR}/src/compute/api_arrow.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/aggregations.cpp
 )
 
 ## Target source files

@@ -21,7 +21,7 @@
 #include <cudf/groupby.hpp>
 #include <cudf/detail/aggregation/aggregation.hpp>
 
-inline std::unique_ptr<ral::frame::BlazingTable> compute_groupby_without_aggregations(
+std::unique_ptr<ral::frame::BlazingTable> compute_groupby_without_aggregations(
 	std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::vector<int> & group_column_indices) {
   auto ctable_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
 	std::unique_ptr<cudf::table> output = cudf::drop_duplicates(ctable_view->view(),
@@ -31,7 +31,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> compute_groupby_without_aggrega
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(output), table_view->column_names());
 }
 
-inline std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
+std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 		std::shared_ptr<ral::frame::BlazingCudfTableView> table_view, const std::vector<std::string> & aggregation_input_expressions,
 		const std::vector<AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases)
 {
@@ -91,8 +91,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_gr
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(std::make_unique<cudf::table>(std::move(output_columns))), agg_output_column_names);
 }
 
-
-inline std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
+std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
 		std::shared_ptr<ral::frame::BlazingCudfTableView> table_view, const std::vector<std::string> & aggregation_input_expressions, const std::vector<AggregateKind> & aggregation_types,
 		const std::vector<std::string> & aggregation_column_assigned_aliases, const std::vector<int> & group_column_indices) {
 
@@ -192,4 +191,3 @@ inline std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_group
 	}
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(output_table), output_names);
 }
-
