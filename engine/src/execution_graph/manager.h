@@ -6,6 +6,8 @@
 #include <execution_graph/Context.h>
 #include "execution_graph/graph.h"
 
+// execution_graph/manager.h => the main entry point of the query system
+
 using blazingdb::manager::Context;
 
 std::string get_physical_plan(std::string logicalPlan, Context &queryContext);

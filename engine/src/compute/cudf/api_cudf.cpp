@@ -7,7 +7,6 @@
 #include <cudf/concatenate.hpp>
 #include <cudf/detail/gather.hpp>
 #include <cudf/merge.hpp>
-#include <cudf/join.hpp>
 #include <cudf/reduction.hpp>
 #include <cudf/replace.hpp>
 #include <cudf/stream_compaction.hpp>
@@ -17,6 +16,7 @@
 #include <cudf/sorting.hpp>
 #include <cudf/search.hpp>
 #include <cudf/replace.hpp>
+#include <cudf/join.hpp>
 #include <cudf/stream_compaction.hpp>
 #include <cudf/filling.hpp>
 #include <cudf/scalar/scalar_factories.hpp>
@@ -28,70 +28,12 @@
 #include "compute/cudf/detail/aggregations.h"
 
 #include "compute/cudf/detail/interops.h"
+#include "compute/cudf/detail/join.h"
+#include "compute/cudf/detail/filter.h"
+#include "compute/cudf/detail/nulls.h"
+#include "compute/cudf/detail/search.h"
 #include "utilities/error.hpp"
 #include "blazing_table/BlazingCudfTable.h"
-
-
-
-/**
-Takes a table and applies a boolean filter to it
-*/
-inline std::unique_ptr<ral::frame::BlazingCudfTable> applyBooleanFilter(
-  std::shared_ptr<ral::frame::BlazingCudfTableView> table_view,
-  const cudf::column_view & boolValues){
-  auto filteredTable = cudf::apply_boolean_mask(table_view->view(),boolValues);
-  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(filteredTable), table_view->column_names());
-}
-
-inline bool check_if_has_nulls(cudf::table_view const& input, std::vector<cudf::size_type> const& keys){
-  auto keys_view = input.select(keys);
-  if (keys_view.num_columns() != 0 && keys_view.num_rows() != 0 && cudf::has_nulls(keys_view)) {
-      return true;
-  }
-
-  return false;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-///////////////////////////////jopinnnnnn joinnn
-/// 
-inline std::unique_ptr<cudf::table> reordering_columns_due_to_right_join(std::unique_ptr<cudf::table> table_ptr, size_t n_right_columns) {
-	std::vector<std::unique_ptr<cudf::column>> columns_ptr = table_ptr->release();
-	std::vector<std::unique_ptr<cudf::column>> columns_right_pos;
-
-	// First let's put all the left columns
-	for (size_t index = n_right_columns; index < columns_ptr.size(); ++index) {
-		columns_right_pos.push_back(std::move(columns_ptr[index]));
-	}
-
-	// Now let's append right columns
-	for (size_t index = 0; index < n_right_columns; ++index) {
-		columns_right_pos.push_back(std::move(columns_ptr[index]));
-	}
-
-	return std::make_unique<cudf::table>(std::move(columns_right_pos));
-}
-
 
 //namespace voltron {
 //namespace compute {
@@ -102,21 +44,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator
 		const std::vector<cudf::order> & sortOrderTypes,
 		const std::vector<int> & sortColIndices, const std::vector<cudf::null_order> & sortOrderNulls) const
 {
-	std::vector<cudf::table_view> cudf_table_views(tables.size());
-	for(size_t i = 0; i < tables.size(); i++) {
-		cudf_table_views[i] = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(tables[i])->view();
-	}
-	std::unique_ptr<cudf::table> merged_table = cudf::merge(cudf_table_views, sortColIndices, sortOrderTypes, sortOrderNulls);
-
-	// lets get names from a non-empty table
-	std::vector<std::string> names;
-	for(size_t i = 0; i < tables.size(); i++) {
-		if (tables[i]->column_names().size() > 0){
-			names = tables[i]->column_names();
-			break;
-		}
-	}
-	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(merged_table), names);
+	return sorted_merger(tables, sortOrderTypes, sortColIndices, sortOrderNulls);
 }
 
 template <>

@@ -288,7 +288,11 @@ set(COMPUTE_CUDF_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/aggregations.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/interpreter/interpreter_cpp.cu
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/transform.cu
-    
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/filter.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/join.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/nulls.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/search.cpp
+
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTableView.cpp
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingColumnOwner.cpp
@@ -366,7 +370,7 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/utilities/DebuggingUtils.cpp
         ${PROJECT_SOURCE_DIR}/src/parser/CalciteExpressionParsing.cpp
         ${PROJECT_SOURCE_DIR}/src/io/DataLoader.cpp
-        ${PROJECT_SOURCE_DIR}/src/execution_graph/CalciteInterpreter.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_graph/manager.cpp
         ${PROJECT_SOURCE_DIR}/src/parser/expression_utils.cpp
         ${PROJECT_SOURCE_DIR}/src/parser/expression_tree.cpp
 
