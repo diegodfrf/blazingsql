@@ -3,7 +3,7 @@
 #include "blazing_table/BlazingColumnOwner.h"
 #include "parser/expression_tree.hpp"
 #include "parser/expression_utils.hpp"
-#include "Interpreter/interpreter_cpp.h"
+#include "interpreter/interpreter_cpp.h"
 #include <cudf/copying.hpp>
 #include <cudf/replace.hpp>
 #include <cudf/search.hpp>
@@ -21,7 +21,7 @@
 #include <cudf/strings/convert/convert_integers.hpp>
 #include <cudf/unary.hpp>
 
-#include "utilities/transform.hpp"
+#include "compute/cudf/detail/transform.hpp"
 #include "parser/project_parser_utils.h"
 
 using namespace ral;

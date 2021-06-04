@@ -6,8 +6,8 @@
 #include <thrust/transform.h>
 #pragma GCC diagnostic pop
 
-#include "transform.hpp"
-#include "error.hpp"
+#include "compute/cudf/detail/transform.hpp"
+#include "utilities/error.hpp"
 
 namespace ral {
 namespace utilities {

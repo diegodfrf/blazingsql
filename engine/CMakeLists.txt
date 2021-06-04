@@ -286,6 +286,16 @@ endif()
 set(COMPUTE_CUDF_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/interops.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/aggregations.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/interpreter/interpreter_cpp.cu
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/transform.cu
+    
+    ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
+    ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTableView.cpp
+    ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingColumnOwner.cpp
+    
+    ${PROJECT_SOURCE_DIR}/src/cache_machine/GPUCacheData.cpp
+    ${PROJECT_SOURCE_DIR}/src/config/GPUManager.cu
+
 )
 
 set(COMPUTE_ARROW_SRC_FILES
@@ -304,16 +314,12 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheDataLocalFile.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/ConcatCacheData.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CPUCacheData.cpp
-        ${PROJECT_SOURCE_DIR}/src/cache_machine/GPUCacheData.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/ArrowCacheData.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheMachine.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTable.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTableView.cpp
-        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
-        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTableView.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTable.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTableView.cpp
-        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingColumnOwner.cpp
         ${PROJECT_SOURCE_DIR}/src/execution_graph/port.cpp
         ${PROJECT_SOURCE_DIR}/src/execution_kernels/kernel.cpp
         ${PROJECT_SOURCE_DIR}/src/execution_graph/executor.cpp
@@ -334,7 +340,6 @@ set(SRC_FILES
         # TODO percy arrow
         #${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchWindowFunctionProcessing.cpp
         ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchProcessing.cpp
-        ${PROJECT_SOURCE_DIR}/src/config/GPUManager.cu
         ${PROJECT_SOURCE_DIR}/src/operators/OrderBy.cpp
         ${PROJECT_SOURCE_DIR}/src/operators/GroupBy.cpp
         ${PROJECT_SOURCE_DIR}/src/operators/LogicalFilter.cpp
@@ -359,10 +364,8 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/utilities/CommonOperations.cpp
         ${PROJECT_SOURCE_DIR}/src/utilities/scalar_timestamp_parser.cpp
         ${PROJECT_SOURCE_DIR}/src/utilities/DebuggingUtils.cpp
-        ${PROJECT_SOURCE_DIR}/src/utilities/transform.cu
         ${PROJECT_SOURCE_DIR}/src/parser/CalciteExpressionParsing.cpp
         ${PROJECT_SOURCE_DIR}/src/io/DataLoader.cpp
-        ${PROJECT_SOURCE_DIR}/src/Interpreter/interpreter_cpp.cu
         ${PROJECT_SOURCE_DIR}/src/execution_graph/CalciteInterpreter.cpp
         ${PROJECT_SOURCE_DIR}/src/parser/expression_utils.cpp
         ${PROJECT_SOURCE_DIR}/src/parser/expression_tree.cpp

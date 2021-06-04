@@ -16,8 +16,6 @@
 #include <cudf/unary.hpp>
 #include "blazing_table/BlazingColumnOwner.h"
 #include "LogicalProject.h"
-#include "utilities/transform.hpp"
-#include "Interpreter/interpreter_cpp.h"
 #include "parser/expression_utils.hpp"
 #include "parser/project_parser_utils.h"
 #include "compute/api.h"

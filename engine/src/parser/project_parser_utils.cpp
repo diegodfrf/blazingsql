@@ -16,8 +16,6 @@
 #include <cudf/strings/convert/convert_integers.hpp>
 #include <cudf/unary.hpp>
 #include "blazing_table/BlazingColumnOwner.h"
-#include "utilities/transform.hpp"
-#include "Interpreter/interpreter_cpp.h"
 #include "parser/expression_utils.hpp"
 #include "compute/api.h"
 
