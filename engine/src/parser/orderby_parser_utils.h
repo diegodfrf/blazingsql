@@ -10,7 +10,6 @@
 #include <vector>
 #include <tuple>
 #include "blazing_table/BlazingTable.h"
-#include "utilities/CommonOperations.h"
 #include <cudf/copying.hpp>
 #include <cudf/sorting.hpp>
 #include <cudf/search.hpp>

@@ -6,7 +6,6 @@
 
 #include <sys/stat.h>
 #include <random>
-#include <utilities/CommonOperations.h>
 #include <cudf/io/orc.hpp>
 #include "parser/CalciteExpressionParsing.h"
 #include "communication/CommunicationData.h"

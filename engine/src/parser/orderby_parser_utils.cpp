@@ -9,7 +9,6 @@
 #include <cudf/search.hpp>
 #include <random>
 #include "parser/expression_utils.hpp"
-#include "utilities/CommonOperations.h"
 #include <blazingdb/io/Util/StringUtil.h>
 #include "compute/backend_dispatcher.h"
 #include <thrust/binary_search.h>

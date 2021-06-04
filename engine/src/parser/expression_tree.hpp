@@ -10,7 +10,7 @@
 #include <cudf/types.hpp>
 
 #include "parser/CalciteExpressionParsing.h"
-#include "utilities/CommonOperations.h"
+#include "parser/types_parser_utils.h"
 #include "skip_data/utils.hpp"
 #include "expression_utils.hpp"
 #include "utilities/error.hpp"
@@ -248,7 +248,7 @@ private:
             cudf::data_type new_type(get_output_type(cast_op, literal->type().id()));
 
             // Ensure that the types are compatible
-            ral::utilities::get_common_type(literal->type(), new_type, true);
+            get_common_type(literal->type(), new_type, true);
 
             return new literal_node(literal->value, new_type);
         }

@@ -3,6 +3,7 @@
 #include "blazing_table/BlazingColumnOwner.h"
 #include "parser/expression_tree.hpp"
 #include "parser/expression_utils.hpp"
+#include "parser/types_parser_utils.h"
 #include "interpreter/interpreter_cpp.h"
 #include <cudf/copying.hpp>
 #include <cudf/replace.hpp>
@@ -10,6 +11,7 @@
 #include <cudf/strings/capitalize.hpp>
 #include <cudf/strings/combine.hpp>
 #include <cudf/strings/contains.hpp>
+#include <cudf/column/column_factories.hpp>
 #include <cudf/strings/replace_re.hpp>
 #include <cudf/strings/replace.hpp>
 #include <cudf/strings/substring.hpp>
@@ -283,7 +285,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
 
                 // lets make sure that the start and end are the same type
                 if (!(start_column.type() == computed_end_column->type())){
-                    cudf::data_type common_type = ral::utilities::get_common_type(start_column.type(), computed_end_column->type(), true);
+                    cudf::data_type common_type = get_common_type(start_column.type(), computed_end_column->type(), true);
                     if (!(start_column.type() == common_type)){
                         computed_start_column = cudf::cast(start_column, common_type);
                         start_column = computed_start_column->view();

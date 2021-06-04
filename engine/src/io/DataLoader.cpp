@@ -3,7 +3,6 @@
 
 #include <numeric>
 
-#include "utilities/CommonOperations.h"
 #include "utilities/CodeTimer.h"
 #include <blazingdb/io/Library/Logging/Logger.h>
 #include "ExceptionHandling/BlazingThread.h"

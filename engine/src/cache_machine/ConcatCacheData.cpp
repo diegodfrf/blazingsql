@@ -1,5 +1,4 @@
 #include "ConcatCacheData.h"
-#include "utilities/CommonOperations.h"
 #include "compute/backend_dispatcher.h"
 #include "compute/api.h"
 #include "operators/Concatenate.h"

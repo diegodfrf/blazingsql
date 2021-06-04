@@ -2,7 +2,6 @@
 #include "metadata/parquet_metadata.h"
 
 #include "ParquetParser.h"
-#include "utilities/CommonOperations.h"
 
 #include <numeric>
 

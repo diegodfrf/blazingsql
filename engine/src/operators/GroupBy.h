@@ -16,7 +16,6 @@
 #include "parser/CalciteExpressionParsing.h"
 #include "utilities/CodeTimer.h"
 #include "operators/Distribution.h"
-#include "utilities/CommonOperations.h"
 #include <blazingdb/io/Util/StringUtil.h>
 #include <regex>
 

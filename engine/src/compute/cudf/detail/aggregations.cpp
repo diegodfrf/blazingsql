@@ -6,10 +6,10 @@
 #include "blazing_table/BlazingCudfTable.h"
 #include "parser/CalciteExpressionParsing.h"
 #include "utilities/CodeTimer.h"
-#include "utilities/CommonOperations.h"
 #include <blazingdb/io/Util/StringUtil.h>
 #include <regex>
 
+#include <cudf/column/column_factories.hpp>
 #include <cudf/aggregation.hpp>
 #include <cudf/sorting.hpp>
 #include <cudf/replace.hpp>

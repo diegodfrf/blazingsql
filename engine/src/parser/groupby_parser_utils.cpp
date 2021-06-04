@@ -7,17 +7,10 @@
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
 #include "utilities/CodeTimer.h"
-#include "utilities/CommonOperations.h"
 #include <blazingdb/io/Util/StringUtil.h>
 #include <regex>
 
-#include <cudf/aggregation.hpp>
-#include <cudf/sorting.hpp>
-#include <cudf/replace.hpp>
-#include <cudf/stream_compaction.hpp>
-#include <cudf/filling.hpp>
-#include <cudf/scalar/scalar_factories.hpp>
-#include <cudf/reduction.hpp>
+#include <numeric>
 
 AggregateKind get_aggregation_operation(std::string expression_in, bool is_window_operation) {
 

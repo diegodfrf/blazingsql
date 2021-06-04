@@ -2,10 +2,13 @@
 
 #include "compute/api.h"
 
+
+#include <random>
 #include <cudf/aggregation.hpp>
 #include <cudf/filling.hpp>
 #include <cudf/concatenate.hpp>
 #include <cudf/detail/gather.hpp>
+#include <cudf/partitioning.hpp>
 #include <cudf/merge.hpp>
 #include <cudf/reduction.hpp>
 #include <cudf/replace.hpp>
@@ -33,6 +36,7 @@
 #include "compute/cudf/detail/nulls.h"
 #include "compute/cudf/detail/search.h"
 #include "compute/cudf/detail/concatenate.h"
+#include "compute/cudf/detail/types.h"
 #include "utilities/error.hpp"
 #include "blazing_table/BlazingCudfTable.h"
 
@@ -270,7 +274,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::ope
     const std::vector<std::string> &column_names,
 	  const std::vector<cudf::data_type> &dtypes) const
 {
-  return ral::utilities::create_empty_cudf_table(column_names, dtypes);
+  return create_empty_cudf_table(column_names, dtypes);
 }
 
 template <>
@@ -346,7 +350,7 @@ normalize_types_functor::operator()<ral::frame::BlazingCudfTable>(
     const std::vector<cudf::data_type> & types,
     std::vector<cudf::size_type> column_indices) const
 {
-  ral::utilities::normalize_types_gpu(table, types, column_indices);
+  normalize_types_gpu(table, types, column_indices);
 }
 
 template <>
@@ -386,7 +390,7 @@ upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
   auto partitionPlan = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(values);  
 
   auto pivot_indexes = cudf::upper_bound(columns_to_search->view(), partitionPlan->view(), column_order, null_precedence);
-	std::vector<cudf::size_type> split_indexes = ral::utilities::column_to_vector<cudf::size_type>(pivot_indexes->view());
+	std::vector<cudf::size_type> split_indexes = column_to_vector<cudf::size_type>(pivot_indexes->view());
   auto tbs = cudf::split(sortedTable->view(), split_indexes);
   std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
   for (auto tb : tbs) {

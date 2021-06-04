@@ -2,7 +2,7 @@
 #include <cudf/detail/interop.hpp>
 #include "blazing_table/BlazingColumn.h"
 #include "parser/groupby_parser_utils.h"
-
+#include "compute/arrow/detail/types.h"
 
 template<typename CPPType, typename ArrowScalarType>
 std::unique_ptr<cudf::scalar> to_cudf_numeric_scalar(cudf::data_type cudf_dtype, std::shared_ptr<arrow::Scalar> arrow_scalar) {
@@ -267,7 +267,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		std::shared_ptr<arrow::Array> temp = arrow::MakeArrayFromScalar((*reductions[i].get()), 1).ValueOrDie();
  		output_columns.emplace_back(std::make_shared<arrow::ChunkedArray>(temp));
  	}
-  
+
   auto new_schema = build_arrow_schema(
         output_columns,
         agg_output_column_names,

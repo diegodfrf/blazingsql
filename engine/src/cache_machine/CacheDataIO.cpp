@@ -1,7 +1,9 @@
 #include "CacheDataIO.h"
 #include "parser/CalciteExpressionParsing.h"
-#include "utilities/CommonOperations.h"
 #include <arrow/api.h>
+
+// TODO percy arrow delete this include, we should not use details here
+#include "compute/arrow/detail/types.h"
 
 namespace ral {
 namespace cache {

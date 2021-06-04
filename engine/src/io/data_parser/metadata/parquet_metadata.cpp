@@ -7,7 +7,6 @@
 
 #include "parquet_metadata.h"
 #include "ExceptionHandling/BlazingThread.h"
-#include "utilities/CommonOperations.h"
 #include <cudf/column/column_factories.hpp>
 #include "blazing_table/BlazingCudfTable.h"
 

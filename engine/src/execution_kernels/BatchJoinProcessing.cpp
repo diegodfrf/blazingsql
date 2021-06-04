@@ -2,6 +2,7 @@
 #include "BatchJoinProcessing.h"
 #include "ExceptionHandling/BlazingThread.h"
 #include "parser/expression_tree.hpp"
+#include "parser/types_parser_utils.h"
 #include "utilities/CodeTimer.h"
 #include <cudf/partitioning.hpp>
 #include <cudf/join.hpp>
@@ -11,6 +12,7 @@
 #include "cache_machine/CPUCacheData.h"
 #include "compute/backend_dispatcher.h"
 #include "compute/api.h"
+#include "operators/Types.h"
 
 namespace ral {
 namespace batch {
@@ -365,7 +367,7 @@ void PartwiseJoin::computeNormalizationData(const std::vector<cudf::data_type> &
 		right_join_types.push_back(right_types[this->right_column_indices[i]]);
 	}
 	bool strict = true;
-	this->join_column_common_types = ral::utilities::get_common_types(left_join_types, right_join_types, strict);
+	this->join_column_common_types = get_common_types(left_join_types, right_join_types, strict);
 	this->normalize_left = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
 												left_join_types.cbegin(), left_join_types.cend());
 	this->normalize_right = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
@@ -446,10 +448,10 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 
 	try{
 		if (this->normalize_left){
-			ral::utilities::normalize_types(left_batch, this->join_column_common_types, this->left_column_indices);
+			normalize_types(left_batch, this->join_column_common_types, this->left_column_indices);
 		}
 		if (this->normalize_right){
-			ral::utilities::normalize_types(right_batch, this->join_column_common_types, this->right_column_indices);
+			normalize_types(right_batch, this->join_column_common_types, this->right_column_indices);
 		}
 
 		auto log_input_num_rows = left_batch->num_rows() + right_batch->num_rows();
@@ -645,7 +647,7 @@ void JoinPartitionKernel::computeNormalizationData(const std::vector<cudf::data_
 		right_join_types.push_back(right_types[this->right_column_indices[i]]);
 	}
 	bool strict = true;
-	this->join_column_common_types = ral::utilities::get_common_types(left_join_types, right_join_types, strict);
+	this->join_column_common_types = get_common_types(left_join_types, right_join_types, strict);
 	this->normalize_left = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
 												left_join_types.cbegin(), left_join_types.cend());
 	this->normalize_right = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
@@ -1056,24 +1058,24 @@ ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::uni
 				small_table_idx //message_tracker_idx
 			);
 		} else if (operation_type == "hash_partition") {
-			bool normalize_types;
+			bool normalize_types_flag;
 			int table_idx;
 			std::string cache_id;
 			std::vector<cudf::size_type> column_indices;
 			if(args.at("side") == "left"){
-				normalize_types = this->normalize_left;
+				normalize_types_flag = this->normalize_left;
 				table_idx = LEFT_TABLE_IDX;
 				cache_id = "output_a";
 				column_indices = this->left_column_indices;
 			} else {
-				normalize_types = this->normalize_right;
+				normalize_types_flag = this->normalize_right;
 				table_idx = RIGHT_TABLE_IDX;
 				cache_id = "output_b";
 				column_indices = this->right_column_indices;
 			}
 
-			if (normalize_types) {
-				ral::utilities::normalize_types(input, join_column_common_types, column_indices);
+			if (normalize_types_flag) {
+				normalize_types(input, join_column_common_types, column_indices);
 			}
 
 			auto batch_view = input->to_table_view();

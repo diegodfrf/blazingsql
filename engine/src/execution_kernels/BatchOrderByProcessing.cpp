@@ -1,6 +1,5 @@
 #include "BatchOrderByProcessing.h"
 #include "utilities/CodeTimer.h"
-#include "utilities/CommonOperations.h"
 #include "execution_graph/executor.h"
 #include "parser/expression_utils.hpp"
 #include "cache_machine/CPUCacheData.h"

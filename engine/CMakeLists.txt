@@ -293,6 +293,7 @@ set(COMPUTE_CUDF_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/nulls.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/search.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/concatenate.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/types.cpp
 
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTableView.cpp
@@ -304,6 +305,7 @@ set(COMPUTE_CUDF_SRC_FILES
 
 set(COMPUTE_ARROW_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/aggregations.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/types.cpp
 )
 
 ## Target source files
@@ -350,6 +352,7 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/operators/LogicalProject.cpp
         ${PROJECT_SOURCE_DIR}/src/operators/Concatenate.cpp
         ${PROJECT_SOURCE_DIR}/src/operators/Distribution.cpp
+        ${PROJECT_SOURCE_DIR}/src/operators/Types.cpp
 
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/compatibility/SQLTranspiler.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/AbstractSQLDataProvider.cpp
@@ -368,7 +371,6 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/parquet_metadata.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/orc_metadata.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/common_metadata.cpp
-        ${PROJECT_SOURCE_DIR}/src/utilities/CommonOperations.cpp
         ${PROJECT_SOURCE_DIR}/src/utilities/scalar_timestamp_parser.cpp
         ${PROJECT_SOURCE_DIR}/src/utilities/DebuggingUtils.cpp
         ${PROJECT_SOURCE_DIR}/src/parser/CalciteExpressionParsing.cpp
@@ -381,6 +383,7 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/parser/groupby_parser_utils.cpp
         ${PROJECT_SOURCE_DIR}/src/parser/project_parser_utils.cpp
         ${PROJECT_SOURCE_DIR}/src/parser/orderby_parser_utils.cpp
+        ${PROJECT_SOURCE_DIR}/src/parser/types_parser_utils.cpp
 
         # TODO percy arrow
         #${PROJECT_SOURCE_DIR}/src/skip_data/SkipDataProcessor.cpp

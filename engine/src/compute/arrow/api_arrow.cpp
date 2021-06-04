@@ -62,10 +62,7 @@ inline limit_table(std::shared_ptr<arrow::Table> table, int64_t num_rows_limit) 
 	}
 }
 
-
-
-
-
+// TODO percy arrow
 inline std::pair<std::shared_ptr<arrow::Table>, std::vector<cudf::size_type>>
 split_arrow(std::shared_ptr<arrow::Table> table_View,
             std::vector<cudf::size_type> const& columns_to_hash,
@@ -87,11 +84,7 @@ split_arrow(std::shared_ptr<arrow::Table> table_View,
     }
     tables.push_back(arrow::Table::Make(table_View->schema(), cols));
   }
-  
-  
-  
-  
-  
+
   //table_View->Slice()
   //std::shared_ptr<Table> Slice(int64_t offset) const { return Slice(offset, num_rows_); }  
 }
@@ -138,7 +131,6 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_wo_filter_
   
   return std::make_unique<ral::frame::BlazingArrowTable>(table_view_ptr->view());
 }
-
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator()<ral::frame::BlazingArrowTable>(

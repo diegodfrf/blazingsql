@@ -10,7 +10,6 @@
 #include <cudf/merge.hpp>
 #include <cudf/utilities/traits.hpp>
 
-#include "utilities/CommonOperations.h"
 #include "operators/OrderBy.h"
 #include "operators/Concatenate.h"
 #include "compute/backend_dispatcher.h"
@@ -22,6 +21,9 @@
 #include <spdlog/spdlog.h>
 
 #include "compute/api.h"
+
+// TODO percy arrow delete this include cudf details should never he here
+#include "compute/cudf/detail/types.h"
 
 using namespace fmt::literals;
 
@@ -118,7 +120,7 @@ std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partiti
 	std::iota(sequence.begin(), sequence.end(), 1);
 	std::transform(sequence.begin(), sequence.end(), sequence.begin(), [step](int32_t i){ return i*step;});
 
-	auto gather_map = ral::utilities::vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
+	auto gather_map = vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
 
 	// TODO percy rommel arrow
 	std::unique_ptr<ral::frame::BlazingTable> pivots = ral::execution::backend_dispatcher(sortedSamples->get_execution_backend(), gather_functor(),

@@ -11,7 +11,6 @@
 // TODO percy arrow
 //#include "execution_kernels/BatchWindowFunctionProcessing.h"
 #include "io/Schema.h"
-#include "utilities/CommonOperations.h"
 #include "parser/expression_utils.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>

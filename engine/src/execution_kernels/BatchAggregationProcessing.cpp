@@ -1,9 +1,7 @@
 #include "BatchAggregationProcessing.h"
 #include "execution_graph/executor.h"
-#include "utilities/CommonOperations.h"
 #include <cudf/partitioning.hpp>
 
-#include "utilities/CommonOperations.h"
 #include "parser/expression_utils.hpp"
 #include "operators/LogicalProject.h"
 #include "operators/GroupBy.h"

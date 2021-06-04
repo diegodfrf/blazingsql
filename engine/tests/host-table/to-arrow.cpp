@@ -6,7 +6,6 @@
 #include "blazing_table/BlazingHostTable.h"
 #include "utilities/DebuggingUtils.h"
 
-#include "utilities/CommonOperations.h"
 #include <arrow/api.h>
 #include <arrow/compute/api.h>
 
