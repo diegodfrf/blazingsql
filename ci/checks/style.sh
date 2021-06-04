@@ -30,6 +30,10 @@ FLAKE_RETVAL=$?
 FLAKE_CYTHON=`flake8 --config=pyblazing/.flake8.cython`
 FLAKE_CYTHON_RETVAL=$?
 
+# Run clang-format and check for a consistent code format
+CLANG_FORMAT=`python scripts/run-clang-format.py 2>&1`
+CLANG_FORMAT_RETVAL=$?
+
 # Output results if failure otherwise show pass
 if [ "$ISORT_RETVAL" != "0" ]; then
   echo -e "\n\n>>>> FAILED: isort style check; begin output\n\n"
@@ -53,6 +57,14 @@ if [ "$FLAKE_RETVAL" != "0" ]; then
   echo -e "\n\n>>>> FAILED: flake8 style check; end output\n\n"
 else
   echo -e "\n\n>>>> PASSED: flake8 style check\n\n"
+fi
+
+if [ "$CLANG_FORMAT_RETVAL" != "0" ]; then
+  echo -e "\n\n>>>> WARNING: clang format check; begin output\n\n"
+  echo -e "$CLANG_FORMAT"
+  echo -e "\n\n>>>> WARNING: clang format check; end output\n\n"
+else
+  echo -e "\n\n>>>> PASSED: clang format check\n\n"
 fi
 
 # TODO: cordova uncomment this when cython files were updated

@@ -25,7 +25,9 @@
 namespace ral {
 namespace operators {
 
+
 using namespace ral::distribution;
+
 
 }  // namespace operators
 }  // namespace ral

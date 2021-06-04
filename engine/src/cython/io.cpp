@@ -1,11 +1,11 @@
-#include "../../include/io/io.h"
-#include "../io/DataLoader.h"
-#include "../io/data_parser/ArgsUtil.h"
-#include "../io/data_parser/CSVParser.h"
-#include "../io/data_parser/JSONParser.h"
-#include "../io/data_parser/OrcParser.h"
-#include "../io/data_parser/ParquetParser.h"
-#include "../io/data_provider/UriDataProvider.h"
+#include "include/io/io.h"
+#include "io/DataLoader.h"
+#include "io/data_parser/ArgsUtil.h"
+#include "io/data_parser/CSVParser.h"
+#include "io/data_parser/JSONParser.h"
+#include "io/data_parser/OrcParser.h"
+#include "io/data_parser/ParquetParser.h"
+#include "io/data_provider/UriDataProvider.h"
 
 #include "utilities/CommonOperations.h"
 #include "parser/expression_tree.hpp"
@@ -13,23 +13,23 @@
 #include <blazingdb/io/Config/BlazingContext.h>
 
 #ifdef MYSQL_SUPPORT
-#include "../io/data_parser/sql/MySQLParser.h"
-#include "../io/data_provider/sql/MySQLDataProvider.h"
+#include "io/data_parser/sql/MySQLParser.h"
+#include "io/data_provider/sql/MySQLDataProvider.h"
 #endif
 
 #ifdef POSTGRESQL_SUPPORT
-#include "../io/data_parser/sql/PostgreSQLParser.h"
-#include "../io/data_provider/sql/PostgreSQLDataProvider.h"
+#include "io/data_parser/sql/PostgreSQLParser.h"
+#include "io/data_provider/sql/PostgreSQLDataProvider.h"
 #endif
 
 #ifdef SQLITE_SUPPORT
-#include "../io/data_parser/sql/SQLiteParser.h"
-#include "../io/data_provider/sql/SQLiteDataProvider.h"
+#include "io/data_parser/sql/SQLiteParser.h"
+#include "io/data_provider/sql/SQLiteDataProvider.h"
 #endif
 
 #ifdef SNOWFLAKE_SUPPORT
-#include "../io/data_parser/sql/SnowFlakeParser.h"
-#include "../io/data_provider/sql/SnowFlakeDataProvider.h"
+#include "io/data_parser/sql/SnowFlakeParser.h"
+#include "io/data_provider/sql/SnowFlakeDataProvider.h"
 #endif
 
 using namespace fmt::literals;

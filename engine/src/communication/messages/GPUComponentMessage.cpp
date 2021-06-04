@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "GPUComponentMessage.h"
 #include "transport/ColumnTransport.h"
 #include "bmr/BufferProvider.h"
@@ -155,7 +157,8 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_tabl
 }
 
 template <class DataType>
-void AllocateDataSize(const std::shared_ptr<arrow::Array> & arrayColumn,
+void PopulateBufferToReadArrowData(
+	const std::shared_ptr<arrow::Array> & arrayColumn,
 	std::unique_ptr<char[]> & data_,
 	std::size_t * const columnSize_) {
 	static_assert(std::is_base_of_v<arrow::DataType, DataType>);
@@ -168,6 +171,9 @@ void AllocateDataSize(const std::shared_ptr<arrow::Array> & arrayColumn,
 	const value_type * raw_values = numericArray->raw_values();
 	const std::size_t length = numericArray->length();
 
+	// TODO: optimizable reading from raw_values into blazing allocation.
+	// See comment about array concatenate because they'll be part of the same
+	// process to traverse the array values.
 	std::unique_ptr<value_type[]> data = std::make_unique<value_type[]>(length);
 	std::copy_n(raw_values, length, data.get());
 
@@ -245,6 +251,11 @@ serialize_arrow_message_to_host_table(
 			arrow::Type::type arrowTypeId = field->type()->id();
 			cudf::type_id type_id = typeMap.at(arrowTypeId);
 
+			// TODO: optimizable traversing chunks instead to consolidate into an
+			// array. In that case, this process should be inverted: iterate through
+			// array/chunks/raw to populate blazing allocations. Consider to reserve
+			// columns transports, chunk columnsinfos, chunk allocations from arrow
+			// field metadata and arrow chunk arrays info.
 			std::shared_ptr<arrow::Array> arrayColumn = *arrow::Concatenate(
 				chunkedArray->chunks(), arrow::default_memory_pool());
 
@@ -274,22 +285,26 @@ serialize_arrow_message_to_host_table(
 
 			switch (arrowTypeId) {
 			case arrow::Type::type::INT8:
-				AllocateDataSize<arrow::Int8Type>(
+				PopulateBufferToReadArrowData<arrow::Int8Type>(
 					arrayColumn, data, &columnSize);
 				break;
 			case arrow::Type::type::INT16:
-				AllocateDataSize<arrow::Int16Type>(
+				PopulateBufferToReadArrowData<arrow::Int16Type>(
 					arrayColumn, data, &columnSize);
 				break;
 			case arrow::Type::type::INT32:
-				AllocateDataSize<arrow::Int32Type>(
+				PopulateBufferToReadArrowData<arrow::Int32Type>(
 					arrayColumn, data, &columnSize);
 				break;
 			case arrow::Type::type::INT64:
-				AllocateDataSize<arrow::Int64Type>(
+				PopulateBufferToReadArrowData<arrow::Int64Type>(
 					arrayColumn, data, &columnSize);
 				break;
-			default: throw std::runtime_error{"unsupported arrow type "};
+			default:
+				std::ostringstream oss;
+				oss << "Unsupported arrow field type " << field->type()->name()
+					<< "when read arrow data to build host table";
+				throw std::runtime_error{oss.str()};
 			}
 
 			std::vector<std::unique_ptr<ral::memory::blazing_allocation_chunk>>

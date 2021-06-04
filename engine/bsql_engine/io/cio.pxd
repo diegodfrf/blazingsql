@@ -142,8 +142,7 @@ cdef extern from "../include/io/io.h" nogil:
     unique_ptr[ResultSet] parseMetadata(vector[string] files, pair[int,int] offsets, TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, string preferred_compute) except +raiseParseSchemaError
     vector[FolderPartitionMetadata] inferFolderPartitionMetadata(string folder_path) except +raiseInferFolderPartitionMetadataError
 
-
-cdef extern from "../src/execution_kernels/LogicPrimitives.h" namespace "ral::frame":
+cdef extern from "../src/blazing_table/BlazingCudfTable.h" namespace "ral::frame":
         cdef cppclass BlazingCudfTable:
             BlazingTable(unique_ptr[CudfTable] table, const vector[string] & columnNames)
             BlazingTable(const CudfTableView & table, const vector[string] & columnNames)
@@ -154,6 +153,7 @@ cdef extern from "../src/execution_kernels/LogicPrimitives.h" namespace "ral::fr
             void ensureOwnership()
             unique_ptr[CudfTable] releaseCudfTable()
 
+cdef extern from "../src/blazing_table/BlazingCudfTableView.h" namespace "ral::frame":
         cdef cppclass BlazingCudfTableView:
             BlazingTableView()
             BlazingTableView(CudfTableView, vector[string]) except +

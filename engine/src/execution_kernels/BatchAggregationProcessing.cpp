@@ -238,16 +238,10 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
 
         try{
             auto tvv = input->to_table_view();
-            
-            ral::utilities::print_blazing_cudf_table_view(tvv);
-            
+
             std::unique_ptr<ral::frame::BlazingTable> hashed_data; // Keep table alive in this scope
-            
+
             auto partitions = this->prepare_partitions(tvv, num_partitions, hashed_data);
-            
-            for (auto t : partitions) {
-              ral::utilities::print_blazing_cudf_table_view(t);
-            }
 
             scatter(partitions,
                 output.get(),
@@ -259,7 +253,6 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
         }catch(const std::exception& e){
             return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
         }
-        
     }
     return {ral::execution::task_status::SUCCESS, std::string(), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
 }
