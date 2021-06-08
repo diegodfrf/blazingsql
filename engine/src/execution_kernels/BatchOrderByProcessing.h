@@ -29,8 +29,8 @@ public:
 	kstatus run() override;
 
 private:
-	std::vector<cudf::order> sortOrderTypes;
-	std::vector<cudf::null_order> sortOrderNulls;
+	std::vector<voltron::compute::SortOrder> sortOrderTypes;
+	std::vector<voltron::compute::NullOrder> sortOrderNulls;
 	std::vector<int> sortColIndices;
 };
 
@@ -85,8 +85,8 @@ public:
 	kstatus run() override;
 
 private:
-	std::vector<cudf::order> sortOrderTypes;
-	std::vector<cudf::null_order> sortOrderNulls;
+	std::vector<voltron::compute::SortOrder> sortOrderTypes;
+	std::vector<voltron::compute::NullOrder> sortOrderNulls;
 	std::vector<int> sortColIndices;
 	int num_partitions_per_node;
 };

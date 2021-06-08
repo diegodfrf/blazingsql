@@ -16,6 +16,7 @@
 #include <arrow/array/builder_primitive.h>
 #include <arrow/api.h>
 #include <arrow/compute/api.h>
+#include "operators_definitions.h"
 
 namespace ral {
 namespace operators {
@@ -25,8 +26,8 @@ namespace {
 }
 
 std::unique_ptr<ral::frame::BlazingTable> logicalSort(std::shared_ptr<ral::frame::BlazingTableView> table_view,
-      const std::vector<int> & sortColIndices,	const std::vector<cudf::order> & sortOrderTypes,
-      const std::vector<cudf::null_order> & sortOrderNulls);
+      const std::vector<int> & sortColIndices,	const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
+      const std::vector<voltron::compute::NullOrder> & sortOrderNulls);
 
 std::unique_ptr<ral::frame::BlazingTable> sort(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string & query_part);
 
@@ -38,8 +39,8 @@ std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(const std::vec
     std::size_t table_num_rows, std::size_t avg_bytes_per_row, const std::string & query_part, Context * context);
 
 std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partition_table(std::shared_ptr<ral::frame::BlazingTableView> partitionPlan,
-	std::shared_ptr<ral::frame::BlazingTableView> sortedTable, const std::vector<cudf::order> & sortOrderTypes,	const std::vector<int> & sortColIndices,
-  const std::vector<cudf::null_order> & sortOrderNulls);
+	std::shared_ptr<ral::frame::BlazingTableView> sortedTable, const std::vector<voltron::compute::SortOrder> & sortOrderTypes,	const std::vector<int> & sortColIndices,
+  const std::vector<voltron::compute::NullOrder> & sortOrderNulls);
 
 std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<ral::frame::BlazingTableView> table_view, cudf::size_type num_rows, bool front=true);
 

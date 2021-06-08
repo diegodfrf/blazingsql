@@ -339,13 +339,13 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
 
         std::vector<int> group_column_indices;
         std::vector<std::string> aggregation_input_expressions, aggregation_column_assigned_aliases;
-        std::vector<AggregateKind> aggregation_types;
+        std::vector<voltron::compute::AggregateKind> aggregation_types;
         std::tie(group_column_indices, aggregation_input_expressions, aggregation_types,
             aggregation_column_assigned_aliases) = parseGroupByExpression(this->expression,concatenated->num_columns());
 
         std::vector<int> mod_group_column_indices;
         std::vector<std::string> mod_aggregation_input_expressions, mod_aggregation_column_assigned_aliases, merging_column_names;
-        std::vector<AggregateKind> mod_aggregation_types;
+        std::vector<voltron::compute::AggregateKind> mod_aggregation_types;
         std::tie(mod_group_column_indices, mod_aggregation_input_expressions, mod_aggregation_types,
             mod_aggregation_column_assigned_aliases) = modGroupByParametersPostComputeAggregations(
             group_column_indices, aggregation_types, concatenated->column_names());

@@ -122,101 +122,63 @@ std::unique_ptr<ral::frame::BlazingTable> compute_groupby_without_aggregations(
  }
 
 std::shared_ptr<arrow::Scalar> arrow_reduce(std::shared_ptr<arrow::ChunkedArray> col,
-                                std::unique_ptr<cudf::aggregation> const &agg,
+                                voltron::compute::AggregateKind agg,
                                 cudf::data_type output_dtype)
 {
- switch (agg->kind) {
-   case cudf::aggregation::SUM: {
+ switch (agg) {
+   case voltron::compute::AggregateKind::SUM: {
      auto result = arrow::compute::Sum(col);
      // TODO percy arrow error
      return result.ValueOrDie().scalar();
    } break;
-   case cudf::aggregation::PRODUCT: {
-    
-   } break;
-   case cudf::aggregation::MIN: {
-    
-   } break;
-   case cudf::aggregation::MAX: {
-    
-   } break;
-   case cudf::aggregation::COUNT_VALID: {
-    
-   } break;
-   case cudf::aggregation::COUNT_ALL: {
-    
-   } break;
-   case cudf::aggregation::ANY: {
-    
-   } break;
-   case cudf::aggregation::ALL: {
-    
-   } break;
-   case cudf::aggregation::SUM_OF_SQUARES: {
-    
-   } break;
-   case cudf::aggregation::MEAN: {
-    
-   } break;
-   case cudf::aggregation::VARIANCE: {
-    
-   } break;
-   case cudf::aggregation::STD: {
-    
-   } break;
-   case cudf::aggregation::MEDIAN: {
-    
-   } break;
-   case cudf::aggregation::QUANTILE: {
-    
-   } break;
-   case cudf::aggregation::ARGMAX: {
-    
-   } break;
-   case cudf::aggregation::ARGMIN: {
-    
-   } break;
-   case cudf::aggregation::NUNIQUE: {
-    
-   } break;
-   case cudf::aggregation::NTH_ELEMENT: {
-    
-   } break;
-   case cudf::aggregation::ROW_NUMBER: {
-    
-   } break;
-   case cudf::aggregation::COLLECT_LIST: {
-    
-   } break;
-   case cudf::aggregation::COLLECT_SET: {
-    
-   } break;
-   case cudf::aggregation::LEAD: {
-    
-   } break;
-   case cudf::aggregation::LAG: {
-    
-   } break;
-   case cudf::aggregation::PTX: {
-    
-   } break;
-   case cudf::aggregation::CUDA: {
-    
-   } break;
+   case voltron::compute::AggregateKind::SUM0: {
+    break;
+   }
+   case voltron::compute::AggregateKind::MEAN: {
+    break;
+   }
+   case voltron::compute::AggregateKind::MIN: {
+    break;
+   }
+   case voltron::compute::AggregateKind::MAX: {
+    break;
+   }
+   case voltron::compute::AggregateKind::COUNT_VALID: {
+    break;
+   }
+   case voltron::compute::AggregateKind::COUNT_ALL: {
+    break;
+   }
+   case voltron::compute::AggregateKind::COUNT_DISTINCT: {
+    break;
+   }
+   case voltron::compute::AggregateKind::ROW_NUMBER: {
+    break;
+   }
+   case voltron::compute::AggregateKind::LAG: {
+    break;
+   }
+   case voltron::compute::AggregateKind::LEAD: {
+    break;
+   }
+   case voltron::compute::AggregateKind::NTH_ELEMENT: {
+    break;
+   }
   };
+  //TODO: Rommel Throw exception
   return nullptr;
 }
 
 std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		std::shared_ptr<ral::frame::BlazingArrowTableView> table_view, const std::vector<std::string> & aggregation_input_expressions,
- 		const std::vector<AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases)
+ 		const std::vector<voltron::compute::AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases)
 {
     std::shared_ptr<arrow::Table> table = table_view->view();
 
  	std::vector<std::shared_ptr<arrow::Scalar>> reductions;
  	std::vector<std::string> agg_output_column_names;
  	for (size_t i = 0; i < aggregation_types.size(); i++){
- 		if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
+ 		if(aggregation_input_expressions[i] == "" && aggregation_types[i] == voltron::compute::AggregateKind::COUNT_ALL) { // this is a COUNT(*)
             std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(table->num_rows());
  			reductions.emplace_back(std::move(scalar));
  		} else {
@@ -231,17 +193,17 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  				//aggregation_input = aggregation_input_scope_holder[0]->view();
  			}
 
- 			if( aggregation_types[i] == AggregateKind::COUNT_VALID) {
+ 			if( aggregation_types[i] == voltron::compute::AggregateKind::COUNT_VALID) {
                 std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(aggregation_input->length() - aggregation_input->null_count());
  				reductions.emplace_back(std::move(scalar));
  			} else {
-                std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation<cudf::aggregation>(aggregation_types[i]);
-                cudf::type_id theinput_type = cudf::detail::arrow_to_cudf_type(*aggregation_input->type()).id();
- 				cudf::type_id output_type = get_aggregation_output_type(theinput_type, aggregation_types[i], false);
+        //std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation<cudf::aggregation>(aggregation_types[i]);
+        cudf::type_id theinput_type = cudf::detail::arrow_to_cudf_type(*aggregation_input->type()).id();
+        cudf::type_id output_type = get_aggregation_output_type(theinput_type, aggregation_types[i], false);
 
- 				std::shared_ptr<arrow::Scalar> reduction_out = arrow_reduce(aggregation_input, agg, cudf::data_type(output_type));
+        std::shared_ptr<arrow::Scalar> reduction_out = arrow_reduce(aggregation_input, aggregation_types[i], cudf::data_type(output_type));
 
- 				if (aggregation_types[i] == AggregateKind::SUM0 && !reduction_out->is_valid){ // if this aggregation was a SUM0, and it was not valid, we want it to be a valid 0 instead
+ 				if (aggregation_types[i] == voltron::compute::AggregateKind::SUM0 && !reduction_out->is_valid){ // if this aggregation was a SUM0, and it was not valid, we want it to be a valid 0 instead
                     auto dt = cudf::detail::arrow_to_cudf_type(*reduction_out->type);
  					std::shared_ptr<arrow::Int64Scalar> zero_scalar = std::make_shared<arrow::Int64Scalar>(0);
  					reductions.emplace_back(std::move(zero_scalar));
@@ -252,7 +214,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		}
  		// if the aggregation was given an alias lets use it, otherwise we'll name it based on the aggregation and input
  		if(aggregation_column_assigned_aliases[i] == "") {
- 			if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
+ 			if(aggregation_input_expressions[i] == "" && aggregation_types[i] == voltron::compute::AggregateKind::COUNT_ALL) { // this is a COUNT(*)
  				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(*)");
  			} else {
  				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(" + table_view->column_names().at(get_index(aggregation_input_expressions[i])) + ")");

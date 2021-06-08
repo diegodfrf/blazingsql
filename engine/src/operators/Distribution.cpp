@@ -38,8 +38,8 @@ typedef blazingdb::transport::Node Node;
 std::unique_ptr<BlazingTable> generatePartitionPlans(
 	cudf::size_type number_partitions,
 	const std::vector<std::unique_ptr<ral::frame::BlazingTable>> & samples,
-	const std::vector<cudf::order> & sortOrderTypes,
-	const std::vector<cudf::null_order> & sortOrderNulls) {
+	const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
+	const std::vector<voltron::compute::NullOrder> & sortOrderNulls) {
 
 	// just to call concatTables
 	std::vector<std::shared_ptr<BlazingTableView>> samplesView;
@@ -74,8 +74,8 @@ std::vector<NodeColumnView> partitionData(Context * context,
 	std::shared_ptr<BlazingTableView> table,
 	std::shared_ptr<BlazingTableView> pivots,
 	const std::vector<int> & searchColIndices,
-	std::vector<cudf::order> sortOrderTypes,
-	const std::vector<cudf::null_order> & sortOrderNulls) {
+	std::vector<voltron::compute::SortOrder> sortOrderTypes,
+	const std::vector<voltron::compute::NullOrder> & sortOrderNulls) {
 
 	RAL_EXPECTS(static_cast<size_t>(pivots->num_columns()) == searchColIndices.size(), "Mismatched pivots num_columns and searchColIndices");
 
@@ -90,7 +90,7 @@ std::vector<NodeColumnView> partitionData(Context * context,
 	}
 
 	if(sortOrderTypes.size() == 0) {
-		sortOrderTypes.assign(searchColIndices.size(), cudf::order::ASCENDING);
+		sortOrderTypes.assign(searchColIndices.size(), voltron::compute::SortOrder::ASCENDING);
 	}
 
 	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitioned_data = ral::operators::partition_table(pivots, table, sortOrderTypes, searchColIndices, sortOrderNulls);

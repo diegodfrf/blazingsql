@@ -12,59 +12,59 @@
 
 #include <numeric>
 
-AggregateKind get_aggregation_operation(std::string expression_in, bool is_window_operation) {
+voltron::compute::AggregateKind get_aggregation_operation(std::string expression_in, bool is_window_operation) {
 
 	std::string operator_string = get_aggregation_operation_string(expression_in);
 	std::string expression = get_string_between_outer_parentheses(expression_in);
 
 	if (expression == "" && operator_string == "COUNT" && is_window_operation == false){
-		return AggregateKind::COUNT_ALL;
+		return voltron::compute::AggregateKind::COUNT_ALL;
 	} else if(operator_string == "SUM") {
-		return AggregateKind::SUM;
+		return voltron::compute::AggregateKind::SUM;
 	} else if(operator_string == "$SUM0") {
-		return AggregateKind::SUM0;
+		return voltron::compute::AggregateKind::SUM0;
 	} else if(operator_string == "AVG") {
-		return AggregateKind::MEAN;
+		return voltron::compute::AggregateKind::MEAN;
 	} else if(operator_string == "MIN") {
-		return AggregateKind::MIN;
+		return voltron::compute::AggregateKind::MIN;
 	} else if(operator_string == "MAX") {
-		return AggregateKind::MAX;
+		return voltron::compute::AggregateKind::MAX;
 	} else if(operator_string == "ROW_NUMBER") {
-		return AggregateKind::ROW_NUMBER;
+		return voltron::compute::AggregateKind::ROW_NUMBER;
 	} else if(operator_string == "COUNT") {
-		return AggregateKind::COUNT_VALID;
+		return voltron::compute::AggregateKind::COUNT_VALID;
 	} else if (operator_string == "LEAD") {
-		return AggregateKind::LEAD;
+		return voltron::compute::AggregateKind::LEAD;
 	} else if (operator_string == "LAG") {
-		return AggregateKind::LAG;
+		return voltron::compute::AggregateKind::LAG;
 	} else if (operator_string == "FIRST_VALUE" || operator_string == "LAST_VALUE") {
-		return AggregateKind::NTH_ELEMENT;
+		return voltron::compute::AggregateKind::NTH_ELEMENT;
 	}else if(operator_string == "COUNT_DISTINCT") {
 		/* Currently this conditional is unreachable.
 		   Calcite transforms count distincts through the
 		   AggregateExpandDistinctAggregates rule, so in fact,
 		   each count distinct is replaced by some group by clauses. */
-		return AggregateKind::COUNT_DISTINCT;
+		return voltron::compute::AggregateKind::COUNT_DISTINCT;
 	}
 
 	throw std::runtime_error(
 		"In get_aggregation_operation function: aggregation type not supported, " + operator_string);
 }
 
-std::string aggregator_to_string(AggregateKind aggregation) {
-	if(aggregation == AggregateKind::COUNT_VALID || aggregation == AggregateKind::COUNT_ALL) {
+std::string aggregator_to_string(voltron::compute::AggregateKind aggregation) {
+	if(aggregation == voltron::compute::AggregateKind::COUNT_VALID || aggregation == voltron::compute::AggregateKind::COUNT_ALL) {
 		return "count";
-	} else if(aggregation == AggregateKind::SUM) {
+	} else if(aggregation == voltron::compute::AggregateKind::SUM) {
 		return "sum";
-	} else if(aggregation == AggregateKind::SUM0) {
+	} else if(aggregation == voltron::compute::AggregateKind::SUM0) {
 		return "sum0";
-	} else if(aggregation == AggregateKind::MIN) {
+	} else if(aggregation == voltron::compute::AggregateKind::MIN) {
 		return "min";
-	} else if(aggregation == AggregateKind::MAX) {
+	} else if(aggregation == voltron::compute::AggregateKind::MAX) {
 		return "max";
-	} else if(aggregation == AggregateKind::MEAN) {
+	} else if(aggregation == voltron::compute::AggregateKind::MEAN) {
 		return "avg";
-	} else if(aggregation == AggregateKind::COUNT_DISTINCT) {
+	} else if(aggregation == voltron::compute::AggregateKind::COUNT_DISTINCT) {
 		/* Currently this conditional is unreachable.
 		   Calcite transforms count distincts through the
 		   AggregateExpandDistinctAggregates rule, so in fact,
@@ -75,10 +75,10 @@ std::string aggregator_to_string(AggregateKind aggregation) {
 	}
 }
 
-cudf::type_id get_aggregation_output_type(cudf::type_id input_type, AggregateKind aggregation, bool have_groupby) {
-	if(aggregation == AggregateKind::COUNT_VALID || aggregation == AggregateKind::COUNT_ALL) {
+cudf::type_id get_aggregation_output_type(cudf::type_id input_type, voltron::compute::AggregateKind aggregation, bool have_groupby) {
+	if(aggregation == voltron::compute::AggregateKind::COUNT_VALID || aggregation == voltron::compute::AggregateKind::COUNT_ALL) {
 		return cudf::type_id::INT64;
-	} else if(aggregation == AggregateKind::SUM || aggregation == AggregateKind::SUM0) {
+	} else if(aggregation == voltron::compute::AggregateKind::SUM || aggregation == voltron::compute::AggregateKind::SUM0) {
 		if(have_groupby)
 			return input_type;  // current group by function can only handle this
 		else {
@@ -86,13 +86,13 @@ cudf::type_id get_aggregation_output_type(cudf::type_id input_type, AggregateKin
 			// to be safe we should enlarge to the greatest integer or float representation
 			return is_type_float(input_type) ? cudf::type_id::FLOAT64 : cudf::type_id::INT64;
 		}
-	} else if(aggregation == AggregateKind::MIN) {
+	} else if(aggregation == voltron::compute::AggregateKind::MIN) {
 		return input_type;
-	} else if(aggregation == AggregateKind::MAX) {
+	} else if(aggregation == voltron::compute::AggregateKind::MAX) {
 		return input_type;
-	} else if(aggregation == AggregateKind::MEAN) {
+	} else if(aggregation == voltron::compute::AggregateKind::MEAN) {
 		return cudf::type_id::FLOAT64;
-	} else if(aggregation == AggregateKind::COUNT_DISTINCT) {
+	} else if(aggregation == voltron::compute::AggregateKind::COUNT_DISTINCT) {
 		/* Currently this conditional is unreachable.
 		   Calcite transforms count distincts through the
 		   AggregateExpandDistinctAggregates rule, so in fact,
@@ -100,7 +100,7 @@ cudf::type_id get_aggregation_output_type(cudf::type_id input_type, AggregateKin
 		return cudf::type_id::INT64;
 	} else {
 		throw std::runtime_error(
-			"In get_aggregation_output_type function: aggregation type not supported: " + aggregation);
+			"In get_aggregation_output_type function: aggregation type not supported.");
 	}
 }
 
@@ -121,9 +121,9 @@ std::vector<int> get_group_columns(std::string query_part) {
 }
 
 
-std::tuple<std::vector<int>, std::vector<std::string>, std::vector<AggregateKind>,std::vector<std::string>>
+std::tuple<std::vector<int>, std::vector<std::string>, std::vector<voltron::compute::AggregateKind>,std::vector<std::string>>
 	parseGroupByExpression(const std::string & queryString, std::size_t num_cols){
-	std::vector<AggregateKind> aggregation_types;
+	std::vector<voltron::compute::AggregateKind> aggregation_types;
 	std::vector<std::string> aggregation_input_expressions;
 	std::vector<int> group_column_indices;
 
@@ -164,18 +164,18 @@ std::tuple<std::vector<int>, std::vector<std::string>, std::vector<AggregateKind
 		std::move(aggregation_types), std::move(aggregation_column_assigned_aliases));
 }
 
-std::tuple<std::vector<int>, std::vector<std::string>, std::vector<AggregateKind>,	std::vector<std::string>>
+std::tuple<std::vector<int>, std::vector<std::string>, std::vector<voltron::compute::AggregateKind>,	std::vector<std::string>>
 	modGroupByParametersPostComputeAggregations(const std::vector<int> & group_column_indices,
-		const std::vector<AggregateKind> & aggregation_types, const std::vector<std::string> & merging_column_names) {
+		const std::vector<voltron::compute::AggregateKind> & aggregation_types, const std::vector<std::string> & merging_column_names) {
 
-	std::vector<AggregateKind> mod_aggregation_types = aggregation_types;
+	std::vector<voltron::compute::AggregateKind> mod_aggregation_types = aggregation_types;
 	std::vector<std::string> mod_aggregation_input_expressions(aggregation_types.size());
 	std::vector<std::string> mod_aggregation_column_assigned_aliases(mod_aggregation_types.size());
 	std::vector<int> mod_group_column_indices(group_column_indices.size());
 	std::iota(mod_group_column_indices.begin(), mod_group_column_indices.end(), 0);
 	for (size_t i = 0; i < mod_aggregation_types.size(); i++){
-		if (mod_aggregation_types[i] == AggregateKind::COUNT_ALL || mod_aggregation_types[i] == AggregateKind::COUNT_VALID){
-			mod_aggregation_types[i] = AggregateKind::SUM; // if we have a COUNT, we want to SUM the output of the counts from other nodes
+		if (mod_aggregation_types[i] == voltron::compute::AggregateKind::COUNT_ALL || mod_aggregation_types[i] == voltron::compute::AggregateKind::COUNT_VALID){
+			mod_aggregation_types[i] = voltron::compute::AggregateKind::SUM; // if we have a COUNT, we want to SUM the output of the counts from other nodes
 		}
 		mod_aggregation_input_expressions[i] = std::to_string(i + mod_group_column_indices.size()); // we just want to aggregate the input columns, so we are setting the indices here
 		mod_aggregation_column_assigned_aliases[i] = merging_column_names[i + mod_group_column_indices.size()];
