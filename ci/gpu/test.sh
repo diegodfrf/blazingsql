@@ -108,8 +108,8 @@ Options:
    -t=<name>, --tests=<name>        Optional argument to use after 'e2e' run specific e2e test groups.
                                     The comma separated values are the e2e tests to run, where
                                     each value is the python filename of the test located in
-                                    blazingsql/tests/BlazingSQLTest/EndToEndTests/
-                                    (e.g. 'castTest, groupByTest' or 'literalTest' for single test).
+                                    blazingsql/tests/BlazingSQLTest/EndToEndTests/ in TestSuites/ and oldScripts/
+                                    (e.g. 'castSuite, groupBySuite' or 'literalSuite' for single test).
                                     Empty means will run all the e2e tests)
    -c <file>, --config-file <file>  Set configuration file for E2E tests, the file must be located
                                     in blazingsql/tests/BlazingSQLTest/Configuration/
