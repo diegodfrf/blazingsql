@@ -10,6 +10,7 @@ from Runner import runTest
 from Runner import TestSuites
 import sys
 import time
+import itertools
 
 
 def E2EResults():
@@ -77,6 +78,20 @@ def runE2ETest(bc, dask_client, drill, spark):
 
     mainE2ELegacyTests.runLegacyTest(bc, dask_client, drill, spark)
 
+def loadNextSettingsConfiguration():
+    concurrent = Settings.data["RunSettings"]["concurrent"]
+    testsWithNulls = Settings.data["RunSettings"]["testsWithNulls"]
+
+    concurrent = concurrent if isinstance(concurrent, list) else [concurrent]
+    testsWithNulls = testsWithNulls if isinstance(testsWithNulls, list) else [testsWithNulls]
+
+    allList = [concurrent, testsWithNulls]
+    allList = list(itertools.product(*allList))
+    for item in allList:
+        Settings.data["RunSettings"]["concurrent"]     = item[0]
+        Settings.data["RunSettings"]["testsWithNulls"] = item[1]
+        yield item
+
 def main():
     print("**init end2end**")
     Execution.getArgs()
@@ -91,11 +106,24 @@ def main():
 
     print("Using progress bar: ", useProgressBar)
 
-    drill, spark = init_comparators()
+    for item in loadNextSettingsConfiguration():
+        start = time.time()
+        print("\n===============================================================")
+        print("===============================================================")
+        print("Running end to end tests with config: ")
+        Settings.printConfig()
 
-    bc, dask_client = init_context(useProgressBar = useProgressBar)
+        drill, spark = init_comparators()
 
-    runE2ETest(bc, dask_client, drill, spark)
+        bc, dask_client = init_context(useProgressBar = useProgressBar)
+
+        runE2ETest(bc, dask_client, drill, spark)
+
+        total = time.time() - start
+        print("\nTotal time for end to end tests: {0} minutes and {1} seconds".format(int(total / 60 if total >= 60 else 0), total % 60))
+        print("End to end tests with config: ")
+        Settings.printConfig()
+        print(">>> DONE !!!")
 
     return E2EResults()
 
