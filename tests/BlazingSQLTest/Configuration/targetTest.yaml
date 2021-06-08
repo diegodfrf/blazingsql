@@ -144,13 +144,13 @@ LIST_TEST:
     CODE: NEQUIJOIN
   predicatesWithNullsSuite:
     NAME: Predicates With Nulls
-    FILE: predicatesWithNulls.yaml
+    FILE: predicatesWithNullsSuite.yaml
     CODE: PREDWNULLS
   orderbySuite:
     NAME: Order by
     FILE: orderbySuite.yaml
     CODE: ORDERBY
-  rightOuterJoins:
+  rightOuterJoinSuite:
     NAME: Right outer join
     FILE: rightOuterJoinSuite.yaml
     CODE: ROUTJOIN
@@ -166,7 +166,7 @@ LIST_TEST:
     NAME: String case
     FILE: stringCaseSuite.yaml
     CODE: STRINGCASE
-  simpleStringSuites:
+  simpleStringSuite:
     NAME: Simple String
     FILE: simpleStringSuite.yaml
     CODE: SSTRING
@@ -214,7 +214,11 @@ LIST_TEST:
     NAME: Union
     FILE: unionSuite.yaml
     CODE: UNION
-  LimitSuite:
+  unsignedTypeSuite:
+    NAME: Unsigned Type
+    FILE: NONE
+    CODE: NONE
+  useLimitSuite:
     NAME: Limit
     FILE: useLimitSuite.yaml
     CODE: LIMIT
