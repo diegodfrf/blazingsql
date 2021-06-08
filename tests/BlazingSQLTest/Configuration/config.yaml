@@ -13,7 +13,7 @@ RUN_SETTINGS:
   NETWORK_INTERFACE: lo
   WORKSHEET: BSQL Log Results # or "BSQL Performance Results"
   LOG_INFO:
-  NRALS: 2
+  NRALS: 1
   CONCURRENT: False
   TEST_WITH_NULLS: False
 
