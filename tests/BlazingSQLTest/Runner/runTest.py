@@ -244,15 +244,17 @@ def compare_column_names(pdf1, pdf2):
 # lines (the logger logic depends that we log first queryType and then queryId
 # WARNING DO NOT CHANGE THE CALL ORDER IN THIS FUCTION!
 
-
+# TODO percy arrow romulo mario re enable this when we want to deploy blazingsql again
 def get_Branch():
-    branch = blazingsql.__branch_name__
-    return branch
+    # branch = blazingsql.__branch_name__
+    # return branch
+    return ""
 
-
+# TODO percy arrow romulo mario re enable this when we want to deploy blazingsql again
 def get_CommitHash():
-    commit = blazingsql.__version__
-    return commit
+    # commit = blazingsql.__version__
+    # return commit
+    return ""
 
 
 def get_QueryId(input_type, test_name, test_id):
@@ -1282,8 +1284,9 @@ def results_processing(result_gdf,
             pdf1 = (
                 upcast_to_float(result_gdf)
                 .fillna(get_null_constants(result_gdf))
-                .to_pandas()
             )
+            if type(pdf1) is not pd.core.frame.DataFrame:
+                pdf1 = pdf1.to_pandas()
 
             if not isinstance(engine, str):
                 pdf2 = to_pandas_f64_engine(

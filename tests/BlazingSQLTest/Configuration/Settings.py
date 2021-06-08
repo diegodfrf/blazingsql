@@ -33,9 +33,9 @@ def initialize():
 def readFile():
     cwd = os.path.dirname(os.path.realpath(__file__))
     if "--config-file" in sys.argv and len(sys.argv) >= 3:
-        fileName = cwd + "/../Runner/" + sys.argv[2]
+        fileName = cwd + "/../Configuration/" + sys.argv[2]
     else:
-        fileName = cwd + "/../Runner/config.yaml"
+        fileName = cwd + "/../Configuration/config.yaml"
 
     if os.path.isfile(fileName):
         with open(fileName, 'r') as stream:
@@ -91,6 +91,8 @@ def create_json():
     if "RUN_SETTINGS" in fileYaml:
         run_settings = fileYaml["RUN_SETTINGS"]
 
+        output_type         = run_settings.get("OUTPUT_TYPE"       , "cudf")
+        preferred_compute   = run_settings.get("PREFERRED_COMPUTE" , "cudf")
         executionMode       = run_settings.get("EXEC_MODE"         , "gpuci")
         nGPUs               = run_settings.get("NGPUS"             , 1)
         networkInterface    = run_settings.get("NETWORK_INTERFACE" , "lo")
@@ -148,6 +150,8 @@ def create_json():
         "concurrent": concurrent,
         "nRals": int(nRals),
         "testsWithNulls": testsWithNulls,
+        "output_type": output_type,
+        "preferred_compute": preferred_compute
     }
 
 initialize()
