@@ -8,7 +8,7 @@ TEST_SETTINGS:
 
 RUN_SETTINGS:
 #  SAVE_LOG: "false" - Not yet supported in yaml.
-  OUTPUT_TYPE: pandas #pandas, cudf
+  OUTPUT_TYPE: cudf #pandas, cudf
   PREFERRED_COMPUTE: cudf #arrow, cudf
   EXEC_MODE: gpuci #gpuci, full, generator
   NGPUS: 1
