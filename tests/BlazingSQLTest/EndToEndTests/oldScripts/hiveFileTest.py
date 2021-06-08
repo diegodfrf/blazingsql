@@ -953,7 +953,7 @@ def main(dask_client, spark, dir_data_file, bc, nRals):
     tmpPath = tempdir.name + '/BlazingSQL/partitions/'
 
     testsWithNulls = Settings.data["RunSettings"]["testsWithNulls"]
-    if testsWithNulls == "true":
+    if testsWithNulls:
         tmpPath += "nulls/"
     else:
         tmpPath += "without-nulls/"
@@ -973,7 +973,7 @@ def main(dask_client, spark, dir_data_file, bc, nRals):
 
 def createPartitions(fileSchemaType, dir_data_file):
     testsWithNulls = Settings.data["RunSettings"]["testsWithNulls"]
-    if testsWithNulls == "true":
+    if testsWithNulls:
         dir_data = dir_data_file + "/tpch-with-nulls"
     else:
         dir_data = dir_data_file + "/tpch"
