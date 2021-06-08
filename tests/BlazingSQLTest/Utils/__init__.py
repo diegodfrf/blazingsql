@@ -33,9 +33,9 @@ def skip_test(dask_client, nRals, fileSchemaType, queryType):
     executionMode = Settings.data['RunSettings']['executionMode']
 
     if fileSchemaType == DataType.DASK_CUDF:
-        # Skipping combination DASK_CUDF and testsWithNulls="true"
+        # Skipping combination DASK_CUDF and testsWithNulls=True
         # due to https://github.com/rapidsai/cudf/issues/7572
-        if dask_client is None or testsWithNulls == "true":
+        if dask_client is None or testsWithNulls:
             return True
 
     if fileSchemaType == DataType.CUDF:
@@ -44,7 +44,7 @@ def skip_test(dask_client, nRals, fileSchemaType, queryType):
         # on gdf tables with nRals>1
         skip = False
         if int(nRals) > 1:
-            if dask_client is None or testsWithNulls == "true":
+            if dask_client is None or testsWithNulls:
                 return True
 
         return skip

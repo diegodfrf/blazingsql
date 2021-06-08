@@ -13,16 +13,11 @@ RUN_SETTINGS:
   NETWORK_INTERFACE: lo
   WORKSHEET: BSQL Log Results # or "BSQL Performance Results"
   LOG_INFO:
-#  NRALS:  # Not yet supported in yaml.
-#    - 1
-#    - 2
-#  TEST_WITH_NULLS:  # Not yet supported in yaml.
-#    - "true"
-#    - "false"
+  NRALS: 2
   CONCURRENT: False
-#  CONCURRENT:  # The options list is not yet supported by yaml.
-#    - False
-#    - True
+  TEST_WITH_NULLS:
+    - True
+    - False
 
 SETUP:
   APPLY_ORDER: True

@@ -1026,7 +1026,7 @@ def save_results_parquet(filename, pdf2):
 
 def results_file_generator(file_results_dir, testsWithNulls, filename, engine, pdf2):
     file_res_drill_dir = None
-    if testsWithNulls != "true":
+    if not testsWithNulls:
         file_res_drill_dir = (
             file_results_dir + "/" + engine + "/" + filename
         )
@@ -1186,7 +1186,7 @@ def run_query(
             compareResults = Settings.data["RunSettings"]["compare_result_values"]
 
         if compareResults:
-            if testsWithNulls != "true":
+            if not testsWithNulls:
                 resultFile = file_results_dir + "/" + str(engine) + "/" + filename
             else:
                 resultFile = file_results_dir + "/" + str(engine) + "-nulls" + "/" + filename

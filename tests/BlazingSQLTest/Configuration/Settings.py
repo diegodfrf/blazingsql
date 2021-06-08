@@ -30,12 +30,19 @@ def initialize():
 
     execution_mode = data["RunSettings"]["executionMode"]
 
+def printConfig():
+    print("\n[RunSettings]")
+    for key, value in data["RunSettings"].items():
+        print('    {0:<30} {1:<10} {2:<8}'.format(key, "<"+type(value).__name__+">", str(value)))
+
+    print("\n")
+
 def readFile():
     cwd = os.path.dirname(os.path.realpath(__file__))
     if "--config-file" in sys.argv and len(sys.argv) >= 3:
-        fileName = cwd + "/../Runner/" + sys.argv[2]
+        fileName = cwd + "/../Configuration/" + sys.argv[2]
     else:
-        fileName = cwd + "/../Runner/config.yaml"
+        fileName = cwd + "/../Configuration/config.yaml"
 
     if os.path.isfile(fileName):
         with open(fileName, 'r') as stream:
@@ -99,11 +106,11 @@ def create_json():
         logInfo             = run_settings.get("LOG_INFO"          , "")
         compare_results     = run_settings.get("COMPARE_RESULTS"   , "true")
         concurrent          = run_settings.get("CONCURRENT"        , False)
+        nRals               = run_settings.get("NRALS"             , 1)
+        testsWithNulls      = run_settings.get("TEST_WITH_NULLS"   , False)
 
     # RunSettings
-    nRals = os.getenv("BLAZINGSQL_E2E_N_RALS", 1)
     saveLog = os.getenv("BLAZINGSQL_E2E_SAVE_LOG", "false")
-    testsWithNulls = os.getenv("BLAZINGSQL_E2E_TEST_WITH_NULLS", "false")
     targetTestGroups = os.getenv(
         "BLAZINGSQL_E2E_TARGET_TEST_GROUPS", ""
     )  # comma separated values, if empty will run all the e2e tests
@@ -146,7 +153,7 @@ def create_json():
         "compare_results": compare_results,
         "targetTestGroups": targetTestGroups,
         "concurrent": concurrent,
-        "nRals": int(nRals),
+        "nRals": nRals,
         "testsWithNulls": testsWithNulls,
     }
 
