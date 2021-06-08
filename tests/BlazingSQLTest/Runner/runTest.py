@@ -1284,8 +1284,9 @@ def results_processing(result_gdf,
             pdf1 = (
                 upcast_to_float(result_gdf)
                 .fillna(get_null_constants(result_gdf))
-                .to_pandas()
             )
+            if type(pdf1) is not pd.core.frame.DataFrame:
+                pdf1 = pdf1.to_pandas()
 
             if not isinstance(engine, str):
                 pdf2 = to_pandas_f64_engine(
