@@ -1,6 +1,7 @@
 #pragma once
 
 #include "blazing_table/BlazingCudfTable.h"
+#include "operators/operators_definitions.h"
 
 void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table, const std::vector<std::shared_ptr<arrow::DataType>> & types,
 	std::vector<cudf::size_type> column_indices = std::vector<cudf::size_type>() );
@@ -23,3 +24,7 @@ std::vector<T> column_to_vector(cudf::column_view column){
   	CUDA_TRY(cudaMemcpy(host_data.data(), column.data<T>(), column.size() * sizeof(T), cudaMemcpyDeviceToHost));
 	return host_data;
 }
+
+std::vector<cudf::order> toCudfOrderTypes(std::vector<voltron::compute::SortOrder> sortOrderTypes);
+
+std::vector<cudf::null_order> toCudfNullOrderTypes(std::vector<voltron::compute::NullOrder> sortOrderNulls);

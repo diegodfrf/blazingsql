@@ -16,18 +16,18 @@
 #include <arrow/array/builder_primitive.h>
 #include <arrow/api.h>
 #include <arrow/compute/api.h>
+#include "operators/operators_definitions.h"
 
+std::tuple<std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder>, cudf::size_type> get_sort_vars(const std::string & query_part);
 
-std::tuple<std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order>, cudf::size_type> get_sort_vars(const std::string & query_part);
+std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder> > get_vars_to_partition(const std::string & query_part);
 
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_vars_to_partition(const std::string & query_part);
+std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder> > get_vars_to_orders(const std::string & query_part);
 
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_vars_to_orders(const std::string & query_part);
-
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_vars_to_partition_and_order(const std::string & query_part);
+std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder> > get_vars_to_partition_and_order(const std::string & query_part);
 
 bool has_limit_only(const std::string & query_part);
 
 int64_t get_limit_rows_when_relational_alg_is_simple(const std::string & query_part);
 
-std::tuple<std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_right_sorts_vars(const std::string & query_part);
+std::tuple<std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder> > get_right_sorts_vars(const std::string & query_part);

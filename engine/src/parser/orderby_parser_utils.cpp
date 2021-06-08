@@ -15,7 +15,7 @@
 #include <thrust/host_vector.h>
 #include "compute/api.h"
 
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order>, cudf::size_type>
+std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder>, cudf::size_type>
 get_sort_vars(const std::string & query_part) {
 	auto rangeStart = query_part.find("(");
 	auto rangeEnd = query_part.rfind(")") - rangeStart - 1;
@@ -24,23 +24,23 @@ get_sort_vars(const std::string & query_part) {
 	int num_sort_columns = count_string_occurrence(combined_expression, "sort");
 
 	std::vector<int> sortColIndices(num_sort_columns);
-	std::vector<cudf::order> sortOrderTypes(num_sort_columns);
-	std::vector<cudf::null_order> sortOrderNulls(num_sort_columns);
+	std::vector<voltron::compute::SortOrder> sortOrderTypes(num_sort_columns);
+	std::vector<voltron::compute::NullOrder> sortOrderNulls(num_sort_columns);
 	for(auto i = 0; i < num_sort_columns; i++) {
 		sortColIndices[i] = get_index(get_named_expression(combined_expression, "sort" + std::to_string(i)));
 		std::string sort_type = get_named_expression(combined_expression, "dir" + std::to_string(i));
 
 		// defaults
-		sortOrderTypes[i] = cudf::order::ASCENDING;
-		sortOrderNulls[i] = cudf::null_order::AFTER;
+		sortOrderTypes[i] = voltron::compute::SortOrder::ASCENDING;
+		sortOrderNulls[i] = voltron::compute::NullOrder::AFTER;
 
 		if (sort_type == ASCENDING_ORDER_SORT_TEXT_NULLS_FIRST) {
-			sortOrderNulls[i] = cudf::null_order::BEFORE;
+			sortOrderNulls[i] = voltron::compute::NullOrder::BEFORE;
 		} else if (sort_type == DESCENDING_ORDER_SORT_TEXT_NULLS_LAST) {
-			sortOrderTypes[i] = cudf::order::DESCENDING;
-			sortOrderNulls[i] = cudf::null_order::BEFORE; // due to the descending
+			sortOrderTypes[i] = voltron::compute::SortOrder::DESCENDING;
+			sortOrderNulls[i] = voltron::compute::NullOrder::BEFORE; // due to the descending
 		} else if (sort_type == DESCENDING_ORDER_SORT_TEXT) {
-			sortOrderTypes[i] = cudf::order::DESCENDING;
+			sortOrderTypes[i] = voltron::compute::SortOrder::DESCENDING;
 		}
 	}
 
@@ -52,11 +52,11 @@ get_sort_vars(const std::string & query_part) {
 
 
 // input: min_keys=[MIN($0) OVER (PARTITION BY $1, $2 ORDER BY $3)], n_nationkey=[$0]
-// output: < [1, 2], [cudf::ASCENDING, cudf::ASCENDING], [cudf::null_order::AFTER, cudf::null_order::AFTER] >
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_vars_to_partition(const std::string & logical_plan) {
+// output: < [1, 2], [cudf::ASCENDING, cudf::ASCENDING], [voltron::compute::NullOrder::AFTER, voltron::compute::NullOrder::AFTER] >
+std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder> > get_vars_to_partition(const std::string & logical_plan) {
 	std::vector<int> column_index;
-	std::vector<cudf::order> order_types;
-	std::vector<cudf::null_order> null_orders;
+	std::vector<voltron::compute::SortOrder> order_types;
+	std::vector<voltron::compute::NullOrder> null_orders;
 	const std::string partition_expr = "PARTITION BY ";
 
 	// PARTITION BY $1, $2 ORDER BY $3
@@ -79,8 +79,8 @@ std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_o
 		column_numbers_string[i] = StringUtil::replace(column_numbers_string[i], "$", "");
 		column_index.push_back(std::stoi(column_numbers_string[i]));
 		// by default
-		order_types.push_back(cudf::order::ASCENDING);
-		null_orders.push_back(cudf::null_order::AFTER);
+		order_types.push_back(voltron::compute::SortOrder::ASCENDING);
+		null_orders.push_back(voltron::compute::NullOrder::AFTER);
 	}
 
 	return std::make_tuple(column_index, order_types, null_orders);
@@ -88,11 +88,11 @@ std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_o
 
 
 // input: min_keys=[MIN($0) OVER (PARTITION BY $2 ORDER BY $3, $1 DESC)], n_nationkey=[$0]
-// output: < [3, 1], [cudf::ASCENDING, cudf::DESCENDING], [cudf::null_order::AFTER, cudf::null_order::AFTER] >
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_vars_to_orders(const std::string & logical_plan) {
+// output: < [3, 1], [cudf::ASCENDING, cudf::DESCENDING], [voltron::compute::NullOrder::AFTER, voltron::compute::NullOrder::AFTER] >
+std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder> > get_vars_to_orders(const std::string & logical_plan) {
 	std::vector<int> column_index;
-	std::vector<cudf::order> order_types;
-	std::vector<cudf::null_order> sorted_order_nulls;
+	std::vector<voltron::compute::SortOrder> order_types;
+	std::vector<voltron::compute::NullOrder> sorted_order_nulls;
 	std::string order_expr = "ORDER BY ";
 
 	// PARTITION BY $2 ORDER BY $3, $1 DESC
@@ -116,25 +116,25 @@ std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_o
 	for (std::size_t i = 0; i < column_express.size(); ++i) {
 		std::vector<std::string> split_parts = StringUtil::split(column_express[i], " ");
 		if (split_parts.size() == 1) { // $x
-			order_types.push_back(cudf::order::ASCENDING);
-			sorted_order_nulls.push_back(cudf::null_order::AFTER);
+			order_types.push_back(voltron::compute::SortOrder::ASCENDING);
+			sorted_order_nulls.push_back(voltron::compute::NullOrder::AFTER);
 		} else if (split_parts.size() == 2) { // $x DESC
-			order_types.push_back(cudf::order::DESCENDING);
-			sorted_order_nulls.push_back(cudf::null_order::AFTER);
+			order_types.push_back(voltron::compute::SortOrder::DESCENDING);
+			sorted_order_nulls.push_back(voltron::compute::NullOrder::AFTER);
 		} else if (split_parts.size() == 3) {
-			order_types.push_back(cudf::order::ASCENDING);
+			order_types.push_back(voltron::compute::SortOrder::ASCENDING);
 			if (split_parts[2] == "FIRST") {  // $x NULLS FIRST  
-				sorted_order_nulls.push_back(cudf::null_order::BEFORE);
+				sorted_order_nulls.push_back(voltron::compute::NullOrder::BEFORE);
 			} else { // $x NULLS LAST
-				sorted_order_nulls.push_back(cudf::null_order::AFTER);
+				sorted_order_nulls.push_back(voltron::compute::NullOrder::AFTER);
 			}
 		}
 		else {
-			order_types.push_back(cudf::order::DESCENDING);
+			order_types.push_back(voltron::compute::SortOrder::DESCENDING);
 			if (split_parts[3] == "FIRST") { // $x DESC NULLS FIRST
-				sorted_order_nulls.push_back(cudf::null_order::AFTER);
+				sorted_order_nulls.push_back(voltron::compute::NullOrder::AFTER);
 			} else { // $x DESC NULLS LAST
-				sorted_order_nulls.push_back(cudf::null_order::BEFORE);
+				sorted_order_nulls.push_back(voltron::compute::NullOrder::BEFORE);
 			}
 		}
 
@@ -148,11 +148,11 @@ std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_o
 
 
 // input: min_keys=[MIN($0) OVER (PARTITION BY $1, $2 ORDER BY $3 DESC)], n_nationkey=[$0]
-// output: < [1, 2, 3], [cudf::ASCENDING, cudf::ASCENDING, cudf::DESCENDING], [cudf::null_order::AFTER, cudf::null_order::AFTER]>
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_vars_to_partition_and_order(const std::string & query_part) {
+// output: < [1, 2, 3], [cudf::ASCENDING, cudf::ASCENDING, cudf::DESCENDING], [voltron::compute::NullOrder::AFTER, voltron::compute::NullOrder::AFTER]>
+std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder> > get_vars_to_partition_and_order(const std::string & query_part) {
 	std::vector<int> column_index_partition, column_index_order;
-	std::vector<cudf::order> order_types_partition, order_types_order;
-	std::vector<cudf::null_order> order_by_null_part, order_by_null;
+	std::vector<voltron::compute::SortOrder> order_types_partition, order_types_order;
+	std::vector<voltron::compute::NullOrder> order_by_null_part, order_by_null;
 
 	std::tie(column_index_partition, order_types_partition, order_by_null_part) = get_vars_to_partition(query_part);
 	std::tie(column_index_order, order_types_order, order_by_null) = get_vars_to_orders(query_part);
@@ -165,10 +165,10 @@ std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_o
 }
 
 
-std::tuple<std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_right_sorts_vars(const std::string & query_part) {
+std::tuple<std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder> > get_right_sorts_vars(const std::string & query_part) {
 	std::vector<int> sortColIndices;
-	std::vector<cudf::order> sortOrderTypes;
-	std::vector<cudf::null_order> sortOrderNulls;
+	std::vector<voltron::compute::SortOrder> sortOrderTypes;
+	std::vector<voltron::compute::NullOrder> sortOrderNulls;
 	cudf::size_type limitRows;
 
 	if (is_window_function(query_part)) {

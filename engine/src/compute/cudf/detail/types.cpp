@@ -58,3 +58,36 @@ std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<std::shar
 	}
 	return std::make_unique<cudf::table>(std::move(columns));
 }
+
+std::vector<cudf::order> toCudfOrderTypes(std::vector<voltron::compute::SortOrder> sortOrderTypes) {
+  std::vector<cudf::order> cudfOrderTypes;
+  cudfOrderTypes.resize(sortOrderTypes.size());
+
+  for(std::size_t idx; idx < cudfOrderTypes.size(); idx++){
+    switch(sortOrderTypes[idx]){
+      case voltron::compute::SortOrder::ASCENDING:
+        cudfOrderTypes[idx]=cudf::order::ASCENDING;
+      break;
+      case voltron::compute::SortOrder::DESCENDING:
+        cudfOrderTypes[idx]=cudf::order::DESCENDING;
+      break;
+    }
+  }
+}
+
+std::vector<cudf::null_order> toCudfNullOrderTypes(std::vector<voltron::compute::NullOrder> sortNullOrderTypes) {
+  std::vector<cudf::null_order> cudfNullOrderTypes;
+  cudfNullOrderTypes.resize(sortNullOrderTypes.size());
+
+  for(std::size_t idx; idx < cudfNullOrderTypes.size(); idx++){
+    switch(sortNullOrderTypes[idx]){
+      case voltron::compute::NullOrder::AFTER:
+        cudfNullOrderTypes[idx]=cudf::null_order::AFTER;
+      break;
+      case voltron::compute::NullOrder::BEFORE:
+        cudfNullOrderTypes[idx]=cudf::null_order::BEFORE;
+      break;
+    }
+  }
+}
+

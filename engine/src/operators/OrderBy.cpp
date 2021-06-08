@@ -42,8 +42,8 @@ using namespace ral::distribution;
 std::unique_ptr<ral::frame::BlazingTable> logicalSort(
   std::shared_ptr<ral::frame::BlazingTableView> table_view,
 	const std::vector<int> & sortColIndices,
-	const std::vector<cudf::order> & sortOrderTypes,
-	const std::vector<cudf::null_order> & sortOrderNulls) {
+	const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
+	const std::vector<voltron::compute::NullOrder> & sortOrderNulls) {
 
 	std::shared_ptr<ral::frame::BlazingTableView> sortColumns = ral::execution::backend_dispatcher(
     table_view->get_execution_backend(), select_functor(), table_view, sortColIndices);
@@ -98,8 +98,8 @@ limit_table(std::shared_ptr<ral::frame::BlazingTableView> table_view, int64_t nu
 }
 
 std::unique_ptr<ral::frame::BlazingTable> sort(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string & query_part){
-	std::vector<cudf::order> sortOrderTypes;
-	std::vector<cudf::null_order> sortOrderNulls;
+	std::vector<voltron::compute::SortOrder> sortOrderTypes;
+	std::vector<voltron::compute::NullOrder> sortOrderNulls;
 	std::vector<int> sortColIndices;
 
 	std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_right_sorts_vars(query_part);
@@ -119,7 +119,7 @@ std::size_t compute_total_samples(std::size_t num_rows) {
 }
 
 std::unique_ptr<ral::frame::BlazingTable> sample(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string & query_part){
-	std::vector<cudf::order> sortOrderTypes;
+	std::vector<voltron::compute::SortOrder> sortOrderTypes;
 	std::vector<int> sortColIndices;
 	
 	if (is_window_function(query_part)){
@@ -149,9 +149,9 @@ std::unique_ptr<ral::frame::BlazingTable> sample(std::shared_ptr<ral::frame::Bla
 
 std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partition_table(std::shared_ptr<ral::frame::BlazingTableView> partitionPlan,
 	std::shared_ptr<ral::frame::BlazingTableView> sortedTable,
-	const std::vector<cudf::order> & sortOrderTypes,
+	const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
 	const std::vector<int> & sortColIndices,
-	const std::vector<cudf::null_order> & sortOrderNulls) {
+	const std::vector<voltron::compute::NullOrder> & sortOrderNulls) {
 	
 	if (sortedTable->num_rows() == 0) {
 		return {sortedTable};
@@ -169,8 +169,8 @@ std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(
 	std::size_t table_num_rows, std::size_t avg_bytes_per_row,
 	const std::string & query_part, Context * context) {
 
-	std::vector<cudf::order> sortOrderTypes;
-	std::vector<cudf::null_order> sortOrderNulls;
+	std::vector<voltron::compute::SortOrder> sortOrderTypes;
+	std::vector<voltron::compute::NullOrder> sortOrderNulls;
 	std::vector<int> sortColIndices;
 	cudf::size_type limitRows;
 	
@@ -236,8 +236,8 @@ std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(
 }
 
 std::unique_ptr<ral::frame::BlazingTable> merge(std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitions_to_merge, const std::string & query_part) {
-	std::vector<cudf::order> sortOrderTypes;
-	std::vector<cudf::null_order> sortOrderNulls;
+	std::vector<voltron::compute::SortOrder> sortOrderTypes;
+	std::vector<voltron::compute::NullOrder> sortOrderNulls;
 	std::vector<int> sortColIndices;
 	
 	std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_right_sorts_vars(query_part);

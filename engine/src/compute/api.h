@@ -20,9 +20,9 @@ struct sorted_merger_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
 		std::vector<std::shared_ptr<ral::frame::BlazingTableView>> tables,
-		const std::vector<cudf::order> & sortOrderTypes,
+		const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
 		const std::vector<int> & sortColIndices,
-      const std::vector<cudf::null_order> & sortOrderNulls) const
+      const std::vector<voltron::compute::NullOrder> & sortOrderNulls) const
   {
     throw std::runtime_error("ERROR: sorted_merger_functor This default dispatcher operator should not be called.");
     return nullptr;
@@ -58,7 +58,7 @@ struct aggregations_without_groupby_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
       std::vector<std::string> aggregation_input_expressions,
-      std::vector<AggregateKind> aggregation_types,
+      std::vector<voltron::compute::AggregateKind> aggregation_types,
       std::vector<std::string> aggregation_column_assigned_aliases) const
   {
     throw std::runtime_error("ERROR: aggregations_without_groupby_functor This default dispatcher operator should not be called.");
@@ -71,7 +71,7 @@ struct aggregations_with_groupby_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
       std::vector<std::string> aggregation_input_expressions,
-      std::vector<AggregateKind> aggregation_types,
+      std::vector<voltron::compute::AggregateKind> aggregation_types,
       std::vector<std::string> aggregation_column_assigned_aliases,
       std::vector<int> group_column_indices) const
   {
@@ -209,8 +209,8 @@ struct sorted_order_gather_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
       std::shared_ptr<ral::frame::BlazingTableView> sortColumns_view,
-      const std::vector<cudf::order> & sortOrderTypes,
-      std::vector<cudf::null_order> null_orders) const
+      const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
+      std::vector<voltron::compute::NullOrder> null_orders) const
   {
     throw std::runtime_error("ERROR: sorted_order_gather_functor This default dispatcher operator should not be called.");
     return nullptr;
@@ -332,8 +332,8 @@ struct upper_bound_split_functor {
       std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
       std::shared_ptr<ral::frame::BlazingTableView> t,
       std::shared_ptr<ral::frame::BlazingTableView> values,
-      std::vector<cudf::order> const& column_order,
-      std::vector<cudf::null_order> const& null_precedence) const
+      std::vector<voltron::compute::SortOrder> const& column_order,
+      std::vector<voltron::compute::NullOrder> const& null_precedence) const
   {
     throw std::runtime_error("ERROR: upper_bound_split_functor This default dispatcher operator should not be called.");
   }

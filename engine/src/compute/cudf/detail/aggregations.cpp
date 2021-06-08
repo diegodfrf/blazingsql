@@ -32,12 +32,12 @@ std::unique_ptr<ral::frame::BlazingTable> compute_groupby_without_aggregations(
 
 std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 		std::shared_ptr<ral::frame::BlazingCudfTableView> table_view, const std::vector<std::string> & aggregation_input_expressions,
-		const std::vector<AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases)
+		const std::vector<voltron::compute::AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases)
 {
 	std::vector<std::unique_ptr<cudf::scalar>> reductions;
 	std::vector<std::string> agg_output_column_names;
 	for (size_t i = 0; i < aggregation_types.size(); i++){
-		if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
+		if(aggregation_input_expressions[i] == "" && aggregation_types[i] == voltron::compute::AggregateKind::COUNT_ALL) { // this is a COUNT(*)
 			std::unique_ptr<cudf::scalar> scalar = cudf::make_numeric_scalar(cudf::data_type(cudf::type_id::INT64));
 			auto numeric_s = static_cast< cudf::scalar_type_t<int64_t>* >(scalar.get());
 			numeric_s->set_value((int64_t)(table_view->num_rows()));
@@ -52,7 +52,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 				aggregation_input = aggregation_input_scope_holder[0]->view();
 			}
 
-			if( aggregation_types[i] == AggregateKind::COUNT_VALID) {
+			if( aggregation_types[i] == voltron::compute::AggregateKind::COUNT_VALID) {
 				std::unique_ptr<cudf::scalar> scalar = cudf::make_numeric_scalar(cudf::data_type(cudf::type_id::INT64));
 				auto numeric_s = static_cast< cudf::scalar_type_t<int64_t>* >(scalar.get());
 				numeric_s->set_value((int64_t)(aggregation_input.size() - aggregation_input.null_count()));
@@ -61,7 +61,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 				std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation<cudf::aggregation>(aggregation_types[i]);
 				cudf::type_id output_type = get_aggregation_output_type(aggregation_input.type().id(), aggregation_types[i], false);
 				std::unique_ptr<cudf::scalar> reduction_out = cudf::reduce(aggregation_input, agg, cudf::data_type(output_type));
-				if (aggregation_types[i] == AggregateKind::SUM0 && !reduction_out->is_valid()){ // if this aggregation was a SUM0, and it was not valid, we want it to be a valid 0 instead
+				if (aggregation_types[i] == voltron::compute::AggregateKind::SUM0 && !reduction_out->is_valid()){ // if this aggregation was a SUM0, and it was not valid, we want it to be a valid 0 instead
 					std::unique_ptr<cudf::scalar> zero_scalar = get_scalar_from_string("0", reduction_out->type()); // this does not need to be from a string, but this is a convenient way to make the scalar i need
 					reductions.emplace_back(std::move(zero_scalar));
 				} else {
@@ -72,7 +72,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 
 		// if the aggregation was given an alias lets use it, otherwise we'll name it based on the aggregation and input
 		if(aggregation_column_assigned_aliases[i] == "") {
-			if(aggregation_input_expressions[i] == "" && aggregation_types[i] == AggregateKind::COUNT_ALL) { // this is a COUNT(*)
+			if(aggregation_input_expressions[i] == "" && aggregation_types[i] == voltron::compute::AggregateKind::COUNT_ALL) { // this is a COUNT(*)
 				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(*)");
 			} else {
 				agg_output_column_names.push_back(aggregator_to_string(aggregation_types[i]) + "(" + table_view->column_names().at(get_index(aggregation_input_expressions[i])) + ")");
@@ -91,7 +91,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
 }
 
 std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
-		std::shared_ptr<ral::frame::BlazingCudfTableView> table_view, const std::vector<std::string> & aggregation_input_expressions, const std::vector<AggregateKind> & aggregation_types,
+		std::shared_ptr<ral::frame::BlazingCudfTableView> table_view, const std::vector<std::string> & aggregation_input_expressions, const std::vector<voltron::compute::AggregateKind> & aggregation_types,
 		const std::vector<std::string> & aggregation_column_assigned_aliases, const std::vector<int> & group_column_indices) {
 
 	// lets get the unique expressions. This is how many aggregation requests we will need
@@ -119,7 +119,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
 				int column_index = -1;
 				// need to calculate or determine the aggregation input only once
 				if (!got_aggregation_input) {
-					if(expression == "" && aggregation_types[i] == AggregateKind::COUNT_ALL ) { // this is COUNT(*). Lets just pick the first column
+					if(expression == "" && aggregation_types[i] == voltron::compute::AggregateKind::COUNT_ALL ) { // this is COUNT(*). Lets just pick the first column
 						aggregation_input = table_view->view().column(0);
 					} else if(is_var_column(expression) || is_number(expression)) {
 						column_index = get_index(expression);
@@ -136,7 +136,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
 
 				// if the aggregation was given an alias lets use it, otherwise we'll name it based on the aggregation and input
 				if(aggregation_column_assigned_aliases[i] == "") {
-					if(aggregation_types[i] == AggregateKind::COUNT_ALL) {  // COUNT(*) case
+					if(aggregation_types[i] == voltron::compute::AggregateKind::COUNT_ALL) {  // COUNT(*) case
 						agg_output_column_names.push_back("COUNT(*)");
 					} else {
 						if (column_index == -1){
@@ -169,7 +169,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_with_groupby(
 		}
 	}
 	for (size_t i = 0; i < agg_out_indices.size(); i++){
-		if (aggregation_types[agg_out_indices[i]] == AggregateKind::SUM0 && agg_cols_out[i]->null_count() > 0){
+		if (aggregation_types[agg_out_indices[i]] == voltron::compute::AggregateKind::SUM0 && agg_cols_out[i]->null_count() > 0){
 			std::unique_ptr<cudf::scalar> scalar = get_scalar_from_string("0", agg_cols_out[i]->type()); // this does not need to be from a string, but this is a convenient way to make the scalar i need
 			std::unique_ptr<cudf::column> temp = cudf::replace_nulls(agg_cols_out[i]->view(), *scalar );
 			output_columns[agg_out_indices[i] + group_column_indices.size()] = std::move(temp);

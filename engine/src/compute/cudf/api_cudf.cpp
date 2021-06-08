@@ -46,8 +46,8 @@
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator()<ral::frame::BlazingCudfTable>(
 		std::vector<std::shared_ptr<ral::frame::BlazingTableView>> tables,
-		const std::vector<cudf::order> & sortOrderTypes,
-		const std::vector<int> & sortColIndices, const std::vector<cudf::null_order> & sortOrderNulls) const
+		const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
+		const std::vector<int> & sortColIndices, const std::vector<voltron::compute::NullOrder> & sortOrderNulls) const
 {
 	return sorted_merger(tables, sortOrderTypes, sortColIndices, sortOrderNulls);
 }
@@ -79,7 +79,7 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> aggregations_without_groupby_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::vector<std::string> aggregation_input_expressions,
-    std::vector<AggregateKind> aggregation_types,
+    std::vector<voltron::compute::AggregateKind> aggregation_types,
     std::vector<std::string> aggregation_column_assigned_aliases) const
 {
   auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
@@ -90,7 +90,7 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> aggregations_with_groupby_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::vector<std::string> aggregation_input_expressions,
-    std::vector<AggregateKind> aggregation_types,
+    std::vector<voltron::compute::AggregateKind> aggregation_types,
     std::vector<std::string> aggregation_column_assigned_aliases,
     std::vector<int> group_column_indices) const
 {
@@ -250,12 +250,14 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::shared_ptr<ral::frame::BlazingTableView> sortColumns_view,
-    const std::vector<cudf::order> & sortOrderTypes,
-    std::vector<cudf::null_order> null_orders) const
+    const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
+    std::vector<voltron::compute::NullOrder> null_orders) const
 {
   auto table = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
   auto sortColumns = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(sortColumns_view);
-  std::unique_ptr<cudf::column> output = cudf::sorted_order( sortColumns->view(), sortOrderTypes, null_orders );
+  std::vector<cudf::order> cudfOrderTypes = toCudfOrderTypes(sortOrderTypes);
+  std::vector<cudf::null_order> cudfNullOrderTypes = toCudfNullOrderTypes(null_orders);
+  std::unique_ptr<cudf::column> output = cudf::sorted_order( sortColumns->view(), cudfOrderTypes, cudfNullOrderTypes );
 	std::unique_ptr<cudf::table> gathered = cudf::gather( table->view(), output->view() );
   return std::make_unique<ral::frame::BlazingCudfTable>(std::move(gathered), table->column_names());
 }
@@ -382,14 +384,16 @@ upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
     std::shared_ptr<ral::frame::BlazingTableView> t,
     std::shared_ptr<ral::frame::BlazingTableView> values,
-    std::vector<cudf::order> const& column_order,
-    std::vector<cudf::null_order> const& null_precedence) const
+    std::vector<voltron::compute::SortOrder> const& column_order,
+    std::vector<voltron::compute::NullOrder> const& null_precedence) const
 {
   auto sortedTable = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(sortedTable_view);
   auto columns_to_search = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(t);  
   auto partitionPlan = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(values);  
 
-  auto pivot_indexes = cudf::upper_bound(columns_to_search->view(), partitionPlan->view(), column_order, null_precedence);
+  std::vector<cudf::order> cudf_column_order = toCudfOrderTypes(column_order);
+  std::vector<cudf::null_order> cudfNullOrderTypes = toCudfNullOrderTypes(null_precedence);
+  auto pivot_indexes = cudf::upper_bound(columns_to_search->view(), partitionPlan->view(), cudf_column_order, cudfNullOrderTypes);
 	std::vector<cudf::size_type> split_indexes = column_to_vector<cudf::size_type>(pivot_indexes->view());
   auto tbs = cudf::split(sortedTable->view(), split_indexes);
   std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
