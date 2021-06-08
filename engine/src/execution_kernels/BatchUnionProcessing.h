@@ -24,7 +24,7 @@ public:
 
 private:
     std::vector<std::string> common_names;
-    std::vector<cudf::data_type> common_types;
+    std::vector<std::shared_ptr<arrow::DataType>> common_types;
 };
 
 } // namespace batch

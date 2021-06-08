@@ -1,5 +1,6 @@
 #include "OrcParser.h"
 #include "metadata/orc_metadata.h"
+#include "parser/types_parser_utils.h"
 
 #include <arrow/io/file.h>
 
@@ -64,7 +65,7 @@ void orc_parser::parse_schema(ral::execution::execution_backend preferred_comput
 
 	for(cudf::size_type i = 0; i < table_out.tbl->num_columns() ; i++) {
 		std::string name = table_out.metadata.column_names[i];
-		cudf::type_id type = table_out.tbl->get_column(i).type().id();
+		arrow::Type::type type = cudf_type_id_to_arrow_type(table_out.tbl->get_column(i).type().id());
 		size_t file_index = i;
 		bool is_in_file = true;
 		schema.add_column(name, type, file_index, is_in_file);

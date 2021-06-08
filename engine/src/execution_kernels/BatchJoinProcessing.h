@@ -68,7 +68,8 @@ private:
 	std::tuple<int, int> check_for_set_that_has_not_been_completed();
 
   // This function makes sure that the columns being joined are of the same type so that we can join them properly
-	void computeNormalizationData(const	std::vector<cudf::data_type> & left_types, const std::vector<cudf::data_type> & right_types);
+	void computeNormalizationData(const	std::vector<std::shared_ptr<arrow::DataType>> & left_types,
+		const std::vector<std::shared_ptr<arrow::DataType>> & right_types);
 
 private:
 	std::shared_ptr<ral::cache::CacheMachine> left_input;
@@ -86,7 +87,7 @@ private:
 	std::string condition;
 	std::string filter_statement;
 	std::vector<cudf::size_type> left_column_indices, right_column_indices;
-	std::vector<cudf::data_type> join_column_common_types;
+	std::vector<std::shared_ptr<arrow::DataType>> join_column_common_types;
 	bool normalize_left, normalize_right;
 	std::vector<std::string> result_names;
 };
@@ -108,7 +109,8 @@ public:
 
 private:
 	// this function makes sure that the columns being joined are of the same type so that we can join them properly
-	void computeNormalizationData(const	std::vector<cudf::data_type> & left_types, const	std::vector<cudf::data_type> & right_types);
+	void computeNormalizationData(const	std::vector<std::shared_ptr<arrow::DataType>> & left_types,
+		const std::vector<std::shared_ptr<arrow::DataType>> & right_types);
 
 	std::pair<bool, bool> determine_if_we_are_scattering_a_small_table(const ral::cache::CacheData& left_cache_data,
 		const ral::cache::CacheData& right_cache_data);
@@ -132,7 +134,7 @@ private:
 	std::string condition;
 	std::string filter_statement;
 	std::vector<cudf::size_type> left_column_indices, right_column_indices;
-	std::vector<cudf::data_type> join_column_common_types;
+	std::vector<std::shared_ptr<arrow::DataType>> join_column_common_types;
 	bool normalize_left, normalize_right;
 };
 

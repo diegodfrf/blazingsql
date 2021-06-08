@@ -65,6 +65,29 @@ def convertTypeNameStrToCudfType(hiveType):
         )
         return None
 
+arrowTypeToCsvType = {
+    1: "boolean",
+    2: "uint8",
+    3: "int8",
+    4: "uint16",
+    5: "int16",
+    6: "uint32",
+    7: "int32",
+    8: "uint64",
+    9: "int64",
+    #10: "float16",
+    11: "float32",
+    12: "float64",
+    13: "str",
+    #14: "binary",
+    #15: "FIXED_SIZE_BINARY",
+    16: "date32",
+    17: "date64",
+    18: "timestamp", # same as: timestamp[ms]
+    19: "time32",
+    20: "time64",
+    # TODO: Add more types
+}
 
 cudfTypeToCsvType = {
     1: "int8",

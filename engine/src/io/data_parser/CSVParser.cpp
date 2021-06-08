@@ -6,6 +6,7 @@
  */
 
 #include "CSVParser.h"
+#include "parser/types_parser_utils.h"
 #include <arrow/buffer.h>
 #include <arrow/io/memory.h>
 #include <numeric>
@@ -94,7 +95,6 @@ std::unique_ptr<ral::frame::BlazingTable> csv_parser::parse_batch(ral::execution
 	return nullptr;
 }
 
-
 void csv_parser::parse_schema(ral::execution::execution_backend preferred_compute,
 	ral::io::data_handle handle, ral::io::Schema & schema) {
 
@@ -118,7 +118,7 @@ void csv_parser::parse_schema(ral::execution::execution_backend preferred_comput
 	file->Close();
 
 	for(int i = 0; i < table_out.tbl->num_columns(); i++) {
-		cudf::type_id type = table_out.tbl->get_column(i).type().id();
+		arrow::Type::type type = cudf_type_id_to_arrow_type(table_out.tbl->get_column(i).type().id());
 		size_t file_index = i;
 		bool is_in_file = true;
 		std::string name = table_out.metadata.column_names.at(i);

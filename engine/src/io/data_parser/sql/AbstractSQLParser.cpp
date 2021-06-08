@@ -12,6 +12,7 @@
 
 #include "ExceptionHandling/BlazingThread.h"
 #include "Util/StringUtil.h"
+#include "parser/types_parser_utils.h"
 
 #ifdef MYSQL_SUPPORT
 #include <mysql/jdbc.h>
@@ -90,7 +91,8 @@ std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_batch(ral::e
 
 void abstractsql_parser::parse_schema(ral::execution::execution_backend preferred_compute,ral::io::data_handle handle, ral::io::Schema & schema) {
 	for(int i = 0; i < handle.sql_handle.column_names.size(); i++) {
-		cudf::type_id type = get_cudf_type_id(handle.sql_handle.column_types.at(i));
+		cudf::type_id type_cudf = get_cudf_type_id(handle.sql_handle.column_types.at(i));
+    arrow::Type::type type = cudf_type_id_to_arrow_type(type_cudf);
 		size_t file_index = i;
 		bool is_in_file = true;
 		std::string name = handle.sql_handle.column_names.at(i);
@@ -130,7 +132,7 @@ std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::get_metadata(ral::
 
 void abstractsql_parser::parse_sql(void *src,
   const std::vector<int> &column_indices,
-  const std::vector<cudf::type_id> &cudf_types,
+  const std::vector<arrow::Type::type> &cudf_types,
   size_t row,
   std::vector<void*> &host_cols,
   std::vector<std::vector<cudf::bitmask_type>> &null_masks)
@@ -138,7 +140,7 @@ void abstractsql_parser::parse_sql(void *src,
   for (int col = 0; col < column_indices.size(); ++col) {
     size_t projection = column_indices[col];
     uint8_t valid = 1; // 1: not null 0: null
-    cudf::type_id cudf_type_id = cudf_types[projection];
+    cudf::type_id cudf_type_id = arrow_type_to_cudf_data_type(cudf_types[projection]).id();
     switch (cudf_type_id) {
       case cudf::type_id::EMPTY: {} break;
       case cudf::type_id::INT8: {
@@ -217,7 +219,7 @@ void abstractsql_parser::parse_sql(void *src,
 
 std::pair<std::vector<void*>, std::vector<std::vector<cudf::bitmask_type>>> init(
     size_t total_rows, const std::vector<int> &column_indices,
-    const std::vector<cudf::type_id> &cudf_types)
+    const std::vector<arrow::Type::type> &cudf_types)
 {
   cudf::io::table_with_metadata ret;
   std::vector<void*> host_cols(column_indices.size());
@@ -227,7 +229,7 @@ std::pair<std::vector<void*>, std::vector<std::vector<cudf::bitmask_type>>> init
   for (int col = 0; col < host_cols.size(); ++col) {
     null_masks[col].resize(num_words, 0);
     size_t projection = column_indices[col];
-    cudf::type_id cudf_type_id = cudf_types[projection];
+    cudf::type_id cudf_type_id = arrow_type_to_cudf_data_type(cudf_types[projection]).id();
     switch (cudf_type_id) {
       case cudf::type_id::EMPTY: {} break;
       case cudf::type_id::INT8: {
@@ -314,10 +316,9 @@ std::pair<std::vector<void*>, std::vector<std::vector<cudf::bitmask_type>>> init
   return std::make_pair(host_cols, null_masks);
 }
 
-
 cudf::io::table_with_metadata abstractsql_parser::read_sql(void *src,
     const std::vector<int> &column_indices,
-    const std::vector<cudf::type_id> &cudf_types,
+    const std::vector<arrow::Type::type> &cudf_types,
     size_t total_rows)
 {
   auto setup = init(total_rows, column_indices, cudf_types);
@@ -328,7 +329,7 @@ cudf::io::table_with_metadata abstractsql_parser::read_sql(void *src,
 
   for (int col = 0; col < column_indices.size(); ++col) {
     size_t projection = column_indices[col];
-    cudf::type_id cudf_type_id = cudf_types[projection];
+    cudf::type_id cudf_type_id = arrow_type_to_cudf_data_type(cudf_types[projection]).id();
     switch (cudf_type_id) {
       case cudf::type_id::EMPTY: {} break;
       case cudf::type_id::INT8: {
@@ -420,7 +421,7 @@ cudf::io::table_with_metadata abstractsql_parser::read_sql(void *src,
 
   for (int col = 0; col < host_cols.size(); ++col) {
     size_t projection = column_indices[col];
-    cudf::type_id cudf_type_id = cudf_types[projection];
+    cudf::type_id cudf_type_id = arrow_type_to_cudf_data_type(cudf_types[projection]).id();
     switch (cudf_type_id) {
       case cudf::type_id::EMPTY: {} break;
       case cudf::type_id::INT8: {
@@ -527,7 +528,6 @@ std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_raw_batch(
 
 		return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result_table), result.metadata.column_names);
 	}
-
 	return nullptr;
 }
 

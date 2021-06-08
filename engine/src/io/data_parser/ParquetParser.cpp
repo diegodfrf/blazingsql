@@ -1,7 +1,7 @@
 
 #include "metadata/parquet_metadata.h"
-
 #include "ParquetParser.h"
+#include "parser/types_parser_utils.h"
 
 #include <numeric>
 
@@ -124,7 +124,7 @@ std::unique_ptr<ral::frame::BlazingTable> parquet_parser::parse_batch(
 	return nullptr;
 }
 
-std::vector<std::pair<std::string, cudf::type_id>> parse_schema_cudf(std::shared_ptr<arrow::io::RandomAccessFile> file) {
+std::vector<std::pair<std::string, arrow::Type::type>> parse_schema_cudf(std::shared_ptr<arrow::io::RandomAccessFile> file) {
   auto arrow_source = cudf_io::arrow_io_source{file};
 	cudf_io::parquet_reader_options pq_args = cudf_io::parquet_reader_options::builder(cudf_io::source_info{&arrow_source});
 	pq_args.enable_convert_strings_to_categories(false);
@@ -132,25 +132,25 @@ std::vector<std::pair<std::string, cudf::type_id>> parse_schema_cudf(std::shared
 	pq_args.set_num_rows(1);  // we only need the metadata, so one row is fine
 	cudf_io::table_with_metadata table_out = cudf_io::read_parquet(pq_args);
 
-  std::vector<std::pair<std::string, cudf::type_id>> ret;
+  std::vector<std::pair<std::string, arrow::Type::type>> ret;
   ret.resize(table_out.tbl->num_columns());
   for(int i = 0; i < table_out.tbl->num_columns(); i++) {
-		cudf::type_id type = table_out.tbl->get_column(i).type().id();
+		arrow::Type::type type = cudf_type_id_to_arrow_type(table_out.tbl->get_column(i).type().id());
 		std::string name = table_out.metadata.column_names.at(i);
     ret[i] = std::make_pair(name, type);
   }
   return ret;
 }
 
-std::vector<std::pair<std::string, cudf::type_id>> parse_schema_arrow(std::shared_ptr<parquet::FileMetaData> parquet_metadata) {
+std::vector<std::pair<std::string, arrow::Type::type>> parse_schema_arrow(std::shared_ptr<parquet::FileMetaData> parquet_metadata) {
   std::shared_ptr<::arrow::Schema> arrow_schema;
   parquet::ArrowReaderProperties props;
   // TODO percy arrow handle error
   parquet::arrow::FromParquetSchema(parquet_metadata->schema(), props, &arrow_schema);
-  std::vector<std::pair<std::string, cudf::type_id>> ret;
+  std::vector<std::pair<std::string, arrow::Type::type>> ret;
   ret.resize(arrow_schema->fields().size());
   for(int i = 0; i < arrow_schema->fields().size(); i++) {
-		cudf::type_id type = cudf::detail::arrow_to_cudf_type(*arrow_schema->field(i)->type()).id();
+    arrow::Type::type type = arrow_schema->field(i)->type()->id();
 		std::string name = arrow_schema->field(i)->name();
     ret[i] = std::make_pair(name, type);
   }
@@ -165,7 +165,7 @@ void parquet_parser::parse_schema(ral::execution::execution_backend preferred_co
 		return; // if the file has no rows, we dont want cudf_io to try to read it
 	}
 
-  std::vector<std::pair<std::string, cudf::type_id>> fields;
+  std::vector<std::pair<std::string, arrow::Type::type>> fields;
   if (preferred_compute.id() == ral::execution::backend_id::CUDF) {
     fields = parse_schema_cudf(file);
   } else if (preferred_compute.id() == ral::execution::backend_id::ARROW) {

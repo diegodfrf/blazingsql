@@ -231,7 +231,7 @@ struct create_empty_table_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       const std::vector<std::string> &column_names,
-	    const std::vector<cudf::data_type> &dtypes) const
+	    const std::vector<std::shared_ptr<arrow::DataType>> &dtypes) const
   {
     throw std::runtime_error("ERROR: create_empty_table_functor This default dispatcher operator should not be called.");
     return nullptr;
@@ -298,7 +298,7 @@ struct normalize_types_functor {
   template <typename T>
   void operator()(
       std::unique_ptr<ral::frame::BlazingTable> & table,
-      const std::vector<cudf::data_type> & types,
+      const std::vector<std::shared_ptr<arrow::DataType>> & types,
       std::vector<cudf::size_type> column_indices) const
   {
     throw std::runtime_error("ERROR: normalize_types_functor This default dispatcher operator should not be called.");

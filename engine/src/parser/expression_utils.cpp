@@ -1338,7 +1338,7 @@ size_t get_index_from_expression_str(std::string expression) {
 // By default any TIMESTAMP literal expression is handled as TIMESTAMP_NANOSECONDS
 // Using the `Reinterpret` clause we can get the right TIMESTAMP unit using the expression
 // expression: CAST(/INT(Reinterpret(-(1996-12-01 12:00:01, $0)), 86400000)):INTEGER
-std::string reinterpret_timestamp(std::string expression, std::vector<cudf::data_type> table_schema) {
+std::string reinterpret_timestamp(std::string expression, std::vector<std::shared_ptr<arrow::DataType>> table_schema) {
 	if (table_schema.size() == 0) return expression;
 
 	std::string reint_express = "Reinterpret(-(";
@@ -1376,11 +1376,12 @@ std::string reinterpret_timestamp(std::string expression, std::vector<cudf::data
 		return expression;
 	}
 
-	if (table_schema[col_indice].id() == cudf::type_id::TIMESTAMP_SECONDS) {
+	auto type = std::dynamic_pointer_cast<arrow::TimestampType>(table_schema[col_indice]);
+	if (type->unit() == arrow::TimeUnit::type::SECOND) {
 		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_SECONDS");
-	} else if (table_schema[col_indice].id() == cudf::type_id::TIMESTAMP_MILLISECONDS) {
+	} else if (type->unit() == arrow::TimeUnit::type::MILLI) {
 		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_MILLISECONDS");
-	} else if (table_schema[col_indice].id() == cudf::type_id::TIMESTAMP_MICROSECONDS) {
+	} else if (type->unit() == arrow::TimeUnit::type::MICRO) {
 		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_MICROSECONDS");
 	} else {
 		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP");
@@ -1392,7 +1393,7 @@ std::string reinterpret_timestamp(std::string expression, std::vector<cudf::data
 // By default Calcite returns Interval types in ms unit. So we want to convert them to the right INTERVAL unit
 // to do correct operations
 // TODO: any issue related with INTERVAL operations (and parsing expressions) should be handled here
-std::string apply_interval_conversion(std::string expression, std::vector<cudf::data_type> table_schema) {
+std::string apply_interval_conversion(std::string expression, std::vector<std::shared_ptr<arrow::DataType>> table_schema) {
 	std::string interval_expr = ":INTERVAL";
 	if (table_schema.size() == 0 || expression.find(interval_expr) == expression.npos) return expression;
 
@@ -1412,11 +1413,12 @@ std::string apply_interval_conversion(std::string expression, std::vector<cudf::
 		new_expr = new_expr.substr(0, last_pos);
 		int col_indice =  std::stoi(new_expr);
 
-		if (table_schema[col_indice].id() == cudf::type_id::DURATION_SECONDS) {
+		auto type = std::dynamic_pointer_cast<arrow::TimestampType>(table_schema[col_indice]);
+		if (type->unit() == arrow::TimeUnit::type::SECOND) {
 			return StringUtil::replace(expression, "000" + interval_expr, interval_expr);
-		} else if (table_schema[col_indice].id() == cudf::type_id::DURATION_MICROSECONDS) {
+		} else if (type->unit() == arrow::TimeUnit::type::MICRO) {
 			return StringUtil::replace(expression, "000" + interval_expr, "000000" + interval_expr);
-		} else if (table_schema[col_indice].id() == cudf::type_id::DURATION_NANOSECONDS) {
+		} else if (type->unit() == arrow::TimeUnit::type::NANO) {
 			return StringUtil::replace(expression, "000" + interval_expr, "000000000" + interval_expr);
 		} else return expression; // duration ms
 	}

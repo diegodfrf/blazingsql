@@ -90,7 +90,7 @@ std::unique_ptr<cudf::scalar> to_cudf_scalar(std::shared_ptr<arrow::Scalar> arro
 }
 
 
-void normalize_types(std::unique_ptr<ral::frame::BlazingArrowTable> & table,  const std::vector<cudf::data_type> & types,
+void normalize_types(std::unique_ptr<ral::frame::BlazingArrowTable> & table, const std::vector<std::shared_ptr<arrow::DataType>> & types,
                      std::vector<cudf::size_type> column_indices = std::vector<cudf::size_type>()) {
   // TODO percy
 }

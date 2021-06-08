@@ -138,7 +138,7 @@ class InferFolderPartitionMetadataError(BlazingError):
     """InferFolderPartitionMetadata Error."""
 cdef public PyObject * InferFolderPartitionMetadataError_ = <PyObject *>InferFolderPartitionMetadataError
 
-cdef cio.TableSchema parseSchemaPython(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values,vector[pair[string,type_id]] extra_columns, bool ignore_missing_paths, string preferred_compute) nogil except *:
+cdef cio.TableSchema parseSchemaPython(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values,vector[pair[string, Type]] extra_columns, bool ignore_missing_paths, string preferred_compute) nogil except *:
     with nogil:
         return cio.parseSchema(files, file_format_hint, arg_keys, arg_values, extra_columns, ignore_missing_paths, preferred_compute)
 
@@ -385,15 +385,16 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
       arg_keys.push_back(str.encode(key))
       arg_values.push_back(str.encode(str(value)))
 
-    cdef vector[pair[string,type_id]] extra_columns_cpp
-    cdef pair[string,type_id] extra_column_cpp
+    cdef vector[pair[string, Type]] extra_columns_cpp
+    cdef pair[string, Type] extra_column_cpp
 
     for extra_column in extra_columns:
         extra_column_cpp.first = extra_column[0].encode()
-        extra_column_cpp.second = <type_id>(<underlying_type_t_type_id>(extra_column[1]))
+        #extra_column_cpp.second = <type_id>(<underlying_type_t_type_id>(extra_column[1]))
+        extra_column_cpp.second = extra_column[1]
         extra_columns_cpp.push_back(extra_column_cpp)
 
-    tableSchema = parseSchemaPython(files,str.encode(file_format_hint),arg_keys,arg_values, extra_columns_cpp, ignore_missing_paths, preferred_compute)
+    tableSchema = parseSchemaPython(files,str.encode(file_format_hint), arg_keys,arg_values, extra_columns_cpp, ignore_missing_paths, preferred_compute)
 
     return_object = {}
     return_object['datasource'] = files
@@ -420,7 +421,7 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, pref
     cdef vector[string] arg_keys
     cdef vector[string] arg_values
     cdef TableSchema cpp_schema
-    cdef type_id tid
+    cdef Type tid
 
     preferred_compute = str.encode(preferred_compute_py)
 
@@ -428,7 +429,8 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, pref
         cpp_schema.names.push_back(col)
 
     for col_type in schema['types']:
-        tid = <type_id>(<underlying_type_t_type_id>(col_type))
+        #tid = <type_id>(<underlying_type_t_type_id>(col_type))
+        tid = col_type
         cpp_schema.types.push_back(tid)
 
     for key, value in args.items():
@@ -516,7 +518,7 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
     cdef vector[string] currentTableSchemaCppArgValues
     cdef vector[string] tableNames
     cdef vector[string] tableScans
-    cdef vector[type_id] types
+    cdef vector[Type] types
     cdef vector[string] names
     cdef TableSchema currentTableSchemaCpp
 
@@ -572,7 +574,8 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
               names.push_back(col_name)
 
       for col_type in table.column_types:
-        types.push_back(<type_id>(<underlying_type_t_type_id>(col_type)))
+        #types.push_back(<type_id>(<underlying_type_t_type_id>(col_type)))
+        types.push_back(col_type)
 
       if table.fileType in (4, 5): # if cudf DataFrame or dask.cudf DataFrame
         blazingTableViews.resize(0)

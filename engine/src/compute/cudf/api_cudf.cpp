@@ -272,7 +272,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
     const std::vector<std::string> &column_names,
-	  const std::vector<cudf::data_type> &dtypes) const
+	  const std::vector<std::shared_ptr<arrow::DataType>> &dtypes) const
 {
   return create_empty_cudf_table(column_names, dtypes);
 }
@@ -347,7 +347,7 @@ template <>
 inline void
 normalize_types_functor::operator()<ral::frame::BlazingCudfTable>(
     std::unique_ptr<ral::frame::BlazingTable> & table,
-    const std::vector<cudf::data_type> & types,
+    const std::vector<std::shared_ptr<arrow::DataType>>  & types,
     std::vector<cudf::size_type> column_indices) const
 {
   normalize_types_gpu(table, types, column_indices);

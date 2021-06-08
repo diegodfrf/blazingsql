@@ -360,7 +360,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
     const std::vector<std::string> &column_names,
-	  const std::vector<cudf::data_type> &dtypes) const
+	  const std::vector<std::shared_ptr<arrow::DataType>> &dtypes) const
 {
   // TODO percy
   throw std::runtime_error("ERROR: create_empty_table_functor BlazingSQL doesn't support this Arrow operator yet.");
@@ -457,7 +457,7 @@ template <>
 inline void
 normalize_types_functor::operator()<ral::frame::BlazingArrowTable>(
     std::unique_ptr<ral::frame::BlazingTable> & table,
-    const std::vector<cudf::data_type> & types,
+    const std::vector<std::shared_ptr<arrow::DataType>>  & types,
     std::vector<cudf::size_type> column_indices) const
 {
   throw std::runtime_error("ERROR: normalize_types_functor BlazingSQL doesn't support this Arrow operator yet.");

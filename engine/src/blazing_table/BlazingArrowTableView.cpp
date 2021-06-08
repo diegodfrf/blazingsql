@@ -26,10 +26,10 @@ std::vector<std::string> BlazingArrowTableView::column_names() const{
 	return this->arrow_table->ColumnNames();
 }
 
-std::vector<cudf::data_type> BlazingArrowTableView::column_types() const {
-	std::vector<cudf::data_type> ret;
+std::vector<std::shared_ptr<arrow::DataType>> BlazingArrowTableView::column_types() const {
+	std::vector<std::shared_ptr<arrow::DataType>> ret;
 	for (auto f : this->arrow_table->schema()->fields()) {
-		ret.push_back(cudf::detail::arrow_to_cudf_type(*f->type()));
+		ret.push_back(std::move(f->type()));
 	}
 	return ret;
 }

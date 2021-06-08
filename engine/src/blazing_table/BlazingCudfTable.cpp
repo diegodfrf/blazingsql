@@ -1,6 +1,7 @@
 #include "BlazingCudfTable.h"
 #include "BlazingColumnOwner.h"
 #include "BlazingColumnView.h"
+#include "parser/types_parser_utils.h"
 #include <cudf/detail/interop.hpp> //cudf::from_arrow
 #include <cudf/column/column_factories.hpp> //cudf::make_empty_column
 
@@ -69,10 +70,13 @@ std::vector<std::string> BlazingCudfTable::column_names() const{
 	return this->columnNames;
 }
 
-std::vector<cudf::data_type> BlazingCudfTable::column_types() const {
-	std::vector<cudf::data_type> data_types(this->num_columns());
+std::vector<std::shared_ptr<arrow::DataType>> BlazingCudfTable::column_types() const {
+	std::vector<std::shared_ptr<arrow::DataType>> data_types(this->num_columns());
 	auto view = this->view();
-	std::transform(view.begin(), view.end(), data_types.begin(), [](auto & col){ return col.type(); });
+	std::transform(view.begin(), view.end(), data_types.begin(), [](auto & col){ 
+		arrow::Type::type arrow_type = cudf_type_id_to_arrow_type(col.type().id());
+		return get_right_arrow_datatype(arrow_type);
+		});
 	return data_types;
 }
 
@@ -139,13 +143,13 @@ std::unique_ptr<BlazingCudfTable> BlazingCudfTable::clone() {
 	return this->to_table_view()->clone();
 }
 
-std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<cudf::type_id> column_types,
-                                                                std::vector<std::string> column_names) {
+std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(
+	std::vector<arrow::Type::type> column_types,
+	std::vector<std::string> column_names) {
     std::vector< std::unique_ptr<cudf::column> > empty_columns;
     empty_columns.resize(column_types.size());
     for(size_t i = 0; i < column_types.size(); ++i) {
-        cudf::type_id col_type = column_types[i];
-        cudf::data_type dtype(col_type);
+        cudf::data_type dtype = arrow_type_to_cudf_data_type(column_types[i]);
         std::unique_ptr<cudf::column> empty_column = cudf::make_empty_column(dtype);
         empty_columns[i] = std::move(empty_column);
     }
@@ -154,12 +158,13 @@ std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::v
     return std::make_unique<BlazingCudfTable>(std::move(cudf_table), column_names);
 }
 
-std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<cudf::data_type> column_types,
-                                    std::vector<std::string> column_names) {
+std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(
+	std::vector<std::shared_ptr<arrow::DataType>> column_types,
+	std::vector<std::string> column_names) {
     std::vector< std::unique_ptr<cudf::column> > empty_columns;
     empty_columns.resize(column_types.size());
     for(size_t i = 0; i < column_types.size(); ++i) {
-        auto dtype = column_types[i];
+        cudf::data_type dtype = arrow_type_to_cudf_data_type(column_types[i]->id());
         std::unique_ptr<cudf::column> empty_column = cudf::make_empty_column(dtype);
         empty_columns[i] = std::move(empty_column);
     }

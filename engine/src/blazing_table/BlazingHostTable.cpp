@@ -4,6 +4,7 @@
 #include "bmr/BlazingMemoryResource.h"
 #include "bmr/BufferProvider.h"
 #include "communication/CommunicationInterface/serializer.hpp"
+#include "parser/types_parser_utils.h"
 #include "cudf/types.hpp"
 #include <arrow/array/builder_binary.h>
 #include <arrow/array/builder_primitive.h>
@@ -202,12 +203,12 @@ BlazingHostTable::~BlazingHostTable() {
     }
 }
 
-std::vector<cudf::data_type> BlazingHostTable::column_types() const {
-    std::vector<cudf::data_type> data_types(this->num_columns());
+std::vector<std::shared_ptr<arrow::DataType>> BlazingHostTable::column_types() const {
+    std::vector<std::shared_ptr<arrow::DataType>> data_types(this->num_columns());
     std::transform(columns_offsets.begin(), columns_offsets.end(), data_types.begin(), [](auto &col) {
-        int32_t dtype = col.metadata.dtype;
-        return cudf::data_type{cudf::type_id(dtype)};
+		return get_arrow_datatype_from_int_value(col.metadata.dtype);
     });
+
     return data_types;
 }
 

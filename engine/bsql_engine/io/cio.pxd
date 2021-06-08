@@ -16,6 +16,8 @@ from cudf import DataFrame
 from cudf._lib.cpp.types cimport type_id
 from cudf._lib.table cimport table
 
+from pyarrow.includes.libarrow cimport Type
+
 from libc.stdint cimport (  # noqa: E211
     uint8_t,
     uint32_t,
@@ -91,7 +93,7 @@ cdef extern from "../include/io/io.h" nogil:
 
     cdef struct TableSchema:
         vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
-        vector[type_id] types
+        vector[Type] types
         vector[string]  names
         vector[string]  files
         vector[string] datasource
@@ -138,7 +140,7 @@ cdef extern from "../include/io/io.h" nogil:
     pair[bool, string] registerFileSystemGCS( GCS gcs, string root, string authority) except +raiseRegisterFileSystemGCSError
     pair[bool, string] registerFileSystemS3( S3 s3, string root, string authority) except +raiseRegisterFileSystemS3Error
     pair[bool, string] registerFileSystemLocal(  string root, string authority) except +raiseRegisterFileSystemLocalError
-    TableSchema parseSchema(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, vector[pair[string,type_id]] types, bool ignore_missing_paths, string preferred_compute) except +raiseParseSchemaError
+    TableSchema parseSchema(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, vector[pair[string, Type]] types, bool ignore_missing_paths, string preferred_compute) except +raiseParseSchemaError
     unique_ptr[ResultSet] parseMetadata(vector[string] files, pair[int,int] offsets, TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, string preferred_compute) except +raiseParseSchemaError
     vector[FolderPartitionMetadata] inferFolderPartitionMetadata(string folder_path) except +raiseInferFolderPartitionMetadataError
 

@@ -1,5 +1,6 @@
 #include "BlazingCudfTableView.h"
 #include "BlazingCudfTable.h"
+#include "parser/types_parser_utils.h"
 
 namespace ral {
 namespace frame {
@@ -60,10 +61,13 @@ std::vector<std::string> BlazingCudfTableView::column_names() const{
 	return this->columnNames;
 }
 
-std::vector<cudf::data_type> BlazingCudfTableView::column_types() const {
-	std::vector<cudf::data_type> data_types(this->num_columns());
+std::vector<std::shared_ptr<arrow::DataType>> BlazingCudfTableView::column_types() const {
+	std::vector<std::shared_ptr<arrow::DataType>> data_types;
 	auto view = this->view();
-	std::transform(view.begin(), view.end(), data_types.begin(), [](auto & col){ return col.type(); });
+	std::transform(view.begin(), view.end(), data_types.begin(), [](auto & col){ 
+		arrow::Type::type arrow_type = cudf_type_id_to_arrow_type(col.type().id());
+		return get_right_arrow_datatype(arrow_type);
+		});
 	return data_types;
 }
 

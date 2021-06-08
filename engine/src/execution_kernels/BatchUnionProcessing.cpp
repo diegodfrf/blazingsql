@@ -59,7 +59,7 @@ kstatus UnionKernel::run() {
 
     BlazingThread left_thread([this, &cache_machine_a, &cache_data_a](){
         while(cache_data_a != nullptr) {
-            std::vector<cudf::data_type> data_types = cache_data_a->get_schema();
+            std::vector<std::shared_ptr<arrow::DataType>> data_types = cache_data_a->get_schema();
             std::vector<std::string> names = cache_data_a->column_names();
             if (!std::equal(common_types.cbegin(), common_types.cend(), data_types.cbegin(), data_types.cend())
                 || !std::equal(common_names.cbegin(), common_names.cend(), names.cbegin(), names.cend())){
@@ -79,7 +79,7 @@ kstatus UnionKernel::run() {
 
     BlazingThread right_thread([this, &cache_machine_b, &cache_data_b](){
         while(cache_data_b != nullptr){
-            std::vector<cudf::data_type> data_types = cache_data_b->get_schema();
+            std::vector<std::shared_ptr<arrow::DataType>> data_types = cache_data_b->get_schema();
             std::vector<std::string> names = cache_data_b->column_names();
             if (!std::equal(common_types.cbegin(), common_types.cend(), data_types.cbegin(), data_types.cend())
                 || !std::equal(common_names.cbegin(), common_names.cend(), names.cbegin(), names.cend())){

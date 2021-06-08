@@ -29,6 +29,7 @@ from pyhive import hive
 from .hive import (
     convertTypeNameStrToCudfType,
     cudfTypeToCsvType,
+    arrowTypeToCsvType,
     getFolderListFromPartitions,
     getPartitionsFromUserPartitions,
     get_hive_table,
@@ -2556,7 +2557,8 @@ class BlazingContext(object):
 
             dtypes_list = []
             for i in range(0, len(table.column_types)):
-                dtype_str = cudfTypeToCsvType[table.column_types[i]]
+                #dtype_str = cudfTypeToCsvType[table.column_types[i]]
+                dtype_str = arrowTypeToCsvType[table.column_types[i]]
                 # cudfTypeToCsvType uses: timestamp[s], timestamp[ms], timestamp[us], timestamp[ns]
                 if "timestamp" in dtype_str:
                     dtypes_list.append("date64")

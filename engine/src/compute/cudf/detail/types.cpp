@@ -5,11 +5,14 @@
 #include "utilities/error.hpp"
 #include <numeric>
 #include "blazing_table/BlazingColumnOwner.h"
+#include "parser/types_parser_utils.h"
 
-void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table,  const std::vector<cudf::data_type> & types,
+// TODO: cordova , undefined symbol
+void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table,  const std::vector<std::shared_ptr<arrow::DataType>>  & types,
 		std::vector<cudf::size_type> column_indices) {
-
-  auto table = dynamic_cast<ral::frame::BlazingCudfTable*>(gpu_table.get());
+	// TODO: cordova , undefined symbol
+	/*
+  	auto table = dynamic_cast<ral::frame::BlazingCudfTable*>(gpu_table.get());
   
 	if (column_indices.size() == 0){
 		RAL_EXPECTS(static_cast<size_t>(table->num_columns()) == types.size(), "In normalize_types: table->num_columns() != types.size()");
@@ -26,10 +29,11 @@ void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table, 
 		}
 	}
 	gpu_table = std::make_unique<ral::frame::BlazingCudfTable>(std::move(columns), table->column_names());
+	*/
 }
 
 std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
-	const std::vector<cudf::data_type> &dtypes, std::vector<size_t> column_indices) {
+	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes, std::vector<size_t> column_indices) {
 
 	if (column_indices.size() == 0){
 		column_indices.resize(column_names.size());
@@ -39,16 +43,18 @@ std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std:
 	std::vector<std::unique_ptr<cudf::column>> columns(column_indices.size());
 
 	for (auto idx : column_indices) {
-		columns[idx] = cudf::make_empty_column(dtypes[idx]);
+		cudf::data_type dtype = arrow_type_to_cudf_data_type(dtypes[idx]->id());
+		columns[idx] = cudf::make_empty_column(dtype);
 	}
 	auto table = std::make_unique<cudf::table>(std::move(columns));
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(table), column_names);
 }
 
-std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<cudf::type_id> &dtypes) {
+std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<std::shared_ptr<arrow::Type::type>> &dtypes) {
 	std::vector<std::unique_ptr<cudf::column>> columns(dtypes.size());
 	for (size_t idx =0; idx < dtypes.size(); idx++) {
-		columns[idx] = cudf::make_empty_column(cudf::data_type(dtypes[idx]));
+		cudf::data_type dtype = arrow_type_to_cudf_data_type(*dtypes[idx]);
+		columns[idx] = cudf::make_empty_column(dtype);
 	}
 	return std::make_unique<cudf::table>(std::move(columns));
 }
