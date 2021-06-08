@@ -15,9 +15,7 @@ RUN_SETTINGS:
   LOG_INFO:
   NRALS: 2
   CONCURRENT: False
-  TEST_WITH_NULLS:
-    - True
-    - False
+  TEST_WITH_NULLS: False
 
 SETUP:
   APPLY_ORDER: True
