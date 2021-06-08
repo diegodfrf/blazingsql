@@ -112,7 +112,7 @@ Options:
                                     (e.g. 'castTest, groupByTest' or 'literalTest' for single test).
                                     Empty means will run all the e2e tests)
    -c <file>, --config-file <file>  Set configuration file for E2E tests, the file must be located
-                                    in blazingsql/tests/BlazingSQLTest/Runner/
+                                    in blazingsql/tests/BlazingSQLTest/Configuration/
 "
 
 # TODO william kharoly felipe we should try to enable and use this param in the future (compare result from spreadsheet)
