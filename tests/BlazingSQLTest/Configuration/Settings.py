@@ -107,7 +107,7 @@ def create_json():
         compare_results     = run_settings.get("COMPARE_RESULTS"   , "true")
         concurrent          = run_settings.get("CONCURRENT"        , False)
         nRals               = run_settings.get("NRALS"             , 1)
-        testsWithNulls      = run_settings.get("TEST_WITH_NULLS"   , "false")
+        testsWithNulls      = run_settings.get("TEST_WITH_NULLS"   , False)
 
     # RunSettings
     saveLog = os.getenv("BLAZINGSQL_E2E_SAVE_LOG", "false")
