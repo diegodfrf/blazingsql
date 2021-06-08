@@ -42,7 +42,7 @@ def readFile():
     if "--config-file" in sys.argv and len(sys.argv) >= 3:
         fileName = cwd + "/../Configuration/" + sys.argv[2]
     else:
-        fileName = cwd + "/../Configuration/config_singlenode.yaml"
+        fileName = cwd + "/../Configuration/config.yaml"
 
     if os.path.isfile(fileName):
         with open(fileName, 'r') as stream:
