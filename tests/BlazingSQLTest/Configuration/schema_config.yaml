@@ -5,8 +5,6 @@ TEST_SETTINGS:
   DASK_CONNECTION: str()
 
 RUN_SETTINGS:
-  OUTPUT_TYPE: enum('pandas','cudf')
-  PREFERRED_COMPUTE: enum('arrow','cudf')
   EXEC_MODE: enum('gpuci','full','generator')
   NGPUS: int()
   NETWORK_INTERFACE: str()
