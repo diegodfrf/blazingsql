@@ -4,7 +4,7 @@ from EndToEndTests.oldScripts import mainE2ELegacyTests
 
 from DataBase import createSchema
 from pynvml import nvmlInit
-from Utils import Execution, init_context, init_comparators, gpuMemory
+from Utils import Execution, init_context, init_comparators, gpuMemory, validatorYaml
 from blazingsql import DataType
 from Runner import runTest
 from Runner import TestSuites
@@ -92,6 +92,13 @@ def loadNextSettingsConfiguration():
         Settings.data["RunSettings"]["testsWithNulls"] = item[1]
         yield item
 
+def validateSchema():
+    filename = "config.yaml"
+    if "--config-file" in sys.argv and len(sys.argv) >= 3:
+        filename = sys.argv[2]
+
+    validatorYaml.validate_config(filename)
+
 def main():
     print("**init end2end**")
     Execution.getArgs()
@@ -105,6 +112,8 @@ def main():
         useProgressBar = True
 
     print("Using progress bar: ", useProgressBar)
+
+    validateSchema()
 
     for item in loadNextSettingsConfiguration():
         start = time.time()
