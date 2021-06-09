@@ -130,7 +130,7 @@ std::shared_ptr<arrow::Scalar> arrow_reduce(std::shared_ptr<arrow::ChunkedArray>
      auto result = arrow::compute::Sum(col);
      // TODO percy arrow error
      return result.ValueOrDie().scalar();
-   } break;
+   }
    case voltron::compute::AggregateKind::SUM0: {
     break;
    }
@@ -164,8 +164,10 @@ std::shared_ptr<arrow::Scalar> arrow_reduce(std::shared_ptr<arrow::ChunkedArray>
    case voltron::compute::AggregateKind::NTH_ELEMENT: {
     break;
    }
+   default:
+    throw std::runtime_error("ERROR: arrow_reduce invalid aggregation type");
   };
-  //TODO: Rommel Throw exception
+
   return nullptr;
 }
 
