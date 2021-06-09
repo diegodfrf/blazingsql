@@ -7,6 +7,7 @@ namespace ral {
 namespace batch {
 
 using Context = blazingdb::manager::Context;
+// BEGIN Projection
 
 Projection::Projection(std::size_t kernel_id, const std::string & queryString, std::shared_ptr<Context> context, std::shared_ptr<ral::cache::graph> query_graph)
 : kernel(kernel_id, queryString, context, kernel_type::ProjectKernel)
@@ -92,6 +93,8 @@ kstatus Projection::run() {
     }
     return kstatus::proceed;
 }
+
+// END Projection
 
 } // namespace batch
 } // namespace ral

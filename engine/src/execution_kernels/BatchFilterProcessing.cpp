@@ -6,6 +6,8 @@
 namespace ral {
 namespace batch {
 
+// BEGIN Filter
+
 Filter::Filter(std::size_t kernel_id, const std::string & queryString, std::shared_ptr<Context> context, std::shared_ptr<ral::cache::graph> query_graph)
 : kernel(kernel_id, queryString, context, kernel_type::FilterKernel)
 {
@@ -92,6 +94,8 @@ std::pair<bool, uint64_t> Filter::get_estimated_output_num_rows(){
         return std::make_pair(false, 0);
     }
 }
+
+// END Filter
 
 } // namespace batch
 } // namespace ral

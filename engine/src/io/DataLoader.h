@@ -40,7 +40,7 @@ public:
 
 	void get_schema(ral::execution::execution_backend preferred_compute,Schema & schema, std::vector<std::pair<std::string, cudf::type_id>> non_file_columns);
 
-	std::unique_ptr<ral::frame::BlazingTable> get_metadata(ral::execution::execution_backend preferred_compute,int offset);
+	std::unique_ptr<ral::frame::BlazingTable> get_metadata(ral::execution::execution_backend preferred_compute,int offset, std::map<std::string, std::string> args_map);
 
 	std::shared_ptr<data_provider> get_provider() {
 		return provider;
