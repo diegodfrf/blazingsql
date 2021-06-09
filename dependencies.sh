@@ -83,7 +83,7 @@ fi
 if hasArg all || hasArg e2e; then
   echo -e "${GREEN}Install E2E test dependencies${ENDCOLOR}"
   conda install --yes -c conda-forge openjdk=8.0 maven pyspark=3.0.0 pytest
-  pip install pydrill openpyxl pymysql gitpython pynvml gspread oauth2client docker 'sql-metadata==1.12.0' pyyaml
+  pip install pydrill openpyxl pymysql gitpython pynvml gspread oauth2client docker 'sql-metadata==1.12.0' pyyaml yamale
 fi
 
 if hasArg all || hasArg mysql; then

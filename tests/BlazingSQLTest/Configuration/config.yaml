@@ -14,7 +14,7 @@ RUN_SETTINGS:
   NGPUS: 1
   NETWORK_INTERFACE: lo
   WORKSHEET: BSQL Log Results # or "BSQL Performance Results"
-  LOG_INFO: ""
+  LOG_INFO:
   NRALS: 1
   CONCURRENT: False
   TEST_WITH_NULLS: False

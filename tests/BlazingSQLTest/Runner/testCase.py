@@ -188,21 +188,21 @@ class TestCase():
         if self.nRals > 1:
             if multinode and fileSchemaType in multinode:
                 return True
-            if self.withNulls == "true" and multinodeWithNulls and fileSchemaType in multinodeWithNulls:
+            if self.withNulls and multinodeWithNulls and fileSchemaType in multinodeWithNulls:
                 return True
-            if self.withNulls == "false" and multinodeNoNulls and fileSchemaType in multinodeNoNulls:
+            if not self.withNulls and multinodeNoNulls and fileSchemaType in multinodeNoNulls:
                 return True
         else:
             if singlenode and fileSchemaType in singlenode:
                 return True
-            if self.withNulls == "true" and singlenodeWithNulls and fileSchemaType in singlenodeWithNulls:
+            if self.withNulls and singlenodeWithNulls and fileSchemaType in singlenodeWithNulls:
                 return True
-            if self.withNulls == "false" and singlenodeNoNulls and fileSchemaType in singlenodeNoNulls:
+            if not self.withNulls and singlenodeNoNulls and fileSchemaType in singlenodeNoNulls:
                 return True
 
-        if self.withNulls == "true" and fileSchemaType in withNulls:
+        if self.withNulls and fileSchemaType in withNulls:
             return True
-        if self.withNulls == "false" and fileSchemaType in noNulls:
+        if not self.withNulls and fileSchemaType in noNulls:
             return True
 
         if fileSchemaType == DataType.DASK_CUDF and self.dask_client is None:
@@ -218,7 +218,7 @@ class TestCase():
         return False
 
     def __getQuery(self, test_case):
-        if self.withNulls == "true" and "SQL_WITH_NULLS" in test_case:
+        if self.withNulls and "SQL_WITH_NULLS" in test_case:
             return test_case["SQL_WITH_NULLS"]
         return test_case["SQL"]
 

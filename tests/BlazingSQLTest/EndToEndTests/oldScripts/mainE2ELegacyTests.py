@@ -24,16 +24,16 @@ def runLegacyTest(bc, dask_client, drill, spark):
         len(targetTestGroups) == 0
     )  # if targetTestGroups was empty the user wants to run all the tests
 
-    if runAllTests or ("hiveFileTest" in targetTestGroups):
+    if runAllTests or ("hiveFileSuite" in targetTestGroups):
         hiveFileTest.main(dask_client, spark, dir_data_file, bc, nRals)
 
-    if runAllTests or ("unsignedTypeTest" in targetTestGroups):
+    if runAllTests or ("unsignedTypeSuite" in targetTestGroups):
         unsignedTypeTest.main(dask_client, drill, dir_data_file, bc, nRals)
 
-    if runAllTests or ("columnBasisTest" in targetTestGroups):
+    if runAllTests or ("columnBasisSuite" in targetTestGroups):
         columnBasisTest.main(dask_client, drill, dir_data_file, bc, nRals)
 
-    if runAllTests or ("dateTest" in targetTestGroups):
+    if runAllTests or ("dateSuite" in targetTestGroups):
         dateTest.main(dask_client, drill, spark, dir_data_file, bc, nRals)
 
     # HDFS is not working yet
@@ -42,21 +42,21 @@ def runLegacyTest(bc, dask_client, drill, spark):
     # HDFS is not working yet
     # mixedFileSystemTest.main(dask_client, drill, dir_data_file, bc)
 
-    if testsWithNulls != "true":
+    if not testsWithNulls:
         if Settings.execution_mode != ExecutionMode.GPUCI:
-            if runAllTests or ("fileSystemS3Test" in targetTestGroups):
+            if runAllTests or ("fileSystemS3Suite" in targetTestGroups):
                 fileSystemS3Test.main(dask_client, drill, dir_data_file, bc, nRals)
 
-            if runAllTests or ("fileSystemGSTest" in targetTestGroups):
+            if runAllTests or ("fileSystemGSSuite" in targetTestGroups):
                 fileSystemGSTest.main(dask_client, drill, dir_data_file, bc, nRals)
 
-    if runAllTests or ("loggingTest" in targetTestGroups):
+    if runAllTests or ("LoggingSuite" in targetTestGroups):
         loggingTest.main(dask_client, dir_data_file, bc, nRals)
 
     # TODO re enable this test once we have the new version of dask
     # https://github.com/dask/distributed/issues/4645
     # https://github.com/rapidsai/cudf/issues/7773
-    # if runAllTests or ("smilesTest" in targetTestGroups):
+    # if runAllTests or ("smilesSuite" in targetTestGroups):
     #    smilesTest.main(dask_client, spark, dir_data_file, bc, nRals)
 
     if testsWithNulls == "true":
@@ -65,5 +65,5 @@ def runLegacyTest(bc, dask_client, drill, spark):
                 tablesFromSQL.main(dask_client, drill, spark, dir_data_file, bc, nRals)
 
     # WARNING!!! This Test must be the last one to test ----------------------------------------------------------------
-    if runAllTests or ("configOptionsTest" in targetTestGroups):
+    if runAllTests or ("configOptionsSuite" in targetTestGroups):
         configOptionsTest.main(dask_client, drill, spark, dir_data_file, bc, nRals)
