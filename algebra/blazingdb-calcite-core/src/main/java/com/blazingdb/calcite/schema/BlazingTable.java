@@ -102,41 +102,34 @@ public class BlazingTable implements ProjectableFilterableTable {
 			case UINT64:
 				temp = typeFactory.createSqlType(SqlTypeName.BIGINT);
 				break;
-			case FLOAT32:
+			case FLOAT:
 				temp = typeFactory.createSqlType(SqlTypeName.FLOAT);
 				break;
-			case FLOAT64:
+			case DOUBLE:
 				temp = typeFactory.createSqlType(SqlTypeName.DOUBLE);
 				break;
-			case BOOL8:
+			case BOOL:
 				temp = typeFactory.createSqlType(SqlTypeName.BOOLEAN);
 				break;
-			case TIMESTAMP_DAYS:
-			case TIMESTAMP_SECONDS:
+			case DATE32:
 				temp = typeFactory.createSqlType(SqlTypeName.DATE);
 				break;
-			case TIMESTAMP_MILLISECONDS:
-			case TIMESTAMP_MICROSECONDS:
-			case TIMESTAMP_NANOSECONDS:
+			case TIMESTAMP:
 				temp = typeFactory.createSqlType(SqlTypeName.TIMESTAMP);
 				break;
-			case DURATION_DAYS:
-			case DURATION_SECONDS:
-			case DURATION_MILLISECONDS:
-			case DURATION_MICROSECONDS:
-			case DURATION_NANOSECONDS:
+			case DURATION:
 				temp = typeFactory.createSqlType(SqlTypeName.TIME);
 				break;
-			case DICTIONARY32:
+			case DICTIONARY:
 			case STRING:
 				temp = typeFactory.createSqlType(SqlTypeName.VARCHAR);
 				break;
-			case DECIMAL64:
+			/// Handle better this cases
+			case DECIMAL:
+			case DECIMAL128:
+			case DECIMAL256:
 				temp = typeFactory.createSqlType(SqlTypeName.DECIMAL);
 				break;
-//			case STRING_CATEGORY:
-//				temp = typeFactory.createSqlType(SqlTypeName.VARCHAR);
-//				break;
 			default:
 				temp = null;
 		}

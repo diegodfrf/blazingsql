@@ -150,11 +150,13 @@ std::shared_ptr<arrow::DataType> get_right_arrow_datatype(arrow::Type::type arro
     case arrow::Type::FLOAT: return arrow::float32();
     case arrow::Type::DOUBLE: return arrow::float64();
     case arrow::Type::STRING: return arrow::utf8();
+	case arrow::Type::TIMESTAMP: return arrow::timestamp(arrow::TimeUnit::type::MILLI);
 	// TODO: enables more types
     default: return arrow::null();
     }
 }
 
+// TODO: improve this function
 std::shared_ptr<arrow::DataType> get_arrow_datatype_from_int_value(int32_t value) {
 	switch (value)
     {
