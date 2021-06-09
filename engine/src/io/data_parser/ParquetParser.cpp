@@ -59,13 +59,6 @@ void parquet_parser::parse_schema(ral::execution::execution_backend preferred_co
                   io_read_file_schema_functor<ral::io::DataType::PARQUET>(),
                   file);
 
-//  std::vector<std::pair<std::string, cudf::type_id>> fields;
-//  if (preferred_compute.id() == ral::execution::backend_id::CUDF) {
-//    fields = parse_schema_cudf(file);
-//  } else if (preferred_compute.id() == ral::execution::backend_id::ARROW) {
-//    fields = parse_schema_arrow(parquet_reader->metadata());
-//  }
-
 	for(int i = 0; i < fields.size(); ++i) {
 		size_t file_index = i;
 		bool is_in_file = true;

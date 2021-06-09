@@ -431,7 +431,6 @@ io_read_file_schema_functor<ral::io::DataType::PARQUET>::operator()<ral::frame::
         std::shared_ptr<arrow::io::RandomAccessFile> file) const
 {
     return parse_schema_cudf(file);
-    //return read_parquet_cudf(file, column_indices, col_names, row_groups);
 }
 
 //} // compute
