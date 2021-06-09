@@ -29,8 +29,8 @@ public:
 	void parse_schema(ral::execution::execution_backend preferred_compute, ral::io::data_handle handle, Schema & schema);
 
 	std::unique_ptr<ral::frame::BlazingTable> get_metadata(ral::execution::execution_backend preferred_compute,
-		std::vector<ral::io::data_handle> handles,
-		int offset);
+		std::vector<ral::io::data_handle> handles, int offset,
+		std::map<std::string, std::string> args_map);
 
 	DataType type() const override { return DataType::ORC; }
 

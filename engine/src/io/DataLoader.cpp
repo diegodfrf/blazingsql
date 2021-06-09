@@ -63,8 +63,9 @@ void data_loader::get_schema(ral::execution::execution_backend preferred_compute
 	this->provider->reset();
 }
 
-std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(ral::execution::execution_backend preferred_compute, int offset) {
-
+std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(ral::execution::execution_backend preferred_compute,int offset,
+	std::map<std::string, std::string> args_map)
+{
 	std::size_t NUM_FILES_AT_A_TIME = 64;
 	std::vector<std::unique_ptr<ral::frame::BlazingTable>> metadata_batches;
 	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> metadata_batches_views;
@@ -74,7 +75,7 @@ std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(ral::executi
 		for(auto handle : handles) {
 			files.push_back(handle.file_handle);
 		}
-		metadata_batches.emplace_back(this->parser->get_metadata(preferred_compute, handles, offset));
+		metadata_batches.emplace_back(this->parser->get_metadata(preferred_compute, handles, offset, args_map));
 		metadata_batches_views.emplace_back(metadata_batches.back()->to_table_view());
 		offset += files.size();
 		this->provider->close_file_handles();
