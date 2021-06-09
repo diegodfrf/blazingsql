@@ -61,7 +61,7 @@ std::vector<cudf::order> toCudfOrderTypes(std::vector<voltron::compute::SortOrde
   std::vector<cudf::order> cudfOrderTypes;
   cudfOrderTypes.resize(sortOrderTypes.size());
 
-  for(std::size_t idx; idx < cudfOrderTypes.size(); idx++){
+  for(std::size_t idx = 0; idx < cudfOrderTypes.size(); idx++){
     switch(sortOrderTypes[idx]){
       case voltron::compute::SortOrder::ASCENDING:
         cudfOrderTypes[idx]=cudf::order::ASCENDING;
@@ -71,13 +71,14 @@ std::vector<cudf::order> toCudfOrderTypes(std::vector<voltron::compute::SortOrde
       break;
     }
   }
+  return cudfOrderTypes;
 }
 
 std::vector<cudf::null_order> toCudfNullOrderTypes(std::vector<voltron::compute::NullOrder> sortNullOrderTypes) {
   std::vector<cudf::null_order> cudfNullOrderTypes;
   cudfNullOrderTypes.resize(sortNullOrderTypes.size());
 
-  for(std::size_t idx; idx < cudfNullOrderTypes.size(); idx++){
+  for(std::size_t idx = 0; idx < cudfNullOrderTypes.size(); idx++){
     switch(sortNullOrderTypes[idx]){
       case voltron::compute::NullOrder::AFTER:
         cudfNullOrderTypes[idx]=cudf::null_order::AFTER;
@@ -87,6 +88,7 @@ std::vector<cudf::null_order> toCudfNullOrderTypes(std::vector<voltron::compute:
       break;
     }
   }
+  return cudfNullOrderTypes;
 }
 
 cudf::data_type get_common_cudf_type(cudf::data_type type1, cudf::data_type type2, bool strict) {
