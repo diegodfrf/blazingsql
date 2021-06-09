@@ -2,11 +2,10 @@
 #include "CPUCacheData.h"
 #include "ConcatCacheData.h"
 #include "CacheDataLocalFile.h"
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
 
 #include <sys/stat.h>
 #include <random>
-#include <utilities/CommonOperations.h>
 #include <cudf/io/orc.hpp>
 #include "parser/CalciteExpressionParsing.h"
 #include "communication/CommunicationData.h"
@@ -14,11 +13,10 @@
 #include <stdio.h>
 
 #include "Util/StringUtil.h"
+#include "operators/Concatenate.h"
 
 namespace ral {
 namespace cache {
-
-
 
 std::size_t CacheMachine::cache_count(900000000);
 
@@ -831,7 +829,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 			// if we dont have to concatenate all, lets make sure we are not overflowing, and if we are, lets put one back
 			if (!concat_all && 
                 backend.id() == ral::execution::backend_id::CUDF &&
-                ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views)){
+                checkIfConcatenatingStringsWillOverflow(table_views)){
                 
                 std::unique_ptr<CacheData> cache_data = ral::execution::backend_dispatcher(tables_holder.back()->get_execution_backend(), 
                                                     make_cachedata_functor(), std::move(tables_holder.back()));
@@ -861,7 +859,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
 			}
 		}
 
-		if( concat_all && ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views) ) { // if we have to concatenate all, then lets throw a warning if it will overflow strings
+		if( concat_all && checkIfConcatenatingStringsWillOverflow(table_views) ) { // if we have to concatenate all, then lets throw a warning if it will overflow strings
             CodeTimer cacheEventTimer;
             cacheEventTimer.start();
             cacheEventTimer.stop();
@@ -879,7 +877,7 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatenatingCacheMachine::pullFromCac
                                           "description"_a="In ConcatenatingCacheMachine::pullFromCache Concatenating will overflow strings length");
             }
 		}
-        output = ral::utilities::concatTables(table_views);
+        output = concatTables(table_views);
 	
 		num_rows = output->num_rows();
 	}

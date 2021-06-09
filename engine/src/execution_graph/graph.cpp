@@ -1,6 +1,7 @@
 #include "graph.h"
 #include "operators/OrderBy.h"
 #include "execution_kernels/BatchProcessing.h"
+#include "parser/orderby_parser_utils.h"
 
 namespace ral {
 namespace cache {
@@ -330,7 +331,7 @@ namespace cache {
 				get_node(min_index_valid + 1)->has_limit_ = true;
 				// get the limit value from LogicalLimit
 				std::string LimitExpression = get_node(min_index_valid)->expression;
-				int64_t scan_only_rows = ral::operators::get_limit_rows_when_relational_alg_is_simple(LimitExpression);
+				int64_t scan_only_rows = get_limit_rows_when_relational_alg_is_simple(LimitExpression);
 				get_node(min_index_valid + 1)->limit_rows_ = scan_only_rows;
 			}
 		}

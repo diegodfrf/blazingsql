@@ -161,7 +161,9 @@ const std::string LOGICAL_ACCUMULATE_OVERLAPS_TEXT = "LogicalAccumulateOverlaps"
 const std::string LOGICAL_COMPUTE_WINDOW_TEXT = "LogicalComputeWindow";
 const std::string ASCENDING_ORDER_SORT_TEXT = "ASC";
 const std::string DESCENDING_ORDER_SORT_TEXT = "DESC";
-
+// Calcite uses these kind of orders w/wo nulls
+const std::string ASCENDING_ORDER_SORT_TEXT_NULLS_FIRST = "ASC-nulls-first";
+const std::string DESCENDING_ORDER_SORT_TEXT_NULLS_LAST = "DESC-nulls-last";
 
 bool is_union(std::string query_part);
 bool is_project(std::string query_part);

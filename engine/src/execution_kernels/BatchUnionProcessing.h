@@ -1,12 +1,10 @@
 #pragma once
 
 #include "BatchProcessing.h"
-#include "LogicPrimitives.h"
-
-
-
+#include "blazing_table/BlazingTable.h"
 namespace ral {
 namespace batch {
+
 using ral::cache::kstatus;
 using ral::cache::kernel;
 using ral::cache::kernel_type;

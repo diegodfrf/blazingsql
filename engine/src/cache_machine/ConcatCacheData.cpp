@@ -1,6 +1,7 @@
 #include "ConcatCacheData.h"
-#include "utilities/CommonOperations.h"
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
+#include "compute/api.h"
+#include "operators/Concatenate.h"
 
 namespace ral {
 namespace cache {
@@ -32,10 +33,10 @@ std::unique_ptr<ral::frame::BlazingTable> ConcatCacheData::decache(execution::ex
 		tables_holder.push_back(cache_data->decache(backend));
 		table_views.push_back(tables_holder.back()->to_table_view());
 
-		RAL_EXPECTS(!ral::utilities::checkIfConcatenatingStringsWillOverflow(table_views), "Concatenating tables will overflow");
+		RAL_EXPECTS(!checkIfConcatenatingStringsWillOverflow(table_views), "Concatenating tables will overflow");
 	}
 
-	std::unique_ptr<ral::frame::BlazingTable> temp_out =  ral::utilities::concatTables(table_views);
+	std::unique_ptr<ral::frame::BlazingTable> temp_out =  concatTables(table_views);
 	return temp_out;
 }
 

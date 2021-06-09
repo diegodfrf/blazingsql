@@ -10,7 +10,7 @@
 #endif // BSQLDBGUTILS
 
 #pragma GCC diagnostic pop
-
+#include "blazing_table/BlazingCudfTable.h"
 
 namespace ral {
 namespace utilities {

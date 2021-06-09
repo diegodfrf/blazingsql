@@ -1,18 +1,21 @@
 #pragma once
 
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 #include "execution_kernels/BatchOrderByProcessing.h"
 #include "execution_kernels/BatchAggregationProcessing.h"
 #include "execution_kernels/BatchJoinProcessing.h"
 #include "execution_kernels/BatchUnionProcessing.h"
+#include "execution_kernels/BatchProjectionProcessing.h"
+#include "execution_kernels/BatchFilterProcessing.h"
+#include "execution_kernels/BatchScanProcessing.h"
 // TODO percy arrow
 //#include "execution_kernels/BatchWindowFunctionProcessing.h"
 #include "io/Schema.h"
-#include "utilities/CommonOperations.h"
 #include "parser/expression_utils.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <Util/StringUtil.h>
+#include "parser/orderby_parser_utils.h"
 
 using namespace fmt::literals;
 
@@ -159,7 +162,7 @@ struct tree_processor {
 			std::string partition_expr = expr;
 			std::string sort_and_sample_expr = expr;
 
-			if( ral::operators::has_limit_only(expr) && !is_window_function(expr) ){
+			if( has_limit_only(expr) && !is_window_function(expr) ){
 				StringUtil::findAndReplaceAll(limit_expr, LOGICAL_SORT_TEXT, LOGICAL_LIMIT_TEXT);
 
 				p_tree.put("expr", limit_expr);

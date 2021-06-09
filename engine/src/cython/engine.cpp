@@ -1,17 +1,17 @@
 #include "engine/engine.h"
-#include "../execution_graph/CalciteInterpreter.h"
-#include "../io/data_parser/ArgsUtil.h"
-#include "../io/data_parser/CSVParser.h"
-#include "../io/data_parser/GDFParser.h"
-#include "../io/data_parser/JSONParser.h"
-#include "../io/data_parser/OrcParser.h"
-#include "../io/data_parser/ArrowParser.h"
-#include "../io/data_parser/ParquetParser.h"
-#include "../io/data_provider/GDFDataProvider.h"
-#include "../io/data_provider/ArrowDataProvider.h"
-#include "../io/data_provider/UriDataProvider.h"
+#include "execution_graph/manager.h"
+#include "io/data_parser/ArgsUtil.h"
+#include "io/data_parser/CSVParser.h"
+#include "io/data_parser/GDFParser.h"
+#include "io/data_parser/JSONParser.h"
+#include "io/data_parser/OrcParser.h"
+#include "io/data_parser/ArrowParser.h"
+#include "io/data_parser/ParquetParser.h"
+#include "io/data_provider/GDFDataProvider.h"
+#include "io/data_provider/ArrowDataProvider.h"
+#include "io/data_provider/UriDataProvider.h"
 //#include "../skip_data/SkipDataProcessor.h" //Todo arrow rommel arrow
-#include "../execution_kernels/LogicalFilter.h"
+#include "operators/LogicalFilter.h"
 
 #include <numeric>
 #include <map>
@@ -78,7 +78,6 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
     auto _name = tableSchema.names;
     auto _calcite_to_file_indices = tableSchema.calcite_to_file_indices;
     auto _in_file = tableSchema.in_file;
-    std::cout << tableSchema.row_groups_ids.size() << "\n";
     auto _row_groups_ids = tableSchema.row_groups_ids;
     
     ral::io::Schema schema;

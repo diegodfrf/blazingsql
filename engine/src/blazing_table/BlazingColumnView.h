@@ -1,12 +1,8 @@
 #pragma once
 
-#include "execution_kernels/LogicPrimitives.h"
 #include "blazing_table/BlazingColumn.h"
-
 namespace ral {
-
 namespace frame {
-
 class BlazingColumnView : public BlazingColumn {
 	public:
 		BlazingColumnView() =default;
@@ -26,5 +22,4 @@ class BlazingColumnView : public BlazingColumn {
 };
 
 }  // namespace frame
-
 }  // namespace ral

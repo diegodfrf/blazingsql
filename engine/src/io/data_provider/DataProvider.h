@@ -29,7 +29,7 @@
 #include <vector>
 
 #include <blazingdb/io/FileSystem/Uri.h>
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTableView.h"
 #include <arrow/table.h>
 
 #ifdef MYSQL_SUPPORT

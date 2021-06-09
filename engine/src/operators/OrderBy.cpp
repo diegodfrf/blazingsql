@@ -2,158 +2,30 @@
 #include "parser/CalciteExpressionParsing.h"
 #include "utilities/CodeTimer.h"
 #include "communication/CommunicationData.h"
-#include "distribution_utils/primitives.h"
 #include <blazingdb/io/Library/Logging/Logger.h>
 #include <cudf/copying.hpp>
 #include <cudf/sorting.hpp>
 #include <cudf/search.hpp>
 #include <random>
 #include "parser/expression_utils.hpp"
-#include "utilities/CommonOperations.h"
 #include <blazingdb/io/Util/StringUtil.h>
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
 #include <thrust/binary_search.h>
 #include <thrust/host_vector.h>
+#include "compute/api.h"
+#include "parser/orderby_parser_utils.h"
+#include "operators/Concatenate.h"
+#include "operators/Distribution.h"
 
 using namespace fmt::literals;
 
 namespace ral {
-namespace cpu {
-namespace operators {
-
-std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t>
-limit_table(std::shared_ptr<arrow::Table> table, int64_t num_rows_limit) {
-	cudf::size_type table_rows = table->num_rows();
-	if (num_rows_limit <= 0) {
-		return std::make_tuple(std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns(), 0)), false, 0);
-	} else if (num_rows_limit >= table_rows) {
-		return std::make_tuple(std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns())), true, num_rows_limit - table_rows);
-	} else {
-		return std::make_tuple(ral::cpu::utilities::getLimitedRows(table, num_rows_limit), false, 0);
-	}
-}
-
-}  // namespace operators
-}  // namespace cpu
-
 namespace operators {
 
 using blazingdb::manager::Context;
 using blazingdb::transport::Node;
 using ral::communication::CommunicationData;
 using namespace ral::distribution;
-
-// Calcite uses these kind of orders w/wo nulls
-const std::string ASCENDING_ORDER_SORT_TEXT = "ASC";
-const std::string ASCENDING_ORDER_SORT_TEXT_NULLS_FIRST = "ASC-nulls-first";
-const std::string DESCENDING_ORDER_SORT_TEXT = "DESC";
-const std::string DESCENDING_ORDER_SORT_TEXT_NULLS_LAST = "DESC-nulls-last";
-
-
-
-
-
-
-
-////////////////functors
-
-template <>
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
-    std::shared_ptr<ral::frame::BlazingTableView> t,
-    std::shared_ptr<ral::frame::BlazingTableView> values,
-    std::vector<cudf::order> const& column_order,
-    std::vector<cudf::null_order> const& null_precedence) const
-{
-  auto sortedTable = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(sortedTable_view)->view();
-  auto columns_to_search = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(t)->view();  
-  auto partitionPlan = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(values)->view();  
-  //thrust::host_vector<unsigned int> output(6);
-
-  std::shared_ptr<arrow::Array> sortedTable_array = *arrow::Concatenate(
-    sortedTable->column(0)->chunks(), arrow::default_memory_pool());
-  std::shared_ptr<arrow::Int32Array> sortedTable_col = std::dynamic_pointer_cast<arrow::Int32Array>(sortedTable_array);
-
-
-  std::shared_ptr<arrow::Array> columns_to_search_array = *arrow::Concatenate(
-    sortedTable->column(0)->chunks(), arrow::default_memory_pool());
-  std::shared_ptr<arrow::Int32Array> columns_to_search_col = std::dynamic_pointer_cast<arrow::Int32Array>(columns_to_search_array);
-
-  std::shared_ptr<arrow::Array> partitionPlan_array = *arrow::Concatenate(
-    sortedTable->column(0)->chunks(), arrow::default_memory_pool());
-  std::shared_ptr<arrow::Int32Array> partitionPlan_col = std::dynamic_pointer_cast<arrow::Int32Array>(partitionPlan_array);
-
-  thrust::host_vector<int32_t> sortedTable_vals(sortedTable_col->raw_values(), sortedTable_col->raw_values() + sortedTable_col->length());
-  thrust::host_vector<int32_t> partitionPlan_vals(partitionPlan_col->raw_values(), partitionPlan_col->raw_values() + partitionPlan_col->length());
-
-  std::vector<int32_t> out;
-  out.resize(sortedTable_vals.size()+1);
-  thrust::upper_bound(sortedTable_vals.begin(), sortedTable_vals.end(),
-                      sortedTable_vals.begin(), sortedTable_vals.end(),
-                      out.begin());
-
-  auto int_builder = std::make_unique<arrow::Int32Builder>();
-  int_builder->AppendValues(out);
-  std::shared_ptr<arrow::Array> pivot_vals;
-  int_builder->Finish(&pivot_vals);
-
-  std::vector<std::shared_ptr<arrow::Array>> cols;
-  cols.push_back(pivot_vals);
-  auto pivot_indexes = arrow::Table::Make(sortedTable->schema(), cols);
-  
-  auto split_indexes = pivot_indexes;
-
-//  auto pivot_indexes = cudf::upper_bound(columns_to_search, partitionPlan->view(), column_order, null_precedence);
-//	std::vector<cudf::size_type> split_indexes = ral::utilities::column_to_vector<cudf::size_type>(pivot_indexes->view());
-//  auto tbs = cudf::split(sortedTable->view(), split_indexes);
-//  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
-//  for (auto tb : tbs) {
-//    ret.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(tb, sortedTable_view->column_names()));
-//  }
-//  return ret;
-  
-  // TODO percy arrow
-  //return nullptr;
-  throw std::runtime_error("ERROR: upper_bound_split_functor BlazingSQL doesn't support this Arrow operator yet.");
-}
-
-template <>
-std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
-upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
-    std::shared_ptr<ral::frame::BlazingTableView> t,
-    std::shared_ptr<ral::frame::BlazingTableView> values,
-    std::vector<cudf::order> const& column_order,
-    std::vector<cudf::null_order> const& null_precedence) const
-{
-  auto sortedTable = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(sortedTable_view);
-  auto columns_to_search = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(t);  
-  auto partitionPlan = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(values);  
-
-  auto pivot_indexes = cudf::upper_bound(columns_to_search->view(), partitionPlan->view(), column_order, null_precedence);
-	std::vector<cudf::size_type> split_indexes = ral::utilities::column_to_vector<cudf::size_type>(pivot_indexes->view());
-  auto tbs = cudf::split(sortedTable->view(), split_indexes);
-  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
-  for (auto tb : tbs) {
-    ret.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(tb, sortedTable_view->column_names()));
-  }
-  return ret;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**---------------------------------------------------------------------------*
  * @brief Sorts the columns of the input table according the sortOrderTypes
@@ -180,187 +52,28 @@ std::unique_ptr<ral::frame::BlazingTable> logicalSort(
     table_view, sortColumns, sortOrderTypes, sortOrderNulls);
 }
 
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order>, cudf::size_type>
-get_sort_vars(const std::string & query_part) {
-	auto rangeStart = query_part.find("(");
-	auto rangeEnd = query_part.rfind(")") - rangeStart - 1;
-	std::string combined_expression = query_part.substr(rangeStart + 1, rangeEnd);
-
-	int num_sort_columns = count_string_occurrence(combined_expression, "sort");
-
-	std::vector<int> sortColIndices(num_sort_columns);
-	std::vector<cudf::order> sortOrderTypes(num_sort_columns);
-	std::vector<cudf::null_order> sortOrderNulls(num_sort_columns);
-	for(auto i = 0; i < num_sort_columns; i++) {
-		sortColIndices[i] = get_index(get_named_expression(combined_expression, "sort" + std::to_string(i)));
-		std::string sort_type = get_named_expression(combined_expression, "dir" + std::to_string(i));
-
-		// defaults
-		sortOrderTypes[i] = cudf::order::ASCENDING;
-		sortOrderNulls[i] = cudf::null_order::AFTER;
-
-		if (sort_type == ASCENDING_ORDER_SORT_TEXT_NULLS_FIRST) {
-			sortOrderNulls[i] = cudf::null_order::BEFORE;
-		} else if (sort_type == DESCENDING_ORDER_SORT_TEXT_NULLS_LAST) {
-			sortOrderTypes[i] = cudf::order::DESCENDING;
-			sortOrderNulls[i] = cudf::null_order::BEFORE; // due to the descending
-		} else if (sort_type == DESCENDING_ORDER_SORT_TEXT) {
-			sortOrderTypes[i] = cudf::order::DESCENDING;
+std::unique_ptr<BlazingTable> getLimitedRows(std::shared_ptr<BlazingTableView> table, cudf::size_type num_rows, bool front){
+	if (num_rows == 0) {
+    return ral::execution::backend_dispatcher(
+          table->get_execution_backend(),
+          create_empty_table_like_functor(),
+          table);
+	} else if (num_rows < table->num_rows()) {
+		std::unique_ptr<ral::frame::BlazingTable> cudf_table;
+		if (front){
+			std::vector<cudf::size_type> splits = {num_rows};
+			auto split_table = ral::execution::backend_dispatcher(table->get_execution_backend(), split_functor(), table, splits);
+			cudf_table = ral::execution::backend_dispatcher(split_table[0]->get_execution_backend(), from_table_view_to_table_functor(), split_table[0]);
+		} else { // back
+			std::vector<cudf::size_type> splits;
+      splits.push_back(table->num_rows() - num_rows);
+      auto split_table = ral::execution::backend_dispatcher(table->get_execution_backend(), split_functor(), table, splits);
+      cudf_table = ral::execution::backend_dispatcher(split_table[1]->get_execution_backend(), from_table_view_to_table_functor(), split_table[1]);
 		}
-	}
-
-	std::string limitRowsStr = get_named_expression(combined_expression, "fetch");
-	cudf::size_type limitRows = !limitRowsStr.empty() ? std::stoi(limitRowsStr) : -1;
-
-	return std::make_tuple(sortColIndices, sortOrderTypes, sortOrderNulls, limitRows);
-}
-
-// input: min_keys=[MIN($0) OVER (PARTITION BY $1, $2 ORDER BY $3)], n_nationkey=[$0]
-// output: < [1, 2], [cudf::ASCENDING, cudf::ASCENDING], [cudf::null_order::AFTER, cudf::null_order::AFTER] >
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_vars_to_partition(const std::string & logical_plan) {
-	std::vector<int> column_index;
-	std::vector<cudf::order> order_types;
-	std::vector<cudf::null_order> null_orders;
-	const std::string partition_expr = "PARTITION BY ";
-
-	// PARTITION BY $1, $2 ORDER BY $3
-	std::string over_expression = get_first_over_expression_from_logical_plan(logical_plan, partition_expr);
-
-	if (over_expression.size() == 0) {
-		return std::make_tuple(column_index, order_types, null_orders);
-	}
-
-	size_t start_position = over_expression.find(partition_expr) + partition_expr.size();
-	size_t end_position = over_expression.find("ORDER BY ");
-
-	if (end_position == get_query_part(logical_plan).npos) {
-		end_position = over_expression.size() + 1;
-	}
-	// $1, $2
-	std::string values = over_expression.substr(start_position, end_position - start_position - 1);
-	std::vector<std::string> column_numbers_string = StringUtil::split(values, ", ");
-	for (size_t i = 0; i < column_numbers_string.size(); i++) {
-		column_numbers_string[i] = StringUtil::replace(column_numbers_string[i], "$", "");
-		column_index.push_back(std::stoi(column_numbers_string[i]));
-		// by default
-		order_types.push_back(cudf::order::ASCENDING);
-		null_orders.push_back(cudf::null_order::AFTER);
-	}
-
-	return std::make_tuple(column_index, order_types, null_orders);
-}
-
-// input: min_keys=[MIN($0) OVER (PARTITION BY $2 ORDER BY $3, $1 DESC)], n_nationkey=[$0]
-// output: < [3, 1], [cudf::ASCENDING, cudf::DESCENDING], [cudf::null_order::AFTER, cudf::null_order::AFTER] >
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_vars_to_orders(const std::string & logical_plan) {
-	std::vector<int> column_index;
-	std::vector<cudf::order> order_types;
-	std::vector<cudf::null_order> sorted_order_nulls;
-	std::string order_expr = "ORDER BY ";
-
-	// PARTITION BY $2 ORDER BY $3, $1 DESC
-	std::string over_expression = get_first_over_expression_from_logical_plan(logical_plan, order_expr);
-
-	if (over_expression.size() == 0) {
-		return std::make_tuple(column_index, order_types, sorted_order_nulls);
-	}
-
-	size_t start_position = over_expression.find(order_expr) + order_expr.size();
-	size_t end_position = over_expression.find("ROWS");
-	if (end_position != over_expression.npos) {
-		end_position = end_position - 1;
+		return cudf_table;
 	} else {
-		end_position = over_expression.size();
+    return ral::execution::backend_dispatcher(table->get_execution_backend(), from_table_view_to_table_functor(), table);
 	}
-
-	// $3, $1 DESC
-	std::string values = over_expression.substr(start_position, end_position - start_position);
-	std::vector<std::string> column_express = StringUtil::split(values, ", ");
-	for (std::size_t i = 0; i < column_express.size(); ++i) {
-		std::vector<std::string> split_parts = StringUtil::split(column_express[i], " ");
-		if (split_parts.size() == 1) { // $x
-			order_types.push_back(cudf::order::ASCENDING);
-			sorted_order_nulls.push_back(cudf::null_order::AFTER);
-		} else if (split_parts.size() == 2) { // $x DESC
-			order_types.push_back(cudf::order::DESCENDING);
-			sorted_order_nulls.push_back(cudf::null_order::AFTER);
-		} else if (split_parts.size() == 3) {
-			order_types.push_back(cudf::order::ASCENDING);
-			if (split_parts[2] == "FIRST") {  // $x NULLS FIRST  
-				sorted_order_nulls.push_back(cudf::null_order::BEFORE);
-			} else { // $x NULLS LAST
-				sorted_order_nulls.push_back(cudf::null_order::AFTER);
-			}
-		}
-		else {
-			order_types.push_back(cudf::order::DESCENDING);
-			if (split_parts[3] == "FIRST") { // $x DESC NULLS FIRST
-				sorted_order_nulls.push_back(cudf::null_order::AFTER);
-			} else { // $x DESC NULLS LAST
-				sorted_order_nulls.push_back(cudf::null_order::BEFORE);
-			}
-		}
-
-		//split_parts[0] = StringUtil::replace(split_parts[0], "$", "");
-		//column_index.push_back(std::stoi(split_parts[0]));
-		column_index.push_back( get_index_from_expression_str(split_parts[0]) );
-	}
-
-	return std::make_tuple(column_index, order_types, sorted_order_nulls);
-}
-
-// input: min_keys=[MIN($0) OVER (PARTITION BY $1, $2 ORDER BY $3 DESC)], n_nationkey=[$0]
-// output: < [1, 2, 3], [cudf::ASCENDING, cudf::ASCENDING, cudf::DESCENDING], [cudf::null_order::AFTER, cudf::null_order::AFTER]>
-std::tuple< std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_vars_to_partition_and_order(const std::string & query_part) {
-	std::vector<int> column_index_partition, column_index_order;
-	std::vector<cudf::order> order_types_partition, order_types_order;
-	std::vector<cudf::null_order> order_by_null_part, order_by_null;
-
-	std::tie(column_index_partition, order_types_partition, order_by_null_part) = get_vars_to_partition(query_part);
-	std::tie(column_index_order, order_types_order, order_by_null) = get_vars_to_orders(query_part);
-
-	column_index_partition.insert(column_index_partition.end(), column_index_order.begin(), column_index_order.end());
-	order_types_partition.insert(order_types_partition.end(), order_types_order.begin(), order_types_order.end());
-	order_by_null_part.insert(order_by_null_part.end(), order_by_null.begin(), order_by_null.end());
-
-	return std::make_tuple(column_index_partition, order_types_partition, order_by_null_part);
-}
-
-std::tuple<std::vector<int>, std::vector<cudf::order>, std::vector<cudf::null_order> > get_right_sorts_vars(const std::string & query_part) {
-	std::vector<int> sortColIndices;
-	std::vector<cudf::order> sortOrderTypes;
-	std::vector<cudf::null_order> sortOrderNulls;
-	cudf::size_type limitRows;
-
-	if (is_window_function(query_part)) {
-		// `order by` and `partition by`
-		if (window_expression_contains_order_by(query_part) && window_expression_contains_partition_by(query_part)) {
-			std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_partition_and_order(query_part);
-		}
-		// only `partition by`
-		else if (!window_expression_contains_order_by(query_part)) {
-			std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_partition(query_part);
-		}
-		// without `partition by`
-		else {
-			std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_orders(query_part);
-		}
-	} else std::tie(sortColIndices, sortOrderTypes, sortOrderNulls, limitRows) = get_sort_vars(query_part);
-
-	return std::make_tuple(sortColIndices, sortOrderTypes, sortOrderNulls);
-}
-
-bool has_limit_only(const std::string & query_part){
-	std::vector<int> sortColIndices;
-	std::tie(sortColIndices, std::ignore, std::ignore, std::ignore) = get_sort_vars(query_part);
-
-	return sortColIndices.empty();
-}
-
-int64_t get_limit_rows_when_relational_alg_is_simple(const std::string & query_part){
-	int64_t limitRows;
-	std::tie(std::ignore, std::ignore, std::ignore, limitRows) = get_sort_vars(query_part);
-	return limitRows;
 }
 
 std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t>
@@ -380,7 +93,7 @@ limit_table(std::shared_ptr<ral::frame::BlazingTableView> table_view, int64_t nu
                                                         table_view);
 		return std::make_tuple(std::move(temp), true, num_rows_limit - table_rows);
 	} else {
-		return std::make_tuple(ral::utilities::getLimitedRows(table_view, num_rows_limit), false, 0);
+		return std::make_tuple(getLimitedRows(table_view, num_rows_limit), false, 0);
 	}
 }
 
@@ -507,7 +220,7 @@ std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(
                                     "info"_a="Determining Number of Order By Partitions " + info);
     }
 
-	if( ral::utilities::checkIfConcatenatingStringsWillOverflow(samples)) {
+	if( checkIfConcatenatingStringsWillOverflow(samples)) {
 	    if(logger){
             logger->warn("{query_id}|{step}|{substep}|{info}",
                             "query_id"_a=(context ? std::to_string(context->getContextToken()) : ""),

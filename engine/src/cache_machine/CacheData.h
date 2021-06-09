@@ -12,7 +12,7 @@
 #include <spdlog/spdlog.h>
 #include "utilities/error.hpp"
 #include "utilities/CodeTimer.h"
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 #include "execution_graph/Context.h"
 #include <bmr/BlazingMemoryResource.h>
 #include "communication/CommunicationData.h"

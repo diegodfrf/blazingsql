@@ -9,8 +9,6 @@
 #include "SQLiteParser.h"
 #include "sqlcommon.h"
 
-#include "utilities/CommonOperations.h"
-
 #include "ExceptionHandling/BlazingThread.h"
 #include <arrow/io/file.h>
 #include <sqlite3.h>

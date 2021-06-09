@@ -2,7 +2,7 @@
 #include <random>
 #include "cudf/types.hpp" //cudf::io::metadata
 #include <cudf/io/orc.hpp>
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
 
 namespace ral {
 namespace cache {

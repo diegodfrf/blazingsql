@@ -3,14 +3,14 @@
 
 #include <numeric>
 
-#include "utilities/CommonOperations.h"
 #include "utilities/CodeTimer.h"
 #include <blazingdb/io/Library/Logging/Logger.h>
 #include "ExceptionHandling/BlazingThread.h"
 #include <cudf/filling.hpp>
 #include <cudf/column/column_factories.hpp>
 #include "parser/CalciteExpressionParsing.h"
-#include "execution_kernels/LogicalFilter.h"
+#include "operators/LogicalFilter.h"
+#include "operators/Concatenate.h"
 
 #include <spdlog/spdlog.h>
 using namespace fmt::literals;
@@ -85,7 +85,7 @@ std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(ral::executi
 	if (metadata_batches.size() == 1){
 		return std::move(metadata_batches[0]);
 	} else {
-		if(ral::utilities::checkIfConcatenatingStringsWillOverflow(metadata_batches)) {
+		if(checkIfConcatenatingStringsWillOverflow(metadata_batches)) {
             std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
             if(logger){
                 logger->warn("|||{info}|||||",
@@ -93,7 +93,7 @@ std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(ral::executi
             }
 		}
 
-		return ral::utilities::concatTables(metadata_batches_views);
+		return concatTables(metadata_batches_views);
 	}
 }
 

@@ -2,7 +2,10 @@
 #define BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_COMMON_METADATA_CPP_H_
 
 #include "orc_metadata.h"
-#include "utilities/CommonOperations.h"
+#include "blazing_table/BlazingCudfTable.h"
+
+// TODO percy arrow delete this include cudf details should never he here
+#include "compute/cudf/detail/types.h"
 
 std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_names(std::vector<std::string> col_names) {
 	const int ncols = col_names.size();
@@ -27,7 +30,7 @@ std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_nam
 	minmax_metadata_gdf_table.resize(metadata_col_names.size());
 	for (std::size_t i = 0; i < metadata_col_names.size(); ++i) {
 		std::vector<int32_t> temp{(int32_t)-1};
-		std::unique_ptr<cudf::column> expected_col = ral::utilities::vector_to_column(temp, cudf::data_type(cudf::type_id::INT32));
+		std::unique_ptr<cudf::column> expected_col = vector_to_column(temp, cudf::data_type(cudf::type_id::INT32));
 		minmax_metadata_gdf_table[i] = std::move(expected_col);
 	}
 

@@ -1,12 +1,15 @@
 #include "BatchOrderByProcessing.h"
 #include "utilities/CodeTimer.h"
-#include "utilities/CommonOperations.h"
 #include "execution_graph/executor.h"
 #include "parser/expression_utils.hpp"
 #include "cache_machine/CPUCacheData.h"
 #include "cache_machine/GPUCacheData.h"
 #include "cache_machine/CacheMachine.h"
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
+#include "compute/api.h"
+#include "operators/OrderBy.h"
+#include "operators/Concatenate.h"
+#include "parser/orderby_parser_utils.h"
 
 namespace ral {
 namespace batch {
@@ -20,12 +23,12 @@ PartitionSingleNodeKernel::PartitionSingleNodeKernel(std::size_t kernel_id, cons
 
     if (is_window_function(this->expression)) {
         if (window_expression_contains_partition_by(this->expression)){
-            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = ral::operators::get_vars_to_partition(this->expression);
+            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_partition(this->expression);
         } else {
-            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = ral::operators::get_vars_to_orders(this->expression);
+            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_orders(this->expression);
 		}
     } else {
-        std::tie(sortColIndices, sortOrderTypes, sortOrderNulls, std::ignore) = ral::operators::get_sort_vars(this->expression);
+        std::tie(sortColIndices, sortOrderTypes, sortOrderNulls, std::ignore) = get_sort_vars(this->expression);
     }
 }
 
@@ -171,7 +174,7 @@ void SortAndSampleKernel::compute_partition_plan(
             total_num_rows_for_sampling, final_avg_bytes_per_row, this->expression, this->context.get());
         this->add_to_output_cache(std::move(partitionPlan), "output_b");
     } else { // distributed mode
-        if( ral::utilities::checkIfConcatenatingStringsWillOverflow(inputSamples)) {
+        if( checkIfConcatenatingStringsWillOverflow(inputSamples)) {
             if(logger){
                 logger->warn("{query_id}|{step}|{substep}|{info}",
                                 "query_id"_a=(context ? std::to_string(context->getContextToken()) : ""),
@@ -201,7 +204,7 @@ void SortAndSampleKernel::compute_partition_plan(
             for (std::size_t i = 0; i < inputSamples.size(); i++){
                 sampledTableViews.push_back(inputSamples[i]->to_table_view());
             }
-            auto concatSamples = ral::utilities::concatTables(sampledTableViews);
+            auto concatSamples = concatTables(sampledTableViews);
             concatSamples->ensureOwnership();
 
             ral::cache::MetadataDictionary extra_metadata;
@@ -373,12 +376,12 @@ PartitionKernel::PartitionKernel(std::size_t kernel_id, const std::string & quer
 
     if (is_window_function(this->expression)) {
         if (window_expression_contains_partition_by(this->expression)){
-            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = ral::operators::get_vars_to_partition(this->expression);
+            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_partition(this->expression);
         } else {
-            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = ral::operators::get_vars_to_orders(this->expression);
+            std::tie(sortColIndices, sortOrderTypes, sortOrderNulls) = get_vars_to_orders(this->expression);
 		}
     } else {
-        std::tie(sortColIndices, sortOrderTypes, sortOrderNulls, std::ignore) = ral::operators::get_sort_vars(this->expression);
+        std::tie(sortColIndices, sortOrderTypes, sortOrderNulls, std::ignore) = get_sort_vars(this->expression);
     }
 }
 
@@ -648,7 +651,7 @@ kstatus LimitKernel::run() {
     }
 
     cudf::size_type limitRows;
-    std::tie(std::ignore, std::ignore, std::ignore, limitRows) = ral::operators::get_sort_vars(this->expression);
+    std::tie(std::ignore, std::ignore, std::ignore, limitRows) = get_sort_vars(this->expression);
     rows_limit = limitRows;
 
     if(this->context->getTotalNodes() > 1 && rows_limit >= 0) {

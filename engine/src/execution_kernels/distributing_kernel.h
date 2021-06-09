@@ -3,7 +3,7 @@
 #include <atomic>
 #include <map>
 #include <vector>
-#include "distribution_utils/primitives.h"
+#include "operators/Distribution.h"
 #include "cache_machine/CacheMachine.h"
 #include <execution_graph/Context.h>
 #include "kernel.h"

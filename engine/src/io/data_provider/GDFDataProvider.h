@@ -9,6 +9,7 @@
 #define GDFDATAPROVIDER_H_
 
 #include "DataProvider.h"
+#include "blazing_table/BlazingCudfTableView.h"
 #include <arrow/io/interfaces.h>
 #include <blazingdb/io/FileSystem/Uri.h>
 #include <vector>

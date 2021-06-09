@@ -5,7 +5,7 @@
 
 #include "cache_machine/CacheMachine.h"  // WaitingQueue
 #include "cache_machine/GPUCacheData.h"
-#include "execution_kernels/LogicPrimitives.h"  // BlazingTable
+#include "blazing_table/BlazingTable.h"  // BlazingTable
 #include "blazing_table/BlazingColumn.h"  // BlazingColumn
 
 #define DESCR(d) RecordProperty("description", d)

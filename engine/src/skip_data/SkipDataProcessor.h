@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 #include "parser/expression_tree.hpp"
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingTable.h"
 
 namespace ral {
 namespace skip_data {

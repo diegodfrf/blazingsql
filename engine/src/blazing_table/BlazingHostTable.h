@@ -6,7 +6,8 @@
 #include "cudf/types.hpp"
 #include "transport/ColumnTransport.h"
 #include "bmr/BufferProvider.h"
-#include "execution_kernels/LogicPrimitives.h"
+#include "blazing_table/BlazingCudfTable.h"
+#include "blazing_table/BlazingArrowTable.h"
 
 namespace ral {
 namespace frame {

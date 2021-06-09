@@ -283,100 +283,140 @@ else()
   message(STATUS "SnowFlake support is disabled!")
 endif()
 
+set(COMPUTE_CUDF_SRC_FILES
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/interops.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/aggregations.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/interpreter/interpreter_cpp.cu
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/transform.cu
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/filter.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/join.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/nulls.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/search.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/concatenate.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/types.cpp
+
+    ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
+    ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTableView.cpp
+    ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingColumnOwner.cpp
+    
+    ${PROJECT_SOURCE_DIR}/src/cache_machine/GPUCacheData.cpp
+    ${PROJECT_SOURCE_DIR}/src/config/GPUManager.cu
+)
+
+set(COMPUTE_ARROW_SRC_FILES
+    ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/aggregations.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/types.cpp
+)
 
 ## Target source files
-set(SRC_FILES ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
-              ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheData.cpp
-              ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheDataIO.cpp
-              ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheDataLocalFile.cpp
-              ${PROJECT_SOURCE_DIR}/src/cache_machine/ConcatCacheData.cpp
-              ${PROJECT_SOURCE_DIR}/src/cache_machine/CPUCacheData.cpp
-              ${PROJECT_SOURCE_DIR}/src/cache_machine/GPUCacheData.cpp
-              ${PROJECT_SOURCE_DIR}/src/cache_machine/ArrowCacheData.cpp
-              ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheMachine.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/LogicPrimitives.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/LogicalFilter.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/LogicalProject.cpp
-              ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingColumnOwner.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_graph/port.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/kernel.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_graph/executor.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/distributing_kernel.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/kernel_type.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_graph/Context.cpp
-              ${PROJECT_SOURCE_DIR}/src/bmr/MemoryMonitor.cpp
-              ${PROJECT_SOURCE_DIR}/src/bmr/BufferProvider.cpp
-              ${PROJECT_SOURCE_DIR}/src/bmr/BlazingMemoryResource.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_graph/graph.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchAggregationProcessing.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchJoinProcessing.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchOrderByProcessing.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchUnionProcessing.cpp
-              # TODO percy arrow
-              #${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchWindowFunctionProcessing.cpp
-              ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchProcessing.cpp
-              ${PROJECT_SOURCE_DIR}/src/config/GPUManager.cu
-              ${PROJECT_SOURCE_DIR}/src/operators/OrderBy.cpp
-              ${PROJECT_SOURCE_DIR}/src/operators/GroupBy.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/compatibility/SQLTranspiler.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/AbstractSQLDataProvider.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_provider/UriDataProvider.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_provider/GDFDataProvider.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_provider/ArrowDataProvider.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/Schema.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/sql/AbstractSQLParser.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/ParquetParser.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/CSVParser.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/JSONParser.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/GDFParser.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/OrcParser.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/ArrowParser.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/ArgsUtil.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/parquet_metadata.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/orc_metadata.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/common_metadata.cpp
-              ${PROJECT_SOURCE_DIR}/src/utilities/CommonOperations.cpp
-              ${PROJECT_SOURCE_DIR}/src/utilities/scalar_timestamp_parser.cpp
-              ${PROJECT_SOURCE_DIR}/src/utilities/DebuggingUtils.cpp
-              ${PROJECT_SOURCE_DIR}/src/utilities/transform.cu
-              ${PROJECT_SOURCE_DIR}/src/parser/CalciteExpressionParsing.cpp
-              ${PROJECT_SOURCE_DIR}/src/io/DataLoader.cpp
-              ${PROJECT_SOURCE_DIR}/src/Interpreter/interpreter_cpp.cu
-              ${PROJECT_SOURCE_DIR}/src/execution_graph/CalciteInterpreter.cpp
-              ${PROJECT_SOURCE_DIR}/src/parser/expression_utils.cpp
-              ${PROJECT_SOURCE_DIR}/src/parser/expression_tree.cpp
-              
-              # TODO percy arrow
-              #${PROJECT_SOURCE_DIR}/src/skip_data/SkipDataProcessor.cpp
-              #${PROJECT_SOURCE_DIR}/src/skip_data/utils.cpp
-              
-              ${PROJECT_SOURCE_DIR}/src/cython/static.cpp
-              ${PROJECT_SOURCE_DIR}/src/cython/initialize.cpp
-              ${PROJECT_SOURCE_DIR}/src/cython/io.cpp
-              ${PROJECT_SOURCE_DIR}/src/cython/errors.cpp
-              ${PROJECT_SOURCE_DIR}/src/cython/engine.cpp
-              ${PROJECT_SOURCE_DIR}/src/distribution_utils/primitives.cpp
+set(SRC_FILES
+        # COMPUTE
+        ${COMPUTE_CUDF_SRC_FILES}
+        ${COMPUTE_ARROW_SRC_FILES}
 
-              ${PROJECT_SOURCE_DIR}/src/communication/factory/MessageFactory.cpp
-              ${PROJECT_SOURCE_DIR}/src/communication/CommunicationData.cpp
-              ${PROJECT_SOURCE_DIR}/src/communication/messages/MessageUtil.cu
-              ${PROJECT_SOURCE_DIR}/src/communication/messages/GPUComponentMessage.cpp
-              ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/serializer.cpp
-              ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/node.cpp
-              ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/messageReceiver.cpp
-              ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/messageListener.cpp
-              ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/bufferTransport.cpp
-              ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/protocols.cpp
-              ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/messageSender.cpp
+        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheData.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheDataIO.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheDataLocalFile.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/ConcatCacheData.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/CPUCacheData.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/ArrowCacheData.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheMachine.cpp
+        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTable.cpp
+        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTableView.cpp
+        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTable.cpp
+        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTableView.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_graph/port.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/kernel.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_graph/executor.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/distributing_kernel.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/kernel_type.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_graph/Context.cpp
+        ${PROJECT_SOURCE_DIR}/src/bmr/MemoryMonitor.cpp
+        ${PROJECT_SOURCE_DIR}/src/bmr/BufferProvider.cpp
+        ${PROJECT_SOURCE_DIR}/src/bmr/BlazingMemoryResource.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_graph/graph.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchAggregationProcessing.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchJoinProcessing.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchOrderByProcessing.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchUnionProcessing.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchFilterProcessing.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchProjectionProcessing.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchScanProcessing.cpp
+        # TODO percy arrow
+        #${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchWindowFunctionProcessing.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_kernels/BatchProcessing.cpp
+        ${PROJECT_SOURCE_DIR}/src/operators/OrderBy.cpp
+        ${PROJECT_SOURCE_DIR}/src/operators/GroupBy.cpp
+        ${PROJECT_SOURCE_DIR}/src/operators/LogicalFilter.cpp
+        ${PROJECT_SOURCE_DIR}/src/operators/LogicalProject.cpp
+        ${PROJECT_SOURCE_DIR}/src/operators/Concatenate.cpp
+        ${PROJECT_SOURCE_DIR}/src/operators/Distribution.cpp
+        ${PROJECT_SOURCE_DIR}/src/operators/Types.cpp
 
-              ${PROJECT_SOURCE_DIR}/src/transport/Node.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/compatibility/SQLTranspiler.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/AbstractSQLDataProvider.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_provider/UriDataProvider.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_provider/GDFDataProvider.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_provider/ArrowDataProvider.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/Schema.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/sql/AbstractSQLParser.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/ParquetParser.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/CSVParser.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/JSONParser.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/GDFParser.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/OrcParser.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/ArrowParser.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/ArgsUtil.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/parquet_metadata.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/orc_metadata.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/common_metadata.cpp
+        ${PROJECT_SOURCE_DIR}/src/utilities/scalar_timestamp_parser.cpp
+        ${PROJECT_SOURCE_DIR}/src/utilities/DebuggingUtils.cpp
+        ${PROJECT_SOURCE_DIR}/src/parser/CalciteExpressionParsing.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/DataLoader.cpp
+        ${PROJECT_SOURCE_DIR}/src/execution_graph/manager.cpp
+        ${PROJECT_SOURCE_DIR}/src/parser/expression_utils.cpp
+        ${PROJECT_SOURCE_DIR}/src/parser/expression_tree.cpp
 
-              # SQL
-              ${MYSQL_DATABASE_SRC_FILES}
-              ${SQLITE_DATABASE_SRC_FILES}
-              ${POSTGRESQL_DATABASE_SRC_FILES}
-              ${SNOWFLAKE_DATABASE_SRC_FILES}
-        )
+        ${PROJECT_SOURCE_DIR}/src/parser/filter_parser_utils.cpp
+        ${PROJECT_SOURCE_DIR}/src/parser/groupby_parser_utils.cpp
+        ${PROJECT_SOURCE_DIR}/src/parser/project_parser_utils.cpp
+        ${PROJECT_SOURCE_DIR}/src/parser/orderby_parser_utils.cpp
+        ${PROJECT_SOURCE_DIR}/src/parser/types_parser_utils.cpp
+
+        # TODO percy arrow
+        #${PROJECT_SOURCE_DIR}/src/skip_data/SkipDataProcessor.cpp
+        #${PROJECT_SOURCE_DIR}/src/skip_data/utils.cpp
+        
+        ${PROJECT_SOURCE_DIR}/src/cython/static.cpp
+        ${PROJECT_SOURCE_DIR}/src/cython/initialize.cpp
+        ${PROJECT_SOURCE_DIR}/src/cython/io.cpp
+        ${PROJECT_SOURCE_DIR}/src/cython/errors.cpp
+        ${PROJECT_SOURCE_DIR}/src/cython/engine.cpp
+
+        ${PROJECT_SOURCE_DIR}/src/communication/factory/MessageFactory.cpp
+        ${PROJECT_SOURCE_DIR}/src/communication/CommunicationData.cpp
+        ${PROJECT_SOURCE_DIR}/src/communication/messages/MessageUtil.cu
+        ${PROJECT_SOURCE_DIR}/src/communication/messages/GPUComponentMessage.cpp
+        ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/serializer.cpp
+        ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/node.cpp
+        ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/messageReceiver.cpp
+        ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/messageListener.cpp
+        ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/bufferTransport.cpp
+        ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/protocols.cpp
+        ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/messageSender.cpp
+
+        ${PROJECT_SOURCE_DIR}/src/transport/Node.cpp
+        
+        ${PROJECT_SOURCE_DIR}/src/compute/api.h
+
+        # SQL
+        ${MYSQL_DATABASE_SRC_FILES}
+        ${SQLITE_DATABASE_SRC_FILES}
+        ${POSTGRESQL_DATABASE_SRC_FILES}
+        ${SNOWFLAKE_DATABASE_SRC_FILES}
+    )
 
 link_directories(${BSQL_BLD_PREFIX}/lib)
 

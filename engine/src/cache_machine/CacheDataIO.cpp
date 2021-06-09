@@ -1,7 +1,9 @@
 #include "CacheDataIO.h"
 #include "parser/CalciteExpressionParsing.h"
-#include "utilities/CommonOperations.h"
 #include <arrow/api.h>
+
+// TODO percy arrow delete this include, we should not use details here
+#include "compute/arrow/detail/types.h"
 
 namespace ral {
 namespace cache {
@@ -96,7 +98,7 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execut
       auto unique_table = std::make_unique<cudf::table>(std::move(all_columns));
       return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), names);
     } else if (backend.id() == ral::execution::backend_id::ARROW) {
-      auto new_schema = ral::cpu::utilities::build_arrow_schema(all_columns_arrow, names, arrow_metadata);
+      auto new_schema = build_arrow_schema(all_columns_arrow, names, arrow_metadata);
       return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(new_schema, all_columns_arrow, num_rows));
     }
   }

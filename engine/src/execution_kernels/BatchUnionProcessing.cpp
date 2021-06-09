@@ -2,8 +2,9 @@
 #include <cudf/types.hpp>
 #include "utilities/CodeTimer.h"
 #include "parser/expression_utils.hpp"
-#include "utilities/CommonOperations.h"
+#include "parser/types_parser_utils.h"
 #include "execution_graph/executor.h"
+#include "operators/Types.h"
 
 namespace ral {
 namespace batch {
@@ -21,7 +22,7 @@ ral::execution::task_result UnionKernel::do_process(std::vector< std::unique_ptr
     auto & input = inputs[0];
     try{
         input->set_column_names(common_names);
-        ral::utilities::normalize_types(input, common_types);
+        normalize_types(input, common_types);
     }catch(const rmm::bad_alloc& e){
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
@@ -54,7 +55,7 @@ kstatus UnionKernel::run() {
     common_names = cache_data_a->column_names();
 
     bool strict = false;
-    common_types = ral::utilities::get_common_types(cache_data_a->get_schema(), cache_data_b->get_schema(), strict);
+    common_types = get_common_types(cache_data_a->get_schema(), cache_data_b->get_schema(), strict);
 
     BlazingThread left_thread([this, &cache_machine_a, &cache_data_a](){
         while(cache_data_a != nullptr) {

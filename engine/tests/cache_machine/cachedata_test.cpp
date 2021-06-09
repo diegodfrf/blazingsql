@@ -3,7 +3,7 @@
 
 #include <src/cache_machine/GPUCacheData.h>
 #include <src/utilities/DebuggingUtils.h>
-#include "execution_graph/backend.hpp"
+#include "compute/backend.h"
 
 #include <cudf_test/column_wrapper.hpp>
 #include <cudf_test/table_utilities.hpp>

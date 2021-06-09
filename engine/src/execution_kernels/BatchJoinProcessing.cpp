@@ -2,14 +2,17 @@
 #include "BatchJoinProcessing.h"
 #include "ExceptionHandling/BlazingThread.h"
 #include "parser/expression_tree.hpp"
+#include "parser/types_parser_utils.h"
 #include "utilities/CodeTimer.h"
 #include <cudf/partitioning.hpp>
 #include <cudf/join.hpp>
 #include <cudf/stream_compaction.hpp>
-#include <src/execution_kernels/LogicalFilter.h>
+#include <src/operators/LogicalFilter.h>
 #include "execution_graph/executor.h"
 #include "cache_machine/CPUCacheData.h"
-#include "execution_graph/backend_dispatcher.h"
+#include "compute/backend_dispatcher.h"
+#include "compute/api.h"
+#include "operators/Types.h"
 
 namespace ral {
 namespace batch {
@@ -364,306 +367,11 @@ void PartwiseJoin::computeNormalizationData(const std::vector<cudf::data_type> &
 		right_join_types.push_back(right_types[this->right_column_indices[i]]);
 	}
 	bool strict = true;
-	this->join_column_common_types = ral::utilities::get_common_types(left_join_types, right_join_types, strict);
+	this->join_column_common_types = get_common_types(left_join_types, right_join_types, strict);
 	this->normalize_left = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
 												left_join_types.cbegin(), left_join_types.cend());
 	this->normalize_right = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
 												right_join_types.cbegin(), right_join_types.cend());
-}
-
-std::unique_ptr<cudf::table> reordering_columns_due_to_right_join(std::unique_ptr<cudf::table> table_ptr, size_t n_right_columns) {
-	std::vector<std::unique_ptr<cudf::column>> columns_ptr = table_ptr->release();
-	std::vector<std::unique_ptr<cudf::column>> columns_right_pos;
-
-	// First let's put all the left columns
-	for (size_t index = n_right_columns; index < columns_ptr.size(); ++index) {
-		columns_right_pos.push_back(std::move(columns_ptr[index]));
-	}
-
-	// Now let's append right columns
-	for (size_t index = 0; index < n_right_columns; ++index) {
-		columns_right_pos.push_back(std::move(columns_ptr[index]));
-	}
-
-	return std::make_unique<cudf::table>(std::move(columns_right_pos));
-}
-
-///////////////////// cross_join
-
-struct cross_join_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> left,
-      std::shared_ptr<ral::frame::BlazingTableView> right) const
-  {
-    throw std::runtime_error("ERROR: cross_join_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> cross_join_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> left,
-    std::shared_ptr<ral::frame::BlazingTableView> right) const
-{
-  throw std::runtime_error("ERROR: cross_join_functor BlazingSQL doesn't support this Arrow operator yet.");
-  return nullptr;
-}
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> cross_join_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> left,
-    std::shared_ptr<ral::frame::BlazingTableView> right) const
-{
-  auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
-  auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
-  return std::make_unique<ral::frame::BlazingCudfTable>(cudf::cross_join(table_left->view(), table_right->view()), names);
-}
-
-//////////////// check_if_has_nulls_functor
-struct check_if_has_nulls_functor {
-  template <typename T>
-  bool operator()(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<cudf::size_type> const& keys) const
-  {
-    throw std::runtime_error("ERROR: check_if_has_nulls_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
-
-template <>
-bool check_if_has_nulls_functor::operator()<ral::frame::BlazingArrowTable>(
-  std::shared_ptr<ral::frame::BlazingTableView> table_view, std::vector<cudf::size_type> const& keys) const
-{
-  auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
-  //return ral::cpu::check_if_has_nulls(arrow_table_view->view(), keys);
-  throw std::runtime_error("ERROR: check_if_has_nulls_functor BlazingSQL doesn't support this Arrow operator yet.");
-}
-
-template <>
-bool check_if_has_nulls_functor::operator()<ral::frame::BlazingCudfTable>(
-  std::shared_ptr<ral::frame::BlazingTableView> table_view, std::vector<cudf::size_type> const& keys) const
-{
-  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
-  return ral::processor::check_if_has_nulls(cudf_table_view->view(), keys);
-}
-
-//////////////////// inner join functor
-
-
-struct inner_join_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> left,
-      std::shared_ptr<ral::frame::BlazingTableView> right,
-      std::vector<cudf::size_type> const& left_column_indices,
-      std::vector<cudf::size_type> const& right_column_indices,
-      cudf::null_equality equalityType) const
-  {
-    throw std::runtime_error("ERROR: inner_join_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<ral::frame::BlazingArrowTable>(    
-    std::shared_ptr<ral::frame::BlazingTableView> left,
-    std::shared_ptr<ral::frame::BlazingTableView> right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices,
-    cudf::null_equality equalityType) const
-{
-  // TODO percy arrow
-  throw std::runtime_error("ERROR: inner_join_functor BlazingSQL doesn't support this Arrow operator yet.");
-  return nullptr;
-}
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> left,
-    std::shared_ptr<ral::frame::BlazingTableView> right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices,
-    cudf::null_equality equalityType) const
-{
-  auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
-  auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
-  auto tb = cudf::inner_join(
-              table_left->view(),
-              table_right->view(),
-              left_column_indices,
-              right_column_indices,
-              equalityType);
-  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(tb), names);
-}
-
-//////////// drop nulls
-
-struct drop_nulls_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> table_view,
-      std::vector<cudf::size_type> const& keys) const
-  {
-    throw std::runtime_error("ERROR: drop_nulls_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> drop_nulls_functor::operator()<ral::frame::BlazingArrowTable>(    
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<cudf::size_type> const& keys) const
-{
-  // TODO percy arrow
-  throw std::runtime_error("ERROR: drop_nulls_functor BlazingSQL doesn't support this Arrow operator yet.");
-  return nullptr;
-}
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> drop_nulls_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<cudf::size_type> const& keys) const
-{
-  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
-  return std::make_unique<ral::frame::BlazingCudfTable>(cudf::drop_nulls(cudf_table_view->view(), keys), table_view->column_names());
-}
-
-///////////////////////// left join functor
-
-struct left_join_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> left,
-      std::shared_ptr<ral::frame::BlazingTableView> right,
-      std::vector<cudf::size_type> const& left_column_indices,
-      std::vector<cudf::size_type> const& right_column_indices) const
-  {
-	throw std::runtime_error("ERROR: left_join_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> left_join_functor::operator()<ral::frame::BlazingArrowTable>(    
-    std::shared_ptr<ral::frame::BlazingTableView> left,
-    std::shared_ptr<ral::frame::BlazingTableView> right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices) const
-{
-  // TODO percy arrow
-  throw std::runtime_error("ERROR: left_join_functor BlazingSQL doesn't support this Arrow operator yet.");
-  return nullptr;
-}
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> left_join_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> left,
-    std::shared_ptr<ral::frame::BlazingTableView> right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices) const
-{
-  auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
-  auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
-  auto tb = cudf::left_join(
-              table_left->view(),
-              table_right->view(),
-              left_column_indices,
-              right_column_indices);
-  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(tb), names);
-}
-
-
-
-
-////////////////////////////////////// full_join
-
-
-struct full_join_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> left,
-      std::shared_ptr<ral::frame::BlazingTableView> right,
-      bool has_nulls_left,
-      bool has_nulls_right,
-      std::vector<cudf::size_type> const& left_column_indices,
-      std::vector<cudf::size_type> const& right_column_indices) const
-  {
-	throw std::runtime_error("ERROR: full_join_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> full_join_functor::operator()<ral::frame::BlazingArrowTable>(    
-    std::shared_ptr<ral::frame::BlazingTableView> left,
-    std::shared_ptr<ral::frame::BlazingTableView> right,
-    bool has_nulls_left,
-    bool has_nulls_right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices) const
-{
-  // TODO percy arrow
-  throw std::runtime_error("ERROR: full_join_functor BlazingSQL doesn't support this Arrow operator yet.");
-  return nullptr;
-}
-
-template <>
-std::unique_ptr<ral::frame::BlazingTable> full_join_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> left,
-    std::shared_ptr<ral::frame::BlazingTableView> right,
-    bool has_nulls_left,
-    bool has_nulls_right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices) const
-{
-  auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
-  auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
-  std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
-  auto tb = cudf::full_join(
-              table_left->view(),
-              table_right->view(),
-              left_column_indices,
-              right_column_indices,
-              (has_nulls_left && has_nulls_right) ? cudf::null_equality::UNEQUAL : cudf::null_equality::EQUAL);
-  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(tb), names);
-}
-
-
-
-
-/////////////////////////////////// reordering_columns_due_to_right_join functor
-
-
-struct reordering_columns_due_to_right_join_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(std::unique_ptr<ral::frame::BlazingTable> table_ptr, size_t right_columns) const
-  {
-    throw std::runtime_error("ERROR: reordering_columns_due_to_right_join_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
-
-template<>
-std::unique_ptr<ral::frame::BlazingTable> reordering_columns_due_to_right_join_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::unique_ptr<ral::frame::BlazingTable> table_ptr, size_t right_columns) const
-{
-  // TODO percy arrow
-  throw std::runtime_error("ERROR: reordering_columns_due_to_right_join_functor BlazingSQL doesn't support this Arrow operator yet.");
-  return nullptr;
-}
-
-template<>
-std::unique_ptr<ral::frame::BlazingTable> reordering_columns_due_to_right_join_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::unique_ptr<ral::frame::BlazingTable> table_ptr, size_t right_columns) const
-{
-  ral::frame::BlazingCudfTable* result_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table_ptr.get());
-  return std::make_unique<ral::frame::BlazingCudfTable>(reordering_columns_due_to_right_join(result_table_ptr->releaseCudfTable(), right_columns), 
-                                                        table_ptr->column_names());
 }
 
 std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
@@ -740,10 +448,10 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 
 	try{
 		if (this->normalize_left){
-			ral::utilities::normalize_types(left_batch, this->join_column_common_types, this->left_column_indices);
+			normalize_types(left_batch, this->join_column_common_types, this->left_column_indices);
 		}
 		if (this->normalize_right){
-			ral::utilities::normalize_types(right_batch, this->join_column_common_types, this->right_column_indices);
+			normalize_types(right_batch, this->join_column_common_types, this->right_column_indices);
 		}
 
 		auto log_input_num_rows = left_batch->num_rows() + right_batch->num_rows();
@@ -755,7 +463,7 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 		auto log_output_num_bytes = joined->size_in_bytes();
 
 		if (filter_statement != "") {
-			auto filter_table = ral::processor::process_filter(joined->to_table_view(), filter_statement, this->context.get());
+			auto filter_table = ral::operators::process_filter(joined->to_table_view(), filter_statement, this->context.get());
 			eventTimer.stop();
 
 			log_output_num_rows = filter_table->num_rows();
@@ -939,7 +647,7 @@ void JoinPartitionKernel::computeNormalizationData(const std::vector<cudf::data_
 		right_join_types.push_back(right_types[this->right_column_indices[i]]);
 	}
 	bool strict = true;
-	this->join_column_common_types = ral::utilities::get_common_types(left_join_types, right_join_types, strict);
+	this->join_column_common_types = get_common_types(left_join_types, right_join_types, strict);
 	this->normalize_left = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
 												left_join_types.cbegin(), left_join_types.cend());
 	this->normalize_right = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
@@ -1350,24 +1058,24 @@ ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::uni
 				small_table_idx //message_tracker_idx
 			);
 		} else if (operation_type == "hash_partition") {
-			bool normalize_types;
+			bool normalize_types_flag;
 			int table_idx;
 			std::string cache_id;
 			std::vector<cudf::size_type> column_indices;
 			if(args.at("side") == "left"){
-				normalize_types = this->normalize_left;
+				normalize_types_flag = this->normalize_left;
 				table_idx = LEFT_TABLE_IDX;
 				cache_id = "output_a";
 				column_indices = this->left_column_indices;
 			} else {
-				normalize_types = this->normalize_right;
+				normalize_types_flag = this->normalize_right;
 				table_idx = RIGHT_TABLE_IDX;
 				cache_id = "output_b";
 				column_indices = this->right_column_indices;
 			}
 
-			if (normalize_types) {
-				ral::utilities::normalize_types(input, join_column_common_types, column_indices);
+			if (normalize_types_flag) {
+				normalize_types(input, join_column_common_types, column_indices);
 			}
 
 			auto batch_view = input->to_table_view();
@@ -1503,8 +1211,6 @@ kstatus JoinPartitionKernel::run() {
 std::string JoinPartitionKernel::get_join_type() {
 	return join_type;
 }
-
-// END JoinPartitionKernel
 
 } // namespace batch
 } // namespace ral

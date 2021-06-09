@@ -10,6 +10,7 @@
 
 #include "common_metadata.h"
 #include <parquet/api/reader.h>
+#include "blazing_table/BlazingTable.h"
 
 std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 	std::vector<std::unique_ptr<parquet::ParquetFileReader>> &parquet_readers,

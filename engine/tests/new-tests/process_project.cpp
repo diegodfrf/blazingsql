@@ -4,8 +4,8 @@
 #include "cudf_test/table_utilities.hpp"
 #include "cudf_test/type_lists.hpp"
 
-#include "execution_kernels/LogicalProject.h"
-#include <execution_kernels/LogicPrimitives.h>
+#include "operators/LogicalProject.h"
+#include "blazing_table/BlazingTable.h"
 #include "tests/utilities/BlazingUnitTest.h"
 
 template <typename T>
@@ -30,7 +30,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types1)
     std::string query_part = "LogicalProject(A=[$0])";
     blazingdb::manager::Context * context = nullptr;
 
-    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::processor::process_project(
+    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::operators::process_project(
         std::move(table), 
         query_part,
         context);
@@ -58,7 +58,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types2)
     std::string query_part = "LogicalProject(C=[$2])";
     blazingdb::manager::Context * context = nullptr;
 
-    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::processor::process_project(
+    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::operators::process_project(
         std::move(table), 
         query_part,
         context);
@@ -86,7 +86,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types3)
     std::string query_part = "LogicalProject(A=[$0], C=[$2])";
     blazingdb::manager::Context * context = nullptr;
 
-    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::processor::process_project(
+    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::operators::process_project(
         std::move(table), 
         query_part,
         context);
@@ -115,7 +115,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types4)
     std::string query_part = "LogicalProject(EXPR$0=[1])";
     blazingdb::manager::Context * context = nullptr;
 
-    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::processor::process_project(
+    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::operators::process_project(
         std::move(table), 
         query_part,
         context);
@@ -143,7 +143,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types5)
     std::string query_part = "LogicalProject(EXPR$0=[>($0, 3)])";
     blazingdb::manager::Context * context = nullptr;
 
-    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::processor::process_project(
+    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::operators::process_project(
         std::move(table),
         query_part,
         context);
@@ -178,7 +178,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types6)
     std::string query_part = "LogicalProject(EXPR$0=[>($0, 3)], EXPR$1=[<($2, 3)])";
     blazingdb::manager::Context * context = nullptr;
 
-    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::processor::process_project(
+    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::operators::process_project(
         std::move(table), 
         query_part,
         context);
@@ -215,7 +215,7 @@ TYPED_TEST(ProjectTestNumeric, test_numeric_types7)
     std::string query_part = "LogicalProject(EXPR$0=[RAND()], EXPR$1=[*($2, RAND())])";
     blazingdb::manager::Context * context = nullptr;
 
-    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::processor::process_project(
+    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::operators::process_project(
         std::move(table), 
         query_part,
         context);
@@ -256,7 +256,7 @@ TYPED_TEST(ProjectTestNumeric, test_rand)
     std::string query_part = "LogicalProject(EXPR$0=[RAND()])";
     blazingdb::manager::Context * context = nullptr;
 
-    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::processor::process_project(
+    std::unique_ptr<ral::frame::BlazingTable> table_out = ral::operators::process_project(
         std::move(table), 
         query_part,
         context);
@@ -292,7 +292,7 @@ TEST_F(ProjectTestString, test_string_like)
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
-    auto out_table = ral::processor::process_project(std::move(table),
+    auto out_table = ral::operators::process_project(std::move(table),
                                                     "LogicalProject(EXPR$0=[LIKE($0, '_')], EXPR$1=[LIKE($0, '%o')])",
                                                     nullptr);
   
@@ -312,7 +312,7 @@ TEST_F(ProjectTestString, test_string_substring)
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
-    auto out_table = ral::processor::process_project(std::move(table),
+    auto out_table = ral::operators::process_project(std::move(table),
                                                     "LogicalProject(EXPR$0=[SUBSTRING($0, 3, -1)])",
                                                     nullptr);
 
@@ -333,7 +333,7 @@ TEST_F(ProjectTestString, test_string_substring_null)
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
-    auto out_table = ral::processor::process_project(std::move(table),
+    auto out_table = ral::operators::process_project(std::move(table),
                                                      "LogicalProject(EXPR$0=[SUBSTRING($0, 2, -(CHAR_LENGTH($0), 2))])",
                                                      //"LogicalProject(EXPR$0=[SUBSTRING($0, 15, -4)])",
                                                     nullptr);
@@ -355,7 +355,7 @@ TEST_F(ProjectTestString, test_char_length)
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
-    auto out_table = ral::processor::process_project(std::move(table),
+    auto out_table = ral::operators::process_project(std::move(table),
                                                      "LogicalProject(EXPR$0=[-(CHAR_LENGTH($0), 1)])",
                                                     nullptr);
     
@@ -375,7 +375,7 @@ TEST_F(ProjectTestString, test_string_concat)
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
-    auto out_table = ral::processor::process_project(std::move(table),
+    auto out_table = ral::operators::process_project(std::move(table),
                                                     "LogicalProject(EXPR$0=[||($0,'XD=D')], EXPR$1=[||($0,$1)])",
                                                     nullptr);
   
@@ -398,7 +398,7 @@ TEST_F(ProjectTestString, test_cast_to_string)
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
-    auto out_table = ral::processor::process_project(std::move(table),
+    auto out_table = ral::operators::process_project(std::move(table),
                                                     "LogicalProject(EXPR$0=[CAST($0):VARCHAR], EXPR$1=[CAST($1):VARCHAR], EXPR$2=[CAST($2):VARCHAR], EXPR$3=[CAST($3):VARCHAR])",
                                                     nullptr);
   
@@ -422,7 +422,7 @@ TEST_F(ProjectTestString, test_cast_from_string)
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
-    auto out_table = ral::processor::process_project(std::move(table),
+    auto out_table = ral::operators::process_project(std::move(table),
                                                     "LogicalProject(EXPR$0=[CAST($0):INTEGER], EXPR$1=[CAST($1):DOUBLE], EXPR$2=[CAST($2):TIMESTAMP])",
                                                     nullptr);
 
@@ -454,7 +454,7 @@ TEST_F(ProjectTestString, test_string_case)
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
-    auto out_table = ral::processor::process_project(std::move(table),
+    auto out_table = ral::operators::process_project(std::move(table),
                                                     "LogicalProject(EXPR$0=[CASE(=(MOD($0, 2), 0), $1, 'LOL')])",
                                                     nullptr);
   
@@ -474,7 +474,7 @@ TEST_F(ProjectTestString, test_string_nested_case)
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
-    auto out_table = ral::processor::process_project(std::move(table),
+    auto out_table = ral::operators::process_project(std::move(table),
                                                     "LogicalProject(EXPR$0=[=(CASE(=(MOD($0, 2), 0), $1, 'LOL'), 'LOL')])",
                                                     nullptr);
   
@@ -500,7 +500,7 @@ TYPED_TEST(ProjectRoundTest, test_round)
     std::vector<std::string> names(in_table_view.num_columns());
     std::unique_ptr<ral::frame::BlazingTable> table = std::make_unique<ral::frame::BlazingTable>(std::move(cudf_table), names);
 
-    auto out_table = ral::processor::process_project(std::move(table),
+    auto out_table = ral::operators::process_project(std::move(table),
                                                     "LogicalProject(EXPR$0=[ROUND($0)], EXPR$1=[ROUND($0, 2)], EXPR$2=[ROUND($0, 5)])",
                                                     nullptr);
 
