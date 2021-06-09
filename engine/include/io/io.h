@@ -8,7 +8,9 @@
 #include <vector>
 #include <set>
 #include <arrow/table.h>
+#include <arrow/type.h>
 #include <memory>
+
 #include "blazing_table/BlazingTableView.h"
 #include "blazing_table/BlazingCudfTableView.h"
 #include "../../src/utilities/error.hpp"
@@ -99,7 +101,7 @@ struct GCS {
 struct FolderPartitionMetadata {
 	std::string name;
 	std::set<std::string> values;
-	cudf::type_id data_type;
+	arrow::Type::type data_type;
 };
 
 TableSchema parseSchema(std::vector<std::string> files,

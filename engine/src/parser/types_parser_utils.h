@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 
-cudf::data_type get_common_type(cudf::data_type type1, cudf::data_type type2, bool strict);
+std::shared_ptr<arrow::DataType> get_common_type(std::shared_ptr<arrow::DataType> type1, std::shared_ptr<arrow::DataType> type2, bool strict);
 
 std::vector<std::shared_ptr<arrow::DataType>> get_common_types(const std::vector<std::shared_ptr<arrow::DataType>> & types1,
    const std::vector<std::shared_ptr<arrow::DataType>> & types2, bool strict);

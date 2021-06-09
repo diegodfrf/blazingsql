@@ -7,11 +7,16 @@
 #include "operators/operators_definitions.h"
 
 bool is_type_float(cudf::type_id type);
+bool is_type_float_arrow(arrow::Type::type type);
 bool is_type_integer(cudf::type_id type);
-bool is_type_bool(cudf::type_id type) ;
+bool is_type_integer_arrow(arrow::Type::type type);
+bool is_type_bool(cudf::type_id type);
+bool is_type_bool_arrow(arrow::Type::type type);
 bool is_type_timestamp(cudf::type_id type);
+bool is_type_timestamp_arrow(arrow::Type::type type);
 bool is_type_duration(cudf::type_id type) ;
 bool is_type_string(cudf::type_id type);
+bool is_type_string_arrow(arrow::Type::type type);
 
 cudf::size_type get_index(const std::string & operand_string);
 

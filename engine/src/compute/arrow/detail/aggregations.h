@@ -13,8 +13,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_groupby_without_aggregations(
 
 
 std::shared_ptr<arrow::Scalar> arrow_reduce(std::shared_ptr<arrow::ChunkedArray> col,
-                                voltron::compute::AggregateKind agg,
-                                cudf::data_type output_dtype);
+                                voltron::compute::AggregateKind agg);
 
 std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		std::shared_ptr<ral::frame::BlazingArrowTableView> table_view, const std::vector<std::string> & aggregation_input_expressions,

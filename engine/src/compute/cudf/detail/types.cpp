@@ -6,12 +6,10 @@
 #include <numeric>
 #include "blazing_table/BlazingColumnOwner.h"
 #include "parser/types_parser_utils.h"
+#include "parser/CalciteExpressionParsing.h"
 
-// TODO: cordova , undefined symbol
 void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table,  const std::vector<std::shared_ptr<arrow::DataType>>  & types,
 		std::vector<cudf::size_type> column_indices) {
-	// TODO: cordova , undefined symbol
-	/*
   	auto table = dynamic_cast<ral::frame::BlazingCudfTable*>(gpu_table.get());
   
 	if (column_indices.size() == 0){
@@ -23,13 +21,13 @@ void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table, 
 	}
 	std::vector<std::unique_ptr<ral::frame::BlazingColumn>> columns = table->releaseBlazingColumns();
 	for (size_t i = 0; i < column_indices.size(); i++){
-		if (!(columns[column_indices[i]]->view().type() == types[i])){
-			std::unique_ptr<cudf::column> casted = cudf::cast(columns[column_indices[i]]->view(), types[i]);
+		cudf::data_type type_to_cast = arrow_type_to_cudf_data_type(types[i]->id());
+		if (!(columns[column_indices[i]]->view().type() == type_to_cast)){
+			std::unique_ptr<cudf::column> casted = cudf::cast(columns[column_indices[i]]->view(), type_to_cast);
 			columns[column_indices[i]] = std::make_unique<ral::frame::BlazingColumnOwner>(std::move(casted));
 		}
 	}
 	gpu_table = std::make_unique<ral::frame::BlazingCudfTable>(std::move(columns), table->column_names());
-	*/
 }
 
 std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
@@ -91,3 +89,54 @@ std::vector<cudf::null_order> toCudfNullOrderTypes(std::vector<voltron::compute:
   }
 }
 
+cudf::data_type get_common_cudf_type(cudf::data_type type1, cudf::data_type type2, bool strict) {
+	if(type1 == type2) {
+		return type1;
+	} else if((is_type_float(type1.id()) && is_type_float(type2.id())) || (is_type_integer(type1.id()) && is_type_integer(type2.id()))) {
+		return (cudf::size_of(type1) >= cudf::size_of(type2))	? type1	: type2;
+	} else if(is_type_timestamp(type1.id()) && is_type_timestamp(type2.id())) {
+		// if they are both datetime, return the highest resolution either has
+		static constexpr std::array<cudf::data_type, 5> datetime_types = {
+			cudf::data_type{cudf::type_id::TIMESTAMP_NANOSECONDS},
+			cudf::data_type{cudf::type_id::TIMESTAMP_MICROSECONDS},
+			cudf::data_type{cudf::type_id::TIMESTAMP_MILLISECONDS},
+			cudf::data_type{cudf::type_id::TIMESTAMP_SECONDS},
+			cudf::data_type{cudf::type_id::TIMESTAMP_DAYS}
+		};
+
+		for (auto datetime_type : datetime_types){
+			if(type1 == datetime_type || type2 == datetime_type)
+				return datetime_type;
+		}
+	} else if(is_type_duration(type1.id()) && is_type_duration(type2.id())) {
+		// if they are both durations, return the highest resolution either has
+		static constexpr std::array<cudf::data_type, 5> duration_types = {
+			cudf::data_type{cudf::type_id::DURATION_NANOSECONDS},
+			cudf::data_type{cudf::type_id::DURATION_MICROSECONDS},
+			cudf::data_type{cudf::type_id::DURATION_MILLISECONDS},
+			cudf::data_type{cudf::type_id::DURATION_SECONDS},
+			cudf::data_type{cudf::type_id::DURATION_DAYS}
+		};
+
+		for (auto duration_type : duration_types){
+			if(type1 == duration_type || type2 == duration_type)
+				return duration_type;
+		}
+	}
+	else if ( is_type_string(type1.id()) && is_type_timestamp(type2.id()) ) {
+		return type2;
+	}
+	if (strict) {
+		RAL_FAIL("No common type between " + std::to_string(static_cast<int32_t>(type1.id())) + " and " + std::to_string(static_cast<int32_t>(type2.id())));
+	} else {
+		if(is_type_float(type1.id()) && is_type_integer(type2.id())) {
+			return type1;
+		} else if (is_type_float(type2.id()) && is_type_integer(type1.id())) {
+			return type2;
+		} else if (is_type_bool(type1.id()) && (is_type_integer(type2.id()) || is_type_float(type2.id()) || is_type_string(type2.id()) )){
+			return type2;
+		} else if (is_type_bool(type2.id()) && (is_type_integer(type1.id()) || is_type_float(type1.id()) || is_type_string(type1.id()) )){
+			return type1;
+		}
+	}
+}

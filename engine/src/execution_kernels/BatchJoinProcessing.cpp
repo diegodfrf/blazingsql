@@ -368,8 +368,7 @@ void PartwiseJoin::computeNormalizationData(const std::vector<std::shared_ptr<ar
 		right_join_types.push_back(std::move(right_types[this->right_column_indices[i]]));
 	}
 	bool strict = true;
-	// TODO: cordova - arrow types
-	//this->join_column_common_types = get_common_types(left_join_types, right_join_types, strict);
+	this->join_column_common_types = get_common_types(left_join_types, right_join_types, strict);
 	this->normalize_left = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
 												left_join_types.cbegin(), left_join_types.cend());
 	this->normalize_right = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
@@ -650,8 +649,7 @@ void JoinPartitionKernel::computeNormalizationData(const std::vector<std::shared
 		right_join_types.push_back(std::move(right_types[this->right_column_indices[i]]));
 	}
 	bool strict = true;
-	// TODO: cordova - arrow types
-	//this->join_column_common_types = get_common_types(left_join_types, right_join_types, strict);
+	this->join_column_common_types = get_common_types(left_join_types, right_join_types, strict);
 	this->normalize_left = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),
 												left_join_types.cbegin(), left_join_types.cend());
 	this->normalize_right = !std::equal(this->join_column_common_types.cbegin(), this->join_column_common_types.cend(),

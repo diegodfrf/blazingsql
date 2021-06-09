@@ -64,10 +64,10 @@ std::vector<std::string> BlazingCudfTableView::column_names() const{
 std::vector<std::shared_ptr<arrow::DataType>> BlazingCudfTableView::column_types() const {
 	std::vector<std::shared_ptr<arrow::DataType>> data_types;
 	auto view = this->view();
-	std::transform(view.begin(), view.end(), data_types.begin(), [](auto & col){ 
-		arrow::Type::type arrow_type = cudf_type_id_to_arrow_type(col.type().id());
-		return get_right_arrow_datatype(arrow_type);
-		});
+	for (size_t i = 0; i < view.num_columns(); ++i) {
+		arrow::Type::type arrow_type = cudf_type_id_to_arrow_type(view.column(i).type().id());
+		data_types.push_back(get_right_arrow_datatype(arrow_type));
+	}
 	return data_types;
 }
 

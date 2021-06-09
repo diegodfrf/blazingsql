@@ -392,7 +392,7 @@ std::vector<FolderPartitionMetadata> inferFolderPartitionMetadata(std::string fo
   	static std::regex timestamp_regex{std::string(ral::parser::detail::lexer::TIMESTAMP_D_REGEX_STR)};
 
 	for (auto &&m : metadata) {
-		m.data_type = cudf::type_id::EMPTY;
+		m.data_type = arrow::Type::NA;
 		for (auto &&value : m.values) {
 			ral::parser::detail::lexer::token token;
 		 	if (std::regex_match(value, boolean_regex)) {
@@ -405,11 +405,12 @@ std::vector<FolderPartitionMetadata> inferFolderPartitionMetadata(std::string fo
 				token = {ral::parser::detail::lexer::token_type::String, value};
 			}
 
-			cudf::data_type inferred_type = ral::parser::detail::infer_type_from_literal_token(token);
-			if (m.data_type == cudf::type_id::EMPTY)		{
-				m.data_type = inferred_type.id();
+			std::shared_ptr<arrow::DataType> inferred_type = ral::parser::detail::infer_arrow_type_from_literal_token(token);
+			if (m.data_type == arrow::Type::NA) {
+				m.data_type = inferred_type->id();
 			} else {
-				m.data_type = get_common_type(cudf::data_type{m.data_type}, inferred_type, false).id();
+				std::shared_ptr<arrow::DataType> m_type = get_right_arrow_datatype(m.data_type);
+				m.data_type = get_common_type(m_type, inferred_type, false)->id();
 			}
 		}
 	}

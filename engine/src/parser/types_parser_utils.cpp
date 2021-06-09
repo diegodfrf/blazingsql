@@ -20,59 +20,29 @@ std::vector<std::shared_ptr<arrow::DataType>> get_common_types(const std::vector
 	RAL_EXPECTS(types1.size() == types2.size(), "In get_common_types: Mismatched number of columns");
 	std::vector<std::shared_ptr<arrow::DataType>> common_types(types1.size());
 	for(size_t j = 0; j < common_types.size(); j++) {
-		// TODO: cordova - arrow types
-		//common_types[j] = get_common_type(types1[j], types2[j], strict);
+		common_types[j] = get_common_type(types1[j], types2[j], strict);
 	}
 	return common_types;
 }
 
-cudf::data_type get_common_type(cudf::data_type type1, cudf::data_type type2, bool strict) {
-	if(type1 == type2) {
+std::shared_ptr<arrow::DataType> get_common_type(std::shared_ptr<arrow::DataType> type1, std::shared_ptr<arrow::DataType> type2, bool strict) {
+	if (type1 == type2) {
 		return type1;
-	} else if((is_type_float(type1.id()) && is_type_float(type2.id())) || (is_type_integer(type1.id()) && is_type_integer(type2.id()))) {
-		return (cudf::size_of(type1) >= cudf::size_of(type2))	? type1	: type2;
-	} else if(is_type_timestamp(type1.id()) && is_type_timestamp(type2.id())) {
-		// if they are both datetime, return the highest resolution either has
-		static constexpr std::array<cudf::data_type, 5> datetime_types = {
-			cudf::data_type{cudf::type_id::TIMESTAMP_NANOSECONDS},
-			cudf::data_type{cudf::type_id::TIMESTAMP_MICROSECONDS},
-			cudf::data_type{cudf::type_id::TIMESTAMP_MILLISECONDS},
-			cudf::data_type{cudf::type_id::TIMESTAMP_SECONDS},
-			cudf::data_type{cudf::type_id::TIMESTAMP_DAYS}
-		};
-
-		for (auto datetime_type : datetime_types){
-			if(type1 == datetime_type || type2 == datetime_type)
-				return datetime_type;
-		}
-	} else if(is_type_duration(type1.id()) && is_type_duration(type2.id())) {
-		// if they are both durations, return the highest resolution either has
-		static constexpr std::array<cudf::data_type, 5> duration_types = {
-			cudf::data_type{cudf::type_id::DURATION_NANOSECONDS},
-			cudf::data_type{cudf::type_id::DURATION_MICROSECONDS},
-			cudf::data_type{cudf::type_id::DURATION_MILLISECONDS},
-			cudf::data_type{cudf::type_id::DURATION_SECONDS},
-			cudf::data_type{cudf::type_id::DURATION_DAYS}
-		};
-
-		for (auto duration_type : duration_types){
-			if(type1 == duration_type || type2 == duration_type)
-				return duration_type;
-		}
-	}
-	else if ( is_type_string(type1.id()) && is_type_timestamp(type2.id()) ) {
+	} else if((is_type_float_arrow(type1->id()) && is_type_float_arrow(type2->id())) || (is_type_integer_arrow(type1->id()) && is_type_integer_arrow(type2->id()))) {
+		return (arrow::internal::GetByteWidth(*type1) >= arrow::internal::GetByteWidth(*type2))	? type1	: type2;
+	} else if ( is_type_string_arrow(type1->id()) && is_type_timestamp_arrow(type2->id()) ) {
 		return type2;
 	}
 	if (strict) {
-		RAL_FAIL("No common type between " + std::to_string(static_cast<int32_t>(type1.id())) + " and " + std::to_string(static_cast<int32_t>(type2.id())));
+		RAL_FAIL("No common type between " + std::to_string(static_cast<int32_t>(type1->id())) + " and " + std::to_string(static_cast<int32_t>(type2->id())));
 	} else {
-		if(is_type_float(type1.id()) && is_type_integer(type2.id())) {
+		if(is_type_float_arrow(type1->id()) && is_type_integer_arrow(type2->id())) {
 			return type1;
-		} else if (is_type_float(type2.id()) && is_type_integer(type1.id())) {
+		} else if (is_type_float_arrow(type2->id()) && is_type_integer_arrow(type1->id())) {
 			return type2;
-		} else if (is_type_bool(type1.id()) && (is_type_integer(type2.id()) || is_type_float(type2.id()) || is_type_string(type2.id()) )){
+		} else if (is_type_bool_arrow(type1->id()) && (is_type_integer_arrow(type2->id()) || is_type_float_arrow(type2->id()) || is_type_string_arrow(type2->id()) )){
 			return type2;
-		} else if (is_type_bool(type2.id()) && (is_type_integer(type1.id()) || is_type_float(type1.id()) || is_type_string(type1.id()) )){
+		} else if (is_type_bool_arrow(type2->id()) && (is_type_integer_arrow(type1->id()) || is_type_float_arrow(type1->id()) || is_type_string_arrow(type1->id()) )){
 			return type1;
 		}
 	}
@@ -168,18 +138,18 @@ std::shared_ptr<arrow::DataType> get_right_arrow_datatype(arrow::Type::type arro
 
     switch (arrow_type)
     {
-	case arrow::Type::type::BOOL: return arrow::boolean();
-	case arrow::Type::type::UINT8: return arrow::uint8();
-	case arrow::Type::type::INT8: return arrow::int8();
-	case arrow::Type::type::UINT16: return arrow::uint16();
-	case arrow::Type::type::INT16: return arrow::int16();
-	case arrow::Type::type::UINT32: return arrow::uint32();
-    case arrow::Type::type::INT32: return arrow::int32();
-	case arrow::Type::type::UINT64: return arrow::uint64();
-	case arrow::Type::type::INT64: return arrow::int64();
-    case arrow::Type::type::FLOAT: return arrow::float32();
-    case arrow::Type::type::DOUBLE: return arrow::float64();
-    case arrow::Type::type::STRING: return arrow::utf8();
+	case arrow::Type::BOOL: return arrow::boolean();
+	case arrow::Type::UINT8: return arrow::uint8();
+	case arrow::Type::INT8: return arrow::int8();
+	case arrow::Type::UINT16: return arrow::uint16();
+	case arrow::Type::INT16: return arrow::int16();
+	case arrow::Type::UINT32: return arrow::uint32();
+    case arrow::Type::INT32: return arrow::int32();
+	case arrow::Type::UINT64: return arrow::uint64();
+	case arrow::Type::INT64: return arrow::int64();
+    case arrow::Type::FLOAT: return arrow::float32();
+    case arrow::Type::DOUBLE: return arrow::float64();
+    case arrow::Type::STRING: return arrow::utf8();
 	// TODO: enables more types
     default: return arrow::null();
     }

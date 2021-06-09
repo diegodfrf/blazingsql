@@ -23,6 +23,7 @@
 #include <cudf/strings/convert/convert_integers.hpp>
 #include <cudf/unary.hpp>
 
+#include "compute/cudf/detail/types.h"
 #include "compute/cudf/detail/transform.hpp"
 #include "parser/project_parser_utils.h"
 
@@ -285,7 +286,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
 
                 // lets make sure that the start and end are the same type
                 if (!(start_column.type() == computed_end_column->type())){
-                    cudf::data_type common_type = get_common_type(start_column.type(), computed_end_column->type(), true);
+                    cudf::data_type common_type = get_common_cudf_type(start_column.type(), computed_end_column->type(), true);
                     if (!(start_column.type() == common_type)){
                         computed_start_column = cudf::cast(start_column, common_type);
                         start_column = computed_start_column->view();

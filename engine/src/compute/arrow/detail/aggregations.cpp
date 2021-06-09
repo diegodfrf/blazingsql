@@ -121,21 +121,21 @@ std::unique_ptr<ral::frame::BlazingTable> compute_groupby_without_aggregations(
      table->num_rows()));
  }
 
-std::shared_ptr<arrow::Scalar> arrow_reduce(std::shared_ptr<arrow::ChunkedArray> col,
-                                voltron::compute::AggregateKind agg,
-                                cudf::data_type output_dtype)
+std::shared_ptr<arrow::Scalar> arrow_reduce(std::shared_ptr<arrow::ChunkedArray> col, voltron::compute::AggregateKind agg)
 {
  switch (agg) {
+   // TODO percy arrow error
    case voltron::compute::AggregateKind::SUM: {
      auto result = arrow::compute::Sum(col);
-     // TODO percy arrow error
      return result.ValueOrDie().scalar();
    } break;
    case voltron::compute::AggregateKind::SUM0: {
-    break;
+     auto result = arrow::compute::Sum(col);
+     return result.ValueOrDie().scalar();
    }
    case voltron::compute::AggregateKind::MEAN: {
-    break;
+    auto result = arrow::compute::Mean(col);
+     return result.ValueOrDie().scalar();
    }
    case voltron::compute::AggregateKind::MIN: {
     break;
@@ -144,6 +144,8 @@ std::shared_ptr<arrow::Scalar> arrow_reduce(std::shared_ptr<arrow::ChunkedArray>
     break;
    }
    case voltron::compute::AggregateKind::COUNT_VALID: {
+     auto result = arrow::compute::Count(col);
+     return result.ValueOrDie().scalar();
     break;
    }
    case voltron::compute::AggregateKind::COUNT_ALL: {
@@ -173,7 +175,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		std::shared_ptr<ral::frame::BlazingArrowTableView> table_view, const std::vector<std::string> & aggregation_input_expressions,
  		const std::vector<voltron::compute::AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases)
 {
-    std::shared_ptr<arrow::Table> table = table_view->view();
+  std::shared_ptr<arrow::Table> table = table_view->view();
 
  	std::vector<std::shared_ptr<arrow::Scalar>> reductions;
  	std::vector<std::string> agg_output_column_names;
@@ -183,7 +185,7 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  			reductions.emplace_back(std::move(scalar));
  		} else {
  			std::vector<std::unique_ptr<ral::frame::BlazingColumn>> aggregation_input_scope_holder;
-            std::shared_ptr<arrow::ChunkedArray> aggregation_input;
+      std::shared_ptr<arrow::ChunkedArray> aggregation_input;
  			if(is_var_column(aggregation_input_expressions[i]) || is_number(aggregation_input_expressions[i])) {
  				aggregation_input = table->column(get_index(aggregation_input_expressions[i]));
 
@@ -194,17 +196,13 @@ std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  			}
 
  			if( aggregation_types[i] == voltron::compute::AggregateKind::COUNT_VALID) {
-                std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(aggregation_input->length() - aggregation_input->null_count());
+        std::shared_ptr<arrow::Int64Scalar> scalar = std::make_shared<arrow::Int64Scalar>(aggregation_input->length() - aggregation_input->null_count());
  				reductions.emplace_back(std::move(scalar));
  			} else {
-        //std::unique_ptr<cudf::aggregation> agg = makeCudfAggregation<cudf::aggregation>(aggregation_types[i]);
-        cudf::type_id theinput_type = cudf::detail::arrow_to_cudf_type(*aggregation_input->type()).id();
-        cudf::type_id output_type = get_aggregation_output_type(theinput_type, aggregation_types[i], false);
+        std::shared_ptr<arrow::Scalar> reduction_out = arrow_reduce(aggregation_input, aggregation_types[i]);
 
-        std::shared_ptr<arrow::Scalar> reduction_out = arrow_reduce(aggregation_input, aggregation_types[i], cudf::data_type(output_type));
-
- 				if (aggregation_types[i] == voltron::compute::AggregateKind::SUM0 && !reduction_out->is_valid){ // if this aggregation was a SUM0, and it was not valid, we want it to be a valid 0 instead
-                    auto dt = cudf::detail::arrow_to_cudf_type(*reduction_out->type);
+        // if this aggregation was a SUM0, and it was not valid, we want it to be a valid 0 instead
+ 				if (aggregation_types[i] == voltron::compute::AggregateKind::SUM0 && !reduction_out->is_valid){
  					std::shared_ptr<arrow::Int64Scalar> zero_scalar = std::make_shared<arrow::Int64Scalar>(0);
  					reductions.emplace_back(std::move(zero_scalar));
  				} else {
