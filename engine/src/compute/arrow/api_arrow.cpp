@@ -15,6 +15,7 @@
 #include <thrust/binary_search.h>
 
 #include "compute/arrow/detail/aggregations.h"
+#include "compute/arrow/detail/io.h"
 
 inline std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
   std::shared_ptr<arrow::Table> table,
@@ -543,5 +544,39 @@ upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
   //return nullptr;
   throw std::runtime_error("ERROR: upper_bound_split_functor BlazingSQL doesn't support this Arrow operator yet.");
 }
+
+template <> template <>
+inline std::unique_ptr<ral::frame::BlazingTable>
+io_read_file_data_functor<ral::io::DataType::PARQUET>::operator()<ral::frame::BlazingArrowTable>(
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        std::vector<int> column_indices,
+        std::vector<std::string> col_names,
+        std::vector<cudf::size_type> row_groups) const
+{
+    return read_parquet_arrow(file, column_indices, col_names, row_groups);
+}
+
+template <> template <>
+inline std::unique_ptr<ral::frame::BlazingTable>
+io_read_file_data_functor<ral::io::DataType::ORC>::operator()<ral::frame::BlazingArrowTable>(
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        std::vector<int> column_indices,
+        std::vector<std::string> col_names,
+        std::vector<cudf::size_type> row_groups) const
+{
+    // TODO percy arrow error
+    // TODO orc reader for cudf
+    return nullptr;
+}
+
+template <> template <>
+inline std::vector<std::pair<std::string, cudf::type_id>>
+io_read_file_schema_functor<ral::io::DataType::PARQUET>::operator()<ral::frame::BlazingArrowTable>(
+        std::shared_ptr<arrow::io::RandomAccessFile> file) const
+{
+    return parse_schema_arrow(file);
+    //return read_parquet_cudf(file, column_indices, col_names, row_groups);
+}
+
 //} // compute
 //} // voltron

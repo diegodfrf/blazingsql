@@ -1,5 +1,9 @@
 #pragma once
 
+// TODO percy make sub mod io
+#include <arrow/io/file.h>
+#include "io/DataType.h"
+
 #include "blazing_table/BlazingTable.h"
 
 // TODO percy arrow delete all cudf related stuff
@@ -336,6 +340,29 @@ struct upper_bound_split_functor {
       std::vector<cudf::null_order> const& null_precedence) const
   {
     throw std::runtime_error("ERROR: upper_bound_split_functor This default dispatcher operator should not be called.");
+  }
+};
+
+template <ral::io::DataType DataSourceType>
+struct io_read_file_data_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(
+      std::shared_ptr<arrow::io::RandomAccessFile> file,
+      std::vector<int> column_indices,
+      std::vector<std::string> col_names,
+      std::vector<cudf::size_type> row_groups) const
+  {
+    throw std::runtime_error("ERROR: io_read_parquet_functor This default dispatcher operator should not be called.");
+  }
+};
+
+template <ral::io::DataType DataSourceType>
+struct io_read_file_schema_functor {
+  template <typename T>
+  std::vector<std::pair<std::string, cudf::type_id>> operator()(
+      std::shared_ptr<arrow::io::RandomAccessFile> file) const
+  {
+    throw std::runtime_error("ERROR: io_read_parquet_functor This default dispatcher operator should not be called.");
   }
 };
 

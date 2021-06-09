@@ -37,6 +37,8 @@
 #include "compute/cudf/detail/search.h"
 #include "compute/cudf/detail/concatenate.h"
 #include "compute/cudf/detail/types.h"
+#include "compute/cudf/detail/io.h"
+
 #include "utilities/error.hpp"
 #include "blazing_table/BlazingCudfTable.h"
 
@@ -397,6 +399,39 @@ upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
     ret.push_back(std::make_shared<ral::frame::BlazingCudfTableView>(tb, sortedTable_view->column_names()));
   }
   return ret;
+}
+
+template <> template <>
+inline std::unique_ptr<ral::frame::BlazingTable>
+io_read_file_data_functor<ral::io::DataType::PARQUET>::operator()<ral::frame::BlazingCudfTable>(
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        std::vector<int> column_indices,
+        std::vector<std::string> col_names,
+        std::vector<cudf::size_type> row_groups) const
+{
+    return read_parquet_cudf(file, column_indices, col_names, row_groups);
+}
+
+template <> template <>
+inline std::unique_ptr<ral::frame::BlazingTable>
+io_read_file_data_functor<ral::io::DataType::ORC>::operator()<ral::frame::BlazingCudfTable>(
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        std::vector<int> column_indices,
+        std::vector<std::string> col_names,
+        std::vector<cudf::size_type> row_groups) const
+{
+    // TODO percy arrow error
+    // TODO orc reader for cudf
+    return nullptr;
+}
+
+template <> template <>
+inline std::vector<std::pair<std::string, cudf::type_id>>
+io_read_file_schema_functor<ral::io::DataType::PARQUET>::operator()<ral::frame::BlazingCudfTable>(
+        std::shared_ptr<arrow::io::RandomAccessFile> file) const
+{
+    return parse_schema_cudf(file);
+    //return read_parquet_cudf(file, column_indices, col_names, row_groups);
 }
 
 //} // compute
