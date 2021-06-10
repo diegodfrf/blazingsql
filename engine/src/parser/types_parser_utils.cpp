@@ -30,6 +30,9 @@ std::shared_ptr<arrow::DataType> get_common_type(std::shared_ptr<arrow::DataType
 		return type1;
 	} else if((is_type_float_arrow(type1->id()) && is_type_float_arrow(type2->id())) || (is_type_integer_arrow(type1->id()) && is_type_integer_arrow(type2->id()))) {
 		return (arrow::internal::GetByteWidth(*type1) >= arrow::internal::GetByteWidth(*type2))	? type1	: type2;
+	} else if(is_type_timestamp_arrow(type1->id()) && is_type_timestamp_arrow(type2->id())) {
+		// TODO: handle units better
+		return type1;
 	} else if ( is_type_string_arrow(type1->id()) && is_type_timestamp_arrow(type2->id()) ) {
 		return type2;
 	}
@@ -103,6 +106,7 @@ cudf::data_type arrow_type_to_cudf_data_type(arrow::Type::type arrow_type) {
 	case arrow::Type::DICTIONARY: return cudf::data_type(cudf::type_id::DICTIONARY32);
 	case arrow::Type::LIST: return cudf::data_type(cudf::type_id::LIST);
 	case arrow::Type::STRUCT: return cudf::data_type(cudf::type_id::STRUCT);
+	// TODO: for now we are handling just MILLI
 	case arrow::Type::TIMESTAMP: return cudf::data_type(cudf::type_id::TIMESTAMP_MILLISECONDS);
 	case arrow::Type::DURATION: return cudf::data_type(cudf::type_id::DURATION_MILLISECONDS);
 
@@ -153,13 +157,15 @@ std::shared_ptr<arrow::DataType> get_right_arrow_datatype(arrow::Type::type arro
     case arrow::Type::FLOAT: return arrow::float32();
     case arrow::Type::DOUBLE: return arrow::float64();
     case arrow::Type::STRING: return arrow::utf8();
+	// TODO: for now we are handling just MILLI
 	case arrow::Type::TIMESTAMP: return arrow::timestamp(arrow::TimeUnit::type::MILLI);
 	// TODO: enables more types
     default: return arrow::null();
     }
 }
 
-// TODO: improve this function
+// TODO: This function is just useful for few cases (BlazingHostTable , CPUCacheData)
+// Remove when it's needed
 std::shared_ptr<arrow::DataType> get_arrow_datatype_from_int_value(int32_t value) {
 	switch (value)
     {

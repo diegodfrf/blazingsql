@@ -81,6 +81,8 @@ TEST_SUITE:
                     order by 1 desc nulls first, 2 nulls last, 3 nulls last,
                     l_linenumber nulls last limit 10)
     SETUP:
+        SKIP_WITH:
+        - ORC
         COMPARE_WITH:
             ORC: spark
             OTHER: drill

@@ -209,6 +209,8 @@ TEST_SUITE:
               from lineitem where l_partkey < 1
               and l_orderkey < 2 and l_linenumber < 2
     SETUP:
+      SKIP_WITH:
+        - ORC
       COMPARE_WITH:
         ORC: spark
         OTHER: drill
@@ -222,6 +224,8 @@ TEST_SUITE:
           select l_returnflag, l_shipdate, l_linestatus
           from lineitem where l_orderkey = 3
     SETUP:
+      SKIP_WITH:
+        - ORC
       COMPARE_WITH:
         ORC: spark
         OTHER: drill
@@ -244,6 +248,8 @@ TEST_SUITE:
               o_orderstatus as s2, o_orderkey as l1
           from orders where o_totalprice < 350
     SETUP:
+      SKIP_WITH:
+        - ORC
       COMPARE_WITH:
         ORC: spark
         OTHER: drill
