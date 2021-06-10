@@ -1532,14 +1532,19 @@ std::string reinterpret_timestamp(std::string expression, std::vector<std::share
 	}
 
 	auto type = std::dynamic_pointer_cast<arrow::TimestampType>(table_schema[col_indice]);
-	if (type->unit() == arrow::TimeUnit::type::SECOND) {
-		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_SECONDS");
-	} else if (type->unit() == arrow::TimeUnit::type::MILLI) {
-		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_MILLISECONDS");
-	} else if (type->unit() == arrow::TimeUnit::type::MICRO) {
-		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_MICROSECONDS");
+
+	if(type!=nullptr){
+		if (type->unit() == arrow::TimeUnit::type::SECOND) {
+			expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_SECONDS");
+		} else if (type->unit() == arrow::TimeUnit::type::MILLI) {
+			expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_MILLISECONDS");
+		} else if (type->unit() == arrow::TimeUnit::type::MICRO) {
+			expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_MICROSECONDS");
+		} else {
+			expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP"); //default
+		}
 	} else {
-		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP");
+		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP"); //default
 	}
 
 	return expression;
