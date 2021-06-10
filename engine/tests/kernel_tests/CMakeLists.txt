@@ -9,14 +9,12 @@ configure_test(kernel_projection_test "${kernel_projection_test_sources}")
 # configure_test(window_overlap_kernel_test "${window_overlap_kernel_test_sources}")
 
 
-message("CONDA_PREFIX=${CONDA_PREFIX}")
-if( CONDA_PREFIX )
-    message("${CONDA_PREFIX} evaluates to True")
-    set(DATASET_PATH ${CONDA_PREFIX}/blazingsql-testing-files/data/tpch)
-    set(compute_test_sources
-        generators/data_generator.cpp
-        compute_test.cpp
-        )
-    configure_test(compute_test "${compute_test_sources}")
-endif()
+set(DATASET_PATH $ENV{CONDA_PREFIX}/blazingsql-testing-files/data/tpch)
+message("TPCH Dataset Path {DATASET_PATH}")
 
+set(compute_test_sources
+    generators/data_generator.cpp
+    compute_test.cpp
+    )
+configure_test(compute_test "${compute_test_sources}")
+target_compile_definitions(compute_test PUBLIC -DDATASET_PATH="${DATASET_PATH}")

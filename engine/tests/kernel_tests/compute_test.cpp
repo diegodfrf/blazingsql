@@ -3,11 +3,13 @@
 
 #include <chrono>
 #include <thread>
+#include <iostream>
 
 #include "blazing_table/BlazingCudfTable.h"
 #include "execution_kernels/BatchProjectionProcessing.h"
 //#include <gtest/gtest.h>
 #include <cudf_test/table_utilities.hpp>
+#include <arrow/pretty_print.h>
 
 #include "bmr/initializer.h"
 #include "compute/cudf/detail/types.h"
@@ -85,6 +87,10 @@ struct ComputeTestParam {
       if (this->preferred_compute.id() == ral::execution::backend_id::ARROW) {
         std::unique_ptr<ral::frame::BlazingArrowTable> arrow_table =
             static_unique_pointer_cast<ral::frame::BlazingArrowTable>(std::move(result));
+
+        auto status = arrow::PrettyPrint(*arrow_table->to_table_view()->view(), {0}, &std::cout);
+	      ASSERT_EQ(status.ok(), true);
+
         ral::frame::BlazingCudfTable blazingCudfTable =
             ral::frame::BlazingCudfTable(std::move(arrow_table));  //
         auto result_view = blazingCudfTable.to_table_view();
@@ -151,6 +157,7 @@ struct ComputeTest : public ::testing::TestWithParam<ComputeTestParam> {
 };
 
 const std::vector<ComputeTestParam> compute_test_params = {
+    // query = "select n_regionkey, n_nationkey from nation where n_nationkey < 6"
     ComputeTestParam{
         .logical_plan = R"({
                 'expr': 'BindableTableScan(table=[[main, nation]], filters=[[<($0, 6)]], projects=[[0, 2]], aliases=[[n_nationkey, n_regionkey]])',
@@ -161,19 +168,20 @@ const std::vector<ComputeTestParam> compute_test_params = {
         .compare_with = ral::execution::backend_id::CUDF
     },
     // TODO: Fix this case: Error converting arrowTable to cudfTable
-    /*ComputeTestParam{
+    // query = "select n_regionkey, n_nationkey from nation group by n_regionkey, n_nationkey"
+    ComputeTestParam{
         .logical_plan = R"({
                 'expr': 'LogicalAggregate(group=[{0, 1}])',
-		'children': [
-                  {
-                          'expr': 'BindableTableScan(table=[[main, nation]], projects=[[2, 0]], aliases=[[n_regionkey, n_nationkey]]',
-                          'children': []
-                  }
-                ]
-	})",
+                'children': [
+                              {
+                                      'expr': 'BindableTableScan(table=[[main, nation]], projects=[[0, 2]], aliases=[[n_nationkey, n_regionkey]]',
+                                      'children': []
+                              }
+                            ]
+              })",
         .preferred_compute = ral::execution::execution_backend{ral::execution::backend_id::ARROW},
-        .compare_with = ral::execution::backend_id::CUDF
-    },*/
+        .compare_with = ral::execution::backend_id::NONE // change to CUDF when this is fixed
+    },
 };
 
 TEST_P(ComputeTest, SimpleQueriesTest){
