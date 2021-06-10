@@ -2,10 +2,7 @@
 #define _BZ_RAL_ARGS_UTIL_H_
 
 #include "io/io.h"
-#include <cudf/io/json.hpp>
-#include <cudf/io/orc.hpp>
-#include <cudf/io/datasource.hpp>
-#include "../data_provider/sql/AbstractSQLDataProvider.h"
+#include "io/data_provider/sql/AbstractSQLDataProvider.h"
 
 namespace ral {
 namespace io {
@@ -23,10 +20,6 @@ char ord(std::string value);
 int to_int(std::string value);
 
 std::vector<std::string> to_vector_string(std::string value);
-
-cudf::io::json_reader_options getJsonReaderOptions(const std::map<std::string, std::string> & args, cudf::io::arrow_io_source & arrow_source);
-
-cudf::io::orc_reader_options getOrcReaderOptions(const std::map<std::string, std::string> & args, cudf::io::arrow_io_source & arrow_source);
 
 std::map<std::string, std::string> to_map(std::vector<std::string> arg_keys, std::vector<std::string> arg_values);
 

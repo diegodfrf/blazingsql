@@ -434,9 +434,19 @@ io_read_file_data_functor<ral::io::DataType::ORC>::operator()<ral::frame::Blazin
         std::vector<cudf::size_type> row_groups,
         const std::map<std::string, std::string> &args_map) const
 {
-    // TODO percy arrow error
-    // TODO orc reader for cudf
-    return nullptr;
+    return voltron::compute::cudf_backend::io::read_orc_file(file, column_indices, col_names, row_groups, args_map);
+}
+
+template <> template <>
+inline std::unique_ptr<ral::frame::BlazingTable>
+io_read_file_data_functor<ral::io::DataType::JSON>::operator()<ral::frame::BlazingCudfTable>(
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        std::vector<int> column_indices,
+        std::vector<std::string> col_names,
+        std::vector<cudf::size_type> row_groups,
+        const std::map<std::string, std::string> &args_map) const
+{
+    return voltron::compute::cudf_backend::io::read_json_file(file, column_indices, col_names, row_groups, args_map);
 }
 
 template <> template <>
@@ -457,6 +467,26 @@ io_parse_file_schema_functor<ral::io::DataType::CSV>::operator()<ral::frame::Bla
         const std::map<std::string, std::string> &args_map) const
 {
     voltron::compute::cudf_backend::io::parse_csv_schema(schema_out, file, args_map);
+}
+
+template <> template <>
+inline void
+io_parse_file_schema_functor<ral::io::DataType::ORC>::operator()<ral::frame::BlazingCudfTable>(
+        ral::io::Schema & schema_out,
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        const std::map<std::string, std::string> &args_map) const
+{
+    voltron::compute::cudf_backend::io::parse_orc_schema(schema_out, file, args_map);
+}
+
+template <> template <>
+inline void
+io_parse_file_schema_functor<ral::io::DataType::JSON>::operator()<ral::frame::BlazingCudfTable>(
+        ral::io::Schema & schema_out,
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        const std::map<std::string, std::string> &args_map) const
+{
+    voltron::compute::cudf_backend::io::parse_json_schema(schema_out, file, args_map);
 }
 
 //} // compute

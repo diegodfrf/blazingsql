@@ -4,9 +4,11 @@
 
 #include <numeric>
 
-#include <cudf/io/parquet.hpp>
 #include <cudf/io/datasource.hpp>
+#include <cudf/io/parquet.hpp>
 #include <cudf/io/csv.hpp>
+#include <cudf/io/json.hpp>
+#include <cudf/io/orc.hpp>
 
 #include <blazingdb/io/Library/Logging/Logger.h>
 
@@ -122,6 +124,51 @@ cudf::io::csv_reader_options getCsvReaderOptions(const std::map<std::string, std
 	return reader_opts;
 }
 
+cudf::io::json_reader_options getJsonReaderOptions(const std::map<std::string, std::string> & args, cudf::io::arrow_io_source & arrow_source)
+{
+	cudf::io::json_reader_options reader_opts = cudf::io::json_reader_options::builder(cudf::io::source_info{&arrow_source});
+	reader_opts.enable_lines(true);
+	if(ral::io::map_contains("dtype", args)) {
+		reader_opts.dtypes(ral::io::to_vector_string(args.at("dtype")));
+	}
+	if(ral::io::map_contains("compression", args)) {
+		reader_opts.compression(static_cast<cudf::io::compression_type>(ral::io::to_int(args.at("compression"))));
+	}
+	if(ral::io::map_contains("lines", args)) {
+		reader_opts.enable_lines(ral::io::to_bool(args.at("lines")));
+	}
+	if(ral::io::map_contains("dayfirst", args)) {
+		reader_opts.enable_dayfirst(ral::io::to_bool(args.at("dayfirst")));
+	}
+	if(ral::io::map_contains("byte_range_offset", args)) {
+		reader_opts.set_byte_range_offset( (size_t) ral::io::to_int(args.at("byte_range_offset")) );
+	}
+	if(ral::io::map_contains("byte_range_size", args)) {
+		reader_opts.set_byte_range_size( (size_t) ral::io::to_int(args.at("byte_range_size")) );
+	}
+	return reader_opts;
+}
+
+cudf::io::orc_reader_options getOrcReaderOptions(const std::map<std::string, std::string> & args, cudf::io::arrow_io_source & arrow_source)
+{
+	cudf::io::orc_reader_options reader_opts = cudf::io::orc_reader_options::builder(cudf::io::source_info{&arrow_source});
+	if(ral::io::map_contains("stripes", args)) {
+		reader_opts.set_stripes(ral::io::to_vector_int(args.at("stripes")));
+	}
+	if(ral::io::map_contains("skiprows", args)) {
+		reader_opts.set_skip_rows(ral::io::to_int(args.at("skiprows")));
+	}
+	if(ral::io::map_contains("num_rows", args)) {
+		reader_opts.set_num_rows(ral::io::to_int(args.at("num_rows")));
+	}
+	if(ral::io::map_contains("use_index", args)) {
+		reader_opts.enable_use_index(ral::io::to_int(args.at("use_index")));
+	} else {
+		reader_opts.enable_use_index(true);
+	}
+	return reader_opts;
+}
+
 std::unique_ptr<ral::frame::BlazingTable> read_parquet_file(
     std::shared_ptr<arrow::io::RandomAccessFile> file,
     std::vector<int> column_indices,
@@ -213,6 +260,54 @@ std::unique_ptr<ral::frame::BlazingTable> read_csv_file(
   return std::make_unique<ral::frame::BlazingCudfTable>(std::move(cudf_tb), column_names_out);
 }
 
+
+std::unique_ptr<ral::frame::BlazingTable> read_orc_file(
+    std::shared_ptr<arrow::io::RandomAccessFile> file,
+    std::vector<int> column_indices,
+    std::vector<std::string> col_names,
+    std::vector<cudf::size_type> row_groups,
+    const std::map<std::string, std::string> &args_map)
+{
+  // Fill data to orc_opts
+  auto arrow_source = cudf::io::arrow_io_source{file};
+  cudf::io::orc_reader_options orc_opts = getOrcReaderOptions(args_map, arrow_source);
+
+  orc_opts.set_columns(col_names);
+  orc_opts.set_stripes(row_groups);
+
+  auto result = cudf::io::read_orc(orc_opts);
+
+  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result.tbl), result.metadata.column_names);
+}
+
+std::unique_ptr<ral::frame::BlazingTable> read_json_file(
+    std::shared_ptr<arrow::io::RandomAccessFile> file,
+    std::vector<int> column_indices,
+    std::vector<std::string> col_names,
+    std::vector<cudf::size_type> row_groups,
+    const std::map<std::string, std::string> &args_map)
+{
+  auto arrow_source = cudf::io::arrow_io_source{file};
+  cudf::io::json_reader_options json_opts = getJsonReaderOptions(args_map, arrow_source);
+  
+  cudf::io::table_with_metadata json_table = cudf::io::read_json(json_opts);
+  
+  auto columns = json_table.tbl->release();
+  auto column_names = std::move(json_table.metadata.column_names);
+  
+  // We just need the columns in column_indices
+  std::vector<std::unique_ptr<cudf::column>> selected_columns;
+  selected_columns.reserve(column_indices.size());
+  std::vector<std::string> selected_column_names;
+  selected_column_names.reserve(column_indices.size());
+  for(auto && i : column_indices) {
+    selected_columns.push_back(std::move(columns[i]));
+    selected_column_names.push_back(std::move(column_names[i]));
+  }
+  
+  return std::make_unique<ral::frame::BlazingCudfTable>(
+    std::make_unique<cudf::table>(std::move(selected_columns)), selected_column_names);
+}
 void parse_parquet_schema(
     ral::io::Schema & schema_out,
     std::shared_ptr<arrow::io::RandomAccessFile> file)
@@ -266,6 +361,56 @@ void parse_csv_schema(
 		std::string name = table_out.metadata.column_names.at(i);
 		schema_out.add_column(name, type, file_index, is_in_file);
 	}
+}
+
+void parse_orc_schema(
+    ral::io::Schema & schema_out,
+    std::shared_ptr<arrow::io::RandomAccessFile> file,
+    const std::map<std::string, std::string> &args_map)
+{
+  auto arrow_source = cudf::io::arrow_io_source{file};
+  cudf::io::orc_reader_options orc_opts = getOrcReaderOptions(args_map, arrow_source);
+  orc_opts.set_num_rows(1);
+  
+  cudf::io::table_with_metadata table_out = cudf::io::read_orc(orc_opts);
+  file->Close();
+  
+  for(cudf::size_type i = 0; i < table_out.tbl->num_columns() ; i++) {
+    std::string name = table_out.metadata.column_names[i];
+    cudf::type_id type = table_out.tbl->get_column(i).type().id();
+    size_t file_index = i;
+    bool is_in_file = true;
+    schema_out.add_column(name, type, file_index, is_in_file);
+  }
+}
+
+void parse_json_schema(
+    ral::io::Schema & schema_out,
+    std::shared_ptr<arrow::io::RandomAccessFile> file,
+    const std::map<std::string, std::string> &args_map)
+{
+  auto arrow_source = cudf::io::arrow_io_source{file};
+  cudf::io::json_reader_options args = getJsonReaderOptions(args_map, arrow_source);
+  
+  int64_t num_bytes = file->GetSize().ValueOrDie();
+  
+  // lets only read up to 48192 bytes. We are assuming that a full row will always be less than that
+  if(num_bytes > 48192) {
+    num_bytes = 48192;
+  }
+  args.set_byte_range_offset(0);
+  args.set_byte_range_size(num_bytes);
+  
+  cudf::io::table_with_metadata table_and_metadata = cudf::io::read_json(args);
+  file->Close();
+  
+  for(auto i = 0; i < table_and_metadata.tbl->num_columns(); i++) {
+    std::string name = table_and_metadata.metadata.column_names[i];
+    cudf::type_id type = table_and_metadata.tbl->get_column(i).type().id();
+    size_t file_index = i;
+    bool is_in_file = true;
+    schema_out.add_column(name, type, file_index, is_in_file);
+  }
 }
 
 } // namespace io

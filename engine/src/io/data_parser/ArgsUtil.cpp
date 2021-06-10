@@ -90,51 +90,6 @@ std::vector<int> to_vector_int(std::string value) {
 	return ret;
 }
 
-cudf::io::json_reader_options getJsonReaderOptions(const std::map<std::string, std::string> & args, cudf::io::arrow_io_source & arrow_source) {
-
-	cudf::io::json_reader_options reader_opts = cudf::io::json_reader_options::builder(cudf::io::source_info{&arrow_source});
-	reader_opts.enable_lines(true);
-	if(map_contains("dtype", args)) {
-		reader_opts.dtypes(to_vector_string(args.at("dtype")));
-	}
-	if(map_contains("compression", args)) {
-		reader_opts.compression(static_cast<cudf::io::compression_type>(to_int(args.at("compression"))));
-	}
-	if(map_contains("lines", args)) {
-		reader_opts.enable_lines(to_bool(args.at("lines")));
-	}
-	if(map_contains("dayfirst", args)) {
-		reader_opts.enable_dayfirst(to_bool(args.at("dayfirst")));
-	}
-	if(map_contains("byte_range_offset", args)) {
-		reader_opts.set_byte_range_offset( (size_t) to_int(args.at("byte_range_offset")) );
-	}
-	if(map_contains("byte_range_size", args)) {
-		reader_opts.set_byte_range_size( (size_t) to_int(args.at("byte_range_size")) );
-	}
-	return reader_opts;
-}
-
-cudf::io::orc_reader_options getOrcReaderOptions(const std::map<std::string, std::string> & args, cudf::io::arrow_io_source & arrow_source) {
-
-	cudf::io::orc_reader_options reader_opts = cudf::io::orc_reader_options::builder(cudf::io::source_info{&arrow_source});
-	if(map_contains("stripes", args)) {
-		reader_opts.set_stripes(to_vector_int(args.at("stripes")));
-	}
-	if(map_contains("skiprows", args)) {
-		reader_opts.set_skip_rows(to_int(args.at("skiprows")));
-	}
-	if(map_contains("num_rows", args)) {
-		reader_opts.set_num_rows(to_int(args.at("num_rows")));
-	}
-	if(map_contains("use_index", args)) {
-		reader_opts.enable_use_index(to_int(args.at("use_index")));
-	} else {
-		reader_opts.enable_use_index(true);
-	}
-	return reader_opts;
-}
-
 std::map<std::string, std::string> to_map(std::vector<std::string> arg_keys, std::vector<std::string> arg_values) {
 	std::map<std::string, std::string> ret;
 	for(size_t i = 0; i < arg_keys.size(); ++i) {
