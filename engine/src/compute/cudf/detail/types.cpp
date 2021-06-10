@@ -21,7 +21,7 @@ void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table, 
 	}
 	std::vector<std::unique_ptr<ral::frame::BlazingColumn>> columns = table->releaseBlazingColumns();
 	for (size_t i = 0; i < column_indices.size(); i++){
-		cudf::data_type type_to_cast = arrow_type_to_cudf_data_type(types[i]->id());
+		cudf::data_type type_to_cast = columns[i]->view().type();
 		if (!(columns[column_indices[i]]->view().type() == type_to_cast)){
 			std::unique_ptr<cudf::column> casted = cudf::cast(columns[column_indices[i]]->view(), type_to_cast);
 			columns[column_indices[i]] = std::make_unique<ral::frame::BlazingColumnOwner>(std::move(casted));

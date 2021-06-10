@@ -103,6 +103,9 @@ cudf::data_type arrow_type_to_cudf_data_type(arrow::Type::type arrow_type) {
 	case arrow::Type::DICTIONARY: return cudf::data_type(cudf::type_id::DICTIONARY32);
 	case arrow::Type::LIST: return cudf::data_type(cudf::type_id::LIST);
 	case arrow::Type::STRUCT: return cudf::data_type(cudf::type_id::STRUCT);
+	case arrow::Type::TIMESTAMP: return cudf::data_type(cudf::type_id::TIMESTAMP_MILLISECONDS);
+	case arrow::Type::DURATION: return cudf::data_type(cudf::type_id::DURATION_MILLISECONDS);
+
 		// TODO: enables more types
 		/*
 		case arrow::Type::TIMESTAMP: {
