@@ -208,7 +208,7 @@ def init_spark_schema(spark, dir_data_lc, **kwargs):
         dir_data_lc = dir_data_lc + "smiles/"
         table_names=smilesTables
     else:
-        if testsWithNulls == "true":
+        if testsWithNulls:
             dir_data_lc = dir_data_lc + "tpch-with-nulls/"
         else:
             dir_data_lc = dir_data_lc + "tpch/"
@@ -232,7 +232,7 @@ def init_spark_schema(spark, dir_data_lc, **kwargs):
     nullable = True
 
     bool_test = kwargs.get("bool_test", None)
-    if bool_test and testsWithNulls != "true":
+    if bool_test and not testsWithNulls:
         bool_orders_df = spark.read.orc(dir_data_lc + "/bool_orders_*.psv")
         bool_orders_df.createOrReplaceTempView("bool_orders")
 
@@ -408,7 +408,7 @@ def init_drill_schema(drill, dir_data_lc, **kwargs):
         dir_data_lc = dir_data_lc + "smiles/"
         table_names=smilesTables
     else:
-        if testsWithNulls == "true":
+        if testsWithNulls:
             dir_data_lc = dir_data_lc + "tpch-with-nulls/"
         else:
             dir_data_lc = dir_data_lc + "tpch/"
@@ -1384,7 +1384,7 @@ def create_tables(bc, dir_data_lc, fileSchemaType, **kwargs):
     if tables[0] in smilesTables:
         dir_data_lc = dir_data_lc + "smiles/"
     else:
-        if testsWithNulls == "true":
+        if testsWithNulls:
             dir_data_lc = dir_data_lc + "tpch-with-nulls/"
         else:
             dir_data_lc = dir_data_lc + "tpch/"

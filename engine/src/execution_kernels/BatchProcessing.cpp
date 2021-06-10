@@ -71,7 +71,6 @@ bool BatchSequenceBypass::has_next_now() {
 
 // END BatchSequenceBypass
 
-
 // BEGIN Print
 
 kstatus Print::run() {

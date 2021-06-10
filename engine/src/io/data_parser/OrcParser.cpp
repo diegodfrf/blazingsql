@@ -11,7 +11,7 @@
 namespace ral {
 namespace io {
 
-orc_parser::orc_parser(std::map<std::string, std::string> args_map_) 
+orc_parser::orc_parser(std::map<std::string, std::string> args_map_)
   : args_map{args_map_} {}
 
 orc_parser::~orc_parser() {
@@ -72,7 +72,9 @@ void orc_parser::parse_schema(ral::execution::execution_backend preferred_comput
 }
 
 std::unique_ptr<ral::frame::BlazingTable> orc_parser::get_metadata(ral::execution::execution_backend preferred_compute,
-	std::vector<ral::io::data_handle> handles, int offset) {
+	std::vector<ral::io::data_handle> handles, int offset,
+	std::map<std::string, std::string> args_map)
+{
 	std::vector<size_t> num_stripes(handles.size());
 	std::vector<cudf::io::parsed_orc_statistics> statistics(handles.size());
 	for(size_t file_index = 0; file_index < handles.size(); file_index++) {

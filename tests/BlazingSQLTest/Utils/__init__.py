@@ -33,9 +33,9 @@ def skip_test(dask_client, nRals, fileSchemaType, queryType):
     executionMode = Settings.data['RunSettings']['executionMode']
 
     if fileSchemaType == DataType.DASK_CUDF:
-        # Skipping combination DASK_CUDF and testsWithNulls="true"
+        # Skipping combination DASK_CUDF and testsWithNulls=True
         # due to https://github.com/rapidsai/cudf/issues/7572
-        if dask_client is None or testsWithNulls == "true":
+        if dask_client is None or testsWithNulls:
             return True
 
     if fileSchemaType == DataType.CUDF:
@@ -44,7 +44,7 @@ def skip_test(dask_client, nRals, fileSchemaType, queryType):
         # on gdf tables with nRals>1
         skip = False
         if int(nRals) > 1:
-            if dask_client is None or testsWithNulls == "true":
+            if dask_client is None or testsWithNulls:
                 return True
 
         return skip
@@ -137,14 +137,18 @@ def init_context(useProgressBar: bool = False, config_options={"ENABLE_GENERAL_E
                                  "ENABLE_COMMS_LOGS": True,
                                  "ENABLE_TASK_LOGS": True,
                                  "ENABLE_OTHER_ENGINE_LOGS": True}):
-    bc = None
-    dask_client = None
-    nRals = int(Settings.data["RunSettings"]["nRals"])
-    nGpus = int(Settings.data["RunSettings"]["nGPUs"])
+    bc                = None
+    dask_client       = None
+    nRals             = Settings.data["RunSettings"]["nRals"]
+    nGpus             = Settings.data["RunSettings"]["nGPUs"]
+    output_type       = Settings.data["RunSettings"]["output_type"]
+    preferred_compute = Settings.data["RunSettings"]["preferred_compute"]
     if nRals == 1:
         bc = BlazingContext(
             config_options=config_options,
-            enable_progress_bar=True
+            enable_progress_bar=True,
+            output_type=output_type,
+            preferred_compute=preferred_compute
         )
     else:
         os.chdir(Settings.data["TestSettings"]["logDirectory"])
@@ -163,13 +167,18 @@ def init_context(useProgressBar: bool = False, config_options={"ENABLE_GENERAL_E
                 # initial_pool_size=300000000,
                 allocator="default",
                 config_options=config_options,
-                enable_progress_bar=True
+                enable_progress_bar=True,
+                output_type=output_type,
+                preferred_compute=preferred_compute
             )
         else:
             # Fallback: could not found a valid dask server
             bc = BlazingContext(
                 config_options=config_options,
-                enable_progress_bar=True)
+                enable_progress_bar=True,
+                output_type=output_type,
+                preferred_compute=preferred_compute
+            )
 
     return (bc, dask_client)
 

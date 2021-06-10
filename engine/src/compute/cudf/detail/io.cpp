@@ -1,5 +1,7 @@
 #include "compute/cudf/detail/io.h"
 
+#include <sys/types.h>
+
 #include <numeric>
 
 #include <cudf/io/parquet.hpp>
@@ -156,6 +158,7 @@ std::unique_ptr<ral::frame::BlazingTable> read_csv_file(
     std::vector<cudf::size_type> row_groups,
     const std::map<std::string, std::string> &args_map)
 {
+  
   // copy column_indices into use_col_indexes (at the moment is ordered only)
   auto arrow_source = cudf::io::arrow_io_source{file};
   cudf::io::csv_reader_options args = getCsvReaderOptions(args_map, arrow_source);
@@ -173,7 +176,10 @@ std::unique_ptr<ral::frame::BlazingTable> read_csv_file(
   auto iter = args_map.find("max_bytes_chunk_read");
   if(iter != args_map.end()) {
     auto chunk_size = std::stoll(iter->second);
-    args.set_byte_range_size(chunk_size);
+    if (chunk_size > 0) {
+      args.set_byte_range_offset(chunk_size * row_groups[0]);
+      args.set_byte_range_size(chunk_size);
+    }
   }
 
   cudf::io::table_with_metadata csv_table = cudf::io::read_csv(args);
@@ -206,7 +212,6 @@ std::unique_ptr<ral::frame::BlazingTable> read_csv_file(
   std::unique_ptr<cudf::table> cudf_tb = std::make_unique<cudf::table>(std::move(columns_out));
   return std::make_unique<ral::frame::BlazingCudfTable>(std::move(cudf_tb), column_names_out);
 }
-
 
 void parse_parquet_schema(
     ral::io::Schema & schema_out,

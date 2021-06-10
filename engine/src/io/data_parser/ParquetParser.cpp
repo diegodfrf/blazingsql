@@ -62,7 +62,9 @@ void parquet_parser::parse_schema(ral::execution::execution_backend preferred_co
 }
 
 std::unique_ptr<ral::frame::BlazingTable> parquet_parser::get_metadata(ral::execution::execution_backend preferred_compute,
-	std::vector<ral::io::data_handle> handles, int offset){
+	std::vector<ral::io::data_handle> handles, int offset,
+	std::map<std::string, std::string> args_map)
+{
   // TODO percy arrow
 	std::vector<size_t> num_row_groups(handles.size());
 	BlazingThread threads[handles.size()];

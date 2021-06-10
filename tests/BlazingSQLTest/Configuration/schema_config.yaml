@@ -1,0 +1,26 @@
+TEST_SETTINGS:
+  LOG_DIRECTORY: str()
+  DATA_SIZE: str()
+  EXECUTION_ENV: str()
+  DASK_CONNECTION: str()
+
+RUN_SETTINGS:
+  OUTPUT_TYPE: enum('pandas','cudf')
+  PREFERRED_COMPUTE: enum('arrow','cudf')
+  EXEC_MODE: enum('gpuci','full','generator')
+  NGPUS: int()
+  NETWORK_INTERFACE: str()
+  WORKSHEET: str()
+  LOG_INFO: any(str(), null())
+  NRALS: int()
+  CONCURRENT: any(bool(),list(bool()))
+  TEST_WITH_NULLS: any(bool(),list(bool()))
+
+SETUP:
+  APPLY_ORDER: bool()
+  USE_PERCENTAGE: bool()
+  ACCEPTABLE_DIFFERENCE: num()
+  PRINT_RESULT: bool()
+  COMPARE_WITH: enum('drill','spark')
+  COMPARING: bool()
+  DATA_TYPES: list(enum('CUDF','DASK_CUDF','ORC','PARQUET','CSV','JSON'))
