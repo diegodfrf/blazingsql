@@ -54,16 +54,11 @@ void parquet_parser::parse_schema(ral::execution::execution_backend preferred_co
 		return; // if the file has no rows, we dont want cudf_io to try to read it
 	}
 
-  auto fields = ral::execution::backend_dispatcher(
-                  preferred_compute,
-                  io_read_file_schema_functor<ral::io::DataType::PARQUET>(),
-                  file);
-
-	for(int i = 0; i < fields.size(); ++i) {
-		size_t file_index = i;
-		bool is_in_file = true;
-		schema.add_column(fields[i].first, fields[i].second, file_index, is_in_file);
-	}
+  ral::execution::backend_dispatcher(
+        preferred_compute,
+        io_parse_file_schema_functor<ral::io::DataType::PARQUET>(),
+        schema,
+        file);
 }
 
 std::unique_ptr<ral::frame::BlazingTable> parquet_parser::get_metadata(ral::execution::execution_backend preferred_compute,

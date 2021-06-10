@@ -5,6 +5,7 @@
 #include "io/DataType.h"
 
 #include "blazing_table/BlazingTable.h"
+#include "io/Schema.h"
 
 // TODO percy arrow delete all cudf related stuff
 #include <cudf/detail/rolling.hpp>
@@ -350,17 +351,20 @@ struct io_read_file_data_functor {
       std::shared_ptr<arrow::io::RandomAccessFile> file,
       std::vector<int> column_indices,
       std::vector<std::string> col_names,
-      std::vector<cudf::size_type> row_groups) const
+      std::vector<cudf::size_type> row_groups,
+      const std::map<std::string, std::string> &args_map = {}) const
   {
     throw std::runtime_error("ERROR: io_read_parquet_functor This default dispatcher operator should not be called.");
   }
 };
 
 template <ral::io::DataType DataSourceType>
-struct io_read_file_schema_functor {
+struct io_parse_file_schema_functor {
   template <typename T>
-  std::vector<std::pair<std::string, cudf::type_id>> operator()(
-      std::shared_ptr<arrow::io::RandomAccessFile> file) const
+  void operator()(
+      ral::io::Schema & schema_out,
+      std::shared_ptr<arrow::io::RandomAccessFile> file,
+      const std::map<std::string, std::string> &args_map = {}) const
   {
     throw std::runtime_error("ERROR: io_read_parquet_functor This default dispatcher operator should not be called.");
   }

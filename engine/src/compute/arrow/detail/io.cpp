@@ -8,7 +8,12 @@
 // TODO percy arrow c.cordova remove this header
 #include <cudf/detail/interop.hpp>
 
-std::unique_ptr<ral::frame::BlazingTable> read_parquet_arrow(
+namespace voltron {
+namespace compute {
+namespace arrow_backend {
+namespace io {
+
+std::unique_ptr<ral::frame::BlazingTable> read_parquet_file(
     std::shared_ptr<arrow::io::RandomAccessFile> file,
     std::vector<int> column_indices,
     std::vector<std::string> col_names,
@@ -47,7 +52,10 @@ std::unique_ptr<ral::frame::BlazingTable> read_parquet_arrow(
   return std::make_unique<ral::frame::BlazingArrowTable>(table);
 }
 
-std::vector<std::pair<std::string, cudf::type_id>> parse_schema_arrow(std::shared_ptr<arrow::io::RandomAccessFile> file) {
+void parse_parquet_schema(
+    ral::io::Schema & schema_out,
+    std::shared_ptr<arrow::io::RandomAccessFile> file)
+{
   // TODO percy arrow move common parquet reader code here (avoid open the file twice)
   auto parquet_reader = parquet::ParquetFileReader::Open(file);
   std::shared_ptr<parquet::FileMetaData> parquet_metadata = parquet_reader->metadata();
@@ -55,12 +63,19 @@ std::vector<std::pair<std::string, cudf::type_id>> parse_schema_arrow(std::share
   parquet::ArrowReaderProperties props;
   // TODO percy arrow handle error
   parquet::arrow::FromParquetSchema(parquet_metadata->schema(), props, &arrow_schema);
-  std::vector<std::pair<std::string, cudf::type_id>> ret;
-  ret.resize(arrow_schema->fields().size());
   for(int i = 0; i < arrow_schema->fields().size(); i++) {
 		cudf::type_id type = cudf::detail::arrow_to_cudf_type(*arrow_schema->field(i)->type()).id();
 		std::string name = arrow_schema->field(i)->name();
-    ret[i] = std::make_pair(name, type);
+    size_t file_index = i;
+		bool is_in_file = true;
+    schema_out.add_column(
+          name,
+          type,
+          file_index, is_in_file);
   }
-  return ret;
 }
+
+} // namespace io
+} // namespace arrow_backend
+} // namespace compute
+} // namespace voltron
