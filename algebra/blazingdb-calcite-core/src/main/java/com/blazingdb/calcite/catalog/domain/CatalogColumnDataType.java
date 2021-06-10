@@ -1,21 +1,5 @@
 package com.blazingdb.calcite.catalog.domain;
 
-//// TODO: handle situations where our column type is timestamp of not the default millisecond resolution
-//GDF_invalid,
-//GDF_INT8,
-//GDF_INT16,
-//GDF_INT32,
-//GDF_INT64,
-//GDF_FLOAT32,
-//GDF_FLOAT64,
-//GDF_BOOL8,
-//GDF_DATE32,	/**< int32_t days since the UNIX epoch */
-//GDF_DATE64,	/**< int64_t milliseconds since the UNIX epoch */
-//GDF_TIMESTAMP, /**< Exact timestamp encoded with int64 since UNIX epoch (Default unit millisecond) */
-//GDF_CATEGORY,
-//GDF_STRING,
-//GDF_STRING_CATEGORY;
-
 public enum CatalogColumnDataType {
 	// See arrow/type_fwwd.h type enum
 	NA(0, "NA"),
@@ -52,15 +36,15 @@ public enum CatalogColumnDataType {
     /// in other programming languages. Holds the dictionary value
     /// type but not the dictionary itself, which is part of the
     /// ArrayData struct
-    DICTIONARY(29, "DICTIONARY"),
-    MAP(29, "MAP"),	/// Map, a repeated struct logical type
-    EXTENSION(29, "EXTENSION"), /// Custom data type, implemented by user
-    FIXED_SIZE_LIST(29, "FIXED_SIZE_LIST"), /// Fixed size list of some logical type
-    DURATION(29, "DURATION"),    /// Measure of elapsed time in either seconds, milliseconds, microseconds  or nanoseconds.
-    LARGE_STRING(29, "LARGE_STRING"),  /// Like STRING, but with 64-bit offsets
-    LARGE_BINARY(29, "LARGE_BINARY"),  /// Like BINARY, but with 64-bit offsets
-    LARGE_LIST(29, "LARGE_LIST"),   /// Like LIST, but with 64-bit offsets
-    MAX_ID(29, "MAX_ID");     // Leave this at the end
+    DICTIONARY(30, "DICTIONARY"),
+    MAP(31, "MAP"),	/// Map, a repeated struct logical type
+    EXTENSION(32, "EXTENSION"), /// Custom data type, implemented by user
+    FIXED_SIZE_LIST(33, "FIXED_SIZE_LIST"), /// Fixed size list of some logical type
+    DURATION(34, "DURATION"),    /// Measure of elapsed time in either seconds, milliseconds, microseconds  or nanoseconds.
+    LARGE_STRING(35, "LARGE_STRING"),  /// Like STRING, but with 64-bit offsets
+    LARGE_BINARY(36, "LARGE_BINARY"),  /// Like BINARY, but with 64-bit offsets
+    LARGE_LIST(37, "LARGE_LIST"),   /// Like LIST, but with 64-bit offsets
+    MAX_ID(38, "MAX_ID");     // Leave this at the end
 
 	private final int type_id;
 	private final String type_id_name;

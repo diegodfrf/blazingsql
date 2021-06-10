@@ -1,5 +1,5 @@
 from itertools import repeat
-
+import numpy as np
 import cudf
 
 from TCLIService.ttypes import TOperationState
@@ -87,6 +87,32 @@ arrowTypeToCsvType = {
     19: "time32",
     20: "time64",
     # TODO: Add more types
+}
+
+# TODO: improve the way we are getting these values or move to another place ..
+# and add more types
+np_to_arrow_types_int = {
+    np.dtype("bool"): 1,
+    np.dtype("uint8"): 2,
+    np.dtype("int8"): 3,
+    np.dtype("uint16"): 4,
+    np.dtype("int16"): 5,
+    np.dtype("uint32"): 6,
+    np.dtype("int32"): 7,
+    np.dtype("uint64"): 8,
+    np.dtype("int64"): 9,
+    np.dtype("float16"): 10,
+    np.dtype("float32"): 11,
+    np.dtype("float64"): 12,
+    np.dtype("object"): 13,
+    np.dtype("datetime64[s]"): 18,
+    np.dtype("datetime64[ms]"): 18,
+    np.dtype("datetime64[us]"): 18,
+    np.dtype("datetime64[ns]"): 18,
+    np.dtype("timedelta64[s]"): 34,
+    np.dtype("timedelta64[ms]"): 34,
+    np.dtype("timedelta64[us]"): 34,
+    np.dtype("timedelta64[ns]"): 34,
 }
 
 cudfTypeToCsvType = {

@@ -33,6 +33,7 @@ from .hive import (
     getFolderListFromPartitions,
     getPartitionsFromUserPartitions,
     get_hive_table,
+    np_to_arrow_types_int
 )
 import time
 import socket
@@ -1064,27 +1065,13 @@ class BlazingTable(object):
         if self.fileType == DataType.CUDF:
             self.column_names = [x for x in self.input._data.keys()]
             for x in self.input._data.values():
-                # for now `decimal` type is not considered from `np_to_cudf_types_int` call
-                if is_decimal_dtype(x.dtype):
-                    print(
-                        "WARNING: BlazingSQL currently does not support operations on DECIMAL datatype columns"
-                    )
-                    type_int = 26
-                else:
-                    type_int = cio.np_to_cudf_types_int(x.dtype)
+                type_int = np_to_arrow_types_int[x.dtype]
                 self.column_types.append(type_int)
         elif self.fileType == DataType.DASK_CUDF:
             self.column_names = [x for x in input.columns]
 
             for x in input.dtypes:
-                # for now `decimal` type is not considered from `np_to_cudf_types_int` call
-                if is_decimal_dtype(x):
-                    print(
-                        "WARNING: BlazingSQL currently does not support operations on DECIMAL datatype columns"
-                    )
-                    type_int = 26
-                else:
-                    type_int = cio.np_to_cudf_types_int(x)
+                type_int = np_to_arrow_types_int[x.dtype]
                 self.column_types.append(type_int)
 
         elif self.fileType == DataType.ARROW:
