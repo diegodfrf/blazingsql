@@ -74,8 +74,7 @@ std::vector<std::shared_ptr<arrow::DataType>> BlazingCudfTable::column_types() c
 	std::vector<std::shared_ptr<arrow::DataType>> data_types;
 	auto view = this->view();
 	for (size_t i = 0; i < view.num_columns(); ++i) {
-		arrow::Type::type arrow_type = cudf_type_id_to_arrow_type(view.column(i).type().id());
-		data_types.push_back(get_right_arrow_datatype(arrow_type));
+		data_types.push_back(cudf_type_id_to_arrow_data_type(view.column(i).type().id()));
 	}
 	return data_types;
 }
