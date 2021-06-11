@@ -2544,6 +2544,10 @@ class BlazingContext(object):
                 # cudfTypeToCsvType uses: timestamp[s], timestamp[ms], timestamp[us], timestamp[ns]
                 if "timestamp" in dtype_str:
                     dtypes_list.append("date64")
+                elif "duration" in dtype_str:
+                    # TODO: handle DURATION units better
+                    table.column_types[i] = 34
+                    dtypes_list.append("timedelta64[s]")
                 else:
                     dtypes_list.append(dtype_str)
             table.args["dtype"] = dtypes_list

@@ -86,6 +86,7 @@ arrowTypeToCsvType = {
     18: "timestamp", # same as: timestamp[ms]
     19: "time32",
     20: "time64",
+    32: "duration"
     # TODO: Add more types
 }
 
