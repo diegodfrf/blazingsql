@@ -43,6 +43,7 @@ const int CACHE_LEVEL_DISK = 2;
 	@brief A class that represents a Cache Machine on a
 	multi-tier (GPU memory, CPU memory, Disk memory) cache system.
 */
+// TODO refactor split cudf/arrow
 class CacheMachine {
 public:
 	CacheMachine(std::shared_ptr<Context> context, std::string cache_machine_name, bool log_timeout = true, int cache_level_override = -1, bool is_array_access = false);
