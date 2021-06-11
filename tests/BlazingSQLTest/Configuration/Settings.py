@@ -44,6 +44,10 @@ def readFile():
     else:
         fileName = cwd + "/../Configuration/config.yaml"
 
+    # try the full path: don't force the user to use Configuration folder
+    if not os.path.isfile(fileName):
+      fileName = sys.argv[2]
+
     if os.path.isfile(fileName):
         with open(fileName, 'r') as stream:
             fileYaml = yaml.safe_load(stream)
