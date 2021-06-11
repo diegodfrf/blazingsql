@@ -6,12 +6,14 @@
 namespace ral {
 namespace cache {
 
-ConcatCacheData::ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_datas, const std::vector<std::string>& col_names, const std::vector<cudf::data_type>& schema)
-	: CacheData(CacheDataType::CONCATENATING, col_names, schema, 0), _cache_datas{std::move(cache_datas)} {
+ConcatCacheData::ConcatCacheData(std::vector<std::unique_ptr<CacheData>> cache_datas,
+	const std::vector<std::string>& col_names,
+	const std::vector<std::shared_ptr<arrow::DataType>>& schema)
+	: CacheData(CacheDataType::CONCATENATING, col_names, std::move(schema), 0), _cache_datas{std::move(cache_datas)} {
 	n_rows = 0;
 	for (auto && cache_data : _cache_datas) {
 		auto cache_schema = cache_data->get_schema();
-		RAL_EXPECTS(std::equal(schema.begin(), schema.end(), cache_schema.begin()), "Cache data has a different schema");
+		//RAL_EXPECTS(std::equal(schema.begin(), schema.end(), cache_schema.begin()), "Cache data has a different schema");
 		n_rows += cache_data->num_rows();
 	}
 }

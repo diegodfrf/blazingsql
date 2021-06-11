@@ -17,7 +17,7 @@ bool checkIfConcatenatingStringsWillOverflow_gpu(const std::vector<std::shared_p
 	}
 
 	for(size_t col_idx = 0; col_idx < tables[non_empty_index[0]]->column_types().size(); col_idx++) {
-		if(tables[non_empty_index[0]]->column_types()[col_idx].id() == cudf::type_id::STRING) {
+		if(tables[non_empty_index[0]]->column_types()[col_idx]->id() == arrow::Type::STRING) {
 			std::size_t total_bytes_size = 0;
 			std::size_t total_offset_count = 0;
 
@@ -25,7 +25,7 @@ bool checkIfConcatenatingStringsWillOverflow_gpu(const std::vector<std::shared_p
 				size_t table_idx = non_empty_index[i];
 
 				// Column i-th from the next tables are expected to have the same string data type
-				assert( tables[table_idx]->column_types()[col_idx].id() == cudf::type_id::STRING );
+				assert( tables[table_idx]->column_types()[col_idx]->id() == arrow::Type::STRING );
 
 				auto & column = tables[table_idx]->column(col_idx);
 				auto num_children = column.num_children();

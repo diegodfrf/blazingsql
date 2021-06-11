@@ -4,6 +4,7 @@
 
 #include "ArgsUtil.h"
 #include "JSONParser.h"
+#include "parser/types_parser_utils.h"
 #include "compute/api.h"
 
 namespace ral {

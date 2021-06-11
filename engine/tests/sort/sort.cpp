@@ -35,8 +35,8 @@ TYPED_TEST(SortTest, withoutNull) {
     ral::frame::BlazingTableView table(cudf_table_in_view, names);
 
     std::vector<int> sortColIndices{0,1};
-    std::vector<cudf::order> sortOrderTypes{cudf::order::ASCENDING, cudf::order::ASCENDING};
-    std::vector<cudf::null_order> sortOrderNulls{cudf::null_order::AFTER, cudf::null_order::AFTER};
+    std::vector<voltron::compute::SortOrder> sortOrderTypes{voltron::compute::SortOrder::ASCENDING, voltron::compute::SortOrder::ASCENDING};
+    std::vector<voltron::compute::NullOrder> sortOrderNulls{voltron::compute::NullOrder::AFTER, voltron::compute::NullOrder::AFTER};
 
     std::unique_ptr<ral::frame::BlazingTable> table_out = ral::operators::logicalSort(table, sortColIndices, sortOrderTypes, sortOrderNulls);
 

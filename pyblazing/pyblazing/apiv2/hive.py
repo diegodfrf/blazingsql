@@ -1,5 +1,5 @@
 from itertools import repeat
-
+import numpy as np
 import cudf
 
 from TCLIService.ttypes import TOperationState
@@ -65,6 +65,56 @@ def convertTypeNameStrToCudfType(hiveType):
         )
         return None
 
+arrowTypeToCsvType = {
+    1: "boolean",
+    2: "uint8",
+    3: "int8",
+    4: "uint16",
+    5: "int16",
+    6: "uint32",
+    7: "int32",
+    8: "uint64",
+    9: "int64",
+    #10: "float16",
+    11: "float32",
+    12: "float64",
+    13: "str",
+    #14: "binary",
+    #15: "FIXED_SIZE_BINARY",
+    16: "date32",
+    17: "date64",
+    18: "timestamp", # same as: timestamp[ms]
+    19: "time32",
+    20: "time64",
+    32: "duration"
+    # TODO: Add more types
+}
+
+# TODO: improve the way we are getting these values or move to another place ..
+# and add more types
+np_to_arrow_types_int = {
+    np.dtype("bool"): 1,
+    np.dtype("uint8"): 2,
+    np.dtype("int8"): 3,
+    np.dtype("uint16"): 4,
+    np.dtype("int16"): 5,
+    np.dtype("uint32"): 6,
+    np.dtype("int32"): 7,
+    np.dtype("uint64"): 8,
+    np.dtype("int64"): 9,
+    np.dtype("float16"): 10,
+    np.dtype("float32"): 11,
+    np.dtype("float64"): 12,
+    np.dtype("object"): 13,
+    np.dtype("datetime64[s]"): 18,
+    np.dtype("datetime64[ms]"): 18,
+    np.dtype("datetime64[us]"): 18,
+    np.dtype("datetime64[ns]"): 18,
+    np.dtype("timedelta64[s]"): 34,
+    np.dtype("timedelta64[ms]"): 34,
+    np.dtype("timedelta64[us]"): 34,
+    np.dtype("timedelta64[ns]"): 34,
+}
 
 cudfTypeToCsvType = {
     1: "int8",

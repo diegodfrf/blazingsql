@@ -8,6 +8,7 @@
 #include <vector>
 #include <regex>
 #include <cudf/types.hpp>
+#include <arrow/type.h>
 
 #include "parser/CalciteExpressionParsing.h"
 #include "parser/types_parser_utils.h"
@@ -247,8 +248,7 @@ private:
             auto literal = static_cast<literal_node *>(operand);
             cudf::data_type new_type(get_output_type(cast_op, literal->type().id()));
 
-            // Ensure that the types are compatible
-            get_common_type(literal->type(), new_type, true);
+            //get_common_type2(literal->type(), new_type, true); // remove this if not needed
 
             return new literal_node(literal->value, new_type);
         }
@@ -334,7 +334,11 @@ private:
 
 cudf::data_type infer_type_from_literal_token(const lexer::token & token);
 
+std::shared_ptr<arrow::DataType> infer_arrow_type_from_literal_token(const lexer::token & token);
+
 cudf::data_type type_from_type_token(const lexer::token & token);
+
+std::shared_ptr<arrow::DataType> arrow_type_from_type_token(const lexer::token & token);
 
 class expr_parser {
 public:

@@ -1,7 +1,7 @@
 
 #include "metadata/parquet_metadata.h"
-
 #include "ParquetParser.h"
+#include "parser/types_parser_utils.h"
 
 #include <numeric>
 

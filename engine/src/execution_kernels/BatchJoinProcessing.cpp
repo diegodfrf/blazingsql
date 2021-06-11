@@ -360,11 +360,12 @@ std::tuple<int, int> PartwiseJoin::check_for_set_that_has_not_been_completed(){
 }
 
 // this function makes sure that the columns being joined are of the same type so that we can join them properly
-void PartwiseJoin::computeNormalizationData(const std::vector<cudf::data_type> & left_types, const std::vector<cudf::data_type> & right_types){
-	std::vector<cudf::data_type> left_join_types, right_join_types;
+void PartwiseJoin::computeNormalizationData(const std::vector<std::shared_ptr<arrow::DataType>> & left_types,
+	const std::vector<std::shared_ptr<arrow::DataType>> & right_types){
+	std::vector<std::shared_ptr<arrow::DataType>> left_join_types, right_join_types;
 	for (size_t i = 0; i < this->left_column_indices.size(); i++){
-		left_join_types.push_back(left_types[this->left_column_indices[i]]);
-		right_join_types.push_back(right_types[this->right_column_indices[i]]);
+		left_join_types.push_back(std::move(left_types[this->left_column_indices[i]]));
+		right_join_types.push_back(std::move(right_types[this->right_column_indices[i]]));
 	}
 	bool strict = true;
 	this->join_column_common_types = get_common_types(left_join_types, right_join_types, strict);
@@ -640,11 +641,12 @@ JoinPartitionKernel::JoinPartitionKernel(std::size_t kernel_id, const std::strin
 }
 
 // this function makes sure that the columns being joined are of the same type so that we can join them properly
-void JoinPartitionKernel::computeNormalizationData(const std::vector<cudf::data_type> & left_types, const std::vector<cudf::data_type> & right_types){
-	std::vector<cudf::data_type> left_join_types, right_join_types;
+void JoinPartitionKernel::computeNormalizationData(const std::vector<std::shared_ptr<arrow::DataType>> & left_types,
+	const std::vector<std::shared_ptr<arrow::DataType>> & right_types){
+	std::vector<std::shared_ptr<arrow::DataType>> left_join_types, right_join_types;
 	for (size_t i = 0; i < this->left_column_indices.size(); i++){
-		left_join_types.push_back(left_types[this->left_column_indices[i]]);
-		right_join_types.push_back(right_types[this->right_column_indices[i]]);
+		left_join_types.push_back(std::move(left_types[this->left_column_indices[i]]));
+		right_join_types.push_back(std::move(right_types[this->right_column_indices[i]]));
 	}
 	bool strict = true;
 	this->join_column_common_types = get_common_types(left_join_types, right_join_types, strict);

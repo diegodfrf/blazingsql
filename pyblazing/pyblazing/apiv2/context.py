@@ -29,9 +29,11 @@ from pyhive import hive
 from .hive import (
     convertTypeNameStrToCudfType,
     cudfTypeToCsvType,
+    arrowTypeToCsvType,
     getFolderListFromPartitions,
     getPartitionsFromUserPartitions,
     get_hive_table,
+    np_to_arrow_types_int
 )
 import time
 import socket
@@ -1063,27 +1065,13 @@ class BlazingTable(object):
         if self.fileType == DataType.CUDF:
             self.column_names = [x for x in self.input._data.keys()]
             for x in self.input._data.values():
-                # for now `decimal` type is not considered from `np_to_cudf_types_int` call
-                if is_decimal_dtype(x.dtype):
-                    print(
-                        "WARNING: BlazingSQL currently does not support operations on DECIMAL datatype columns"
-                    )
-                    type_int = 26
-                else:
-                    type_int = cio.np_to_cudf_types_int(x.dtype)
+                type_int = np_to_arrow_types_int[x.dtype]
                 self.column_types.append(type_int)
         elif self.fileType == DataType.DASK_CUDF:
             self.column_names = [x for x in input.columns]
 
             for x in input.dtypes:
-                # for now `decimal` type is not considered from `np_to_cudf_types_int` call
-                if is_decimal_dtype(x):
-                    print(
-                        "WARNING: BlazingSQL currently does not support operations on DECIMAL datatype columns"
-                    )
-                    type_int = 26
-                else:
-                    type_int = cio.np_to_cudf_types_int(x)
+                type_int = np_to_arrow_types_int[x.dtype]
                 self.column_types.append(type_int)
 
         elif self.fileType == DataType.ARROW:
@@ -2551,10 +2539,15 @@ class BlazingContext(object):
 
             dtypes_list = []
             for i in range(0, len(table.column_types)):
-                dtype_str = cudfTypeToCsvType[table.column_types[i]]
+                #dtype_str = cudfTypeToCsvType[table.column_types[i]]
+                dtype_str = arrowTypeToCsvType[table.column_types[i]]
                 # cudfTypeToCsvType uses: timestamp[s], timestamp[ms], timestamp[us], timestamp[ns]
                 if "timestamp" in dtype_str:
                     dtypes_list.append("date64")
+                elif "duration" in dtype_str:
+                    # TODO: handle DURATION units better
+                    table.column_types[i] = 34
+                    dtypes_list.append("timedelta64[s]")
                 else:
                     dtypes_list.append(dtype_str)
             table.args["dtype"] = dtypes_list

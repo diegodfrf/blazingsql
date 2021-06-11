@@ -5,6 +5,7 @@
 #include <vector>
 #include <cudf/types.hpp>
 #include <cudf/aggregation.hpp>
+#include <arrow/type.h>
 
 enum class operator_type {
 	BLZ_INVALID_OP,
@@ -94,6 +95,10 @@ enum class operator_type {
 bool is_nullary_operator(operator_type op);
 bool is_unary_operator(operator_type op);
 bool is_binary_operator(operator_type op);
+
+arrow::Type::type get_output_arrow_type(operator_type op, arrow::Type::type input_left_type);
+arrow::Type::type get_output_arrow_type(operator_type op, arrow::Type::type input_left_type, arrow::Type::type input_right_type);
+arrow::Type::type get_output_arrow_type(operator_type op);
 
 cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type);
 cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type, cudf::type_id input_right_type);
@@ -269,8 +274,8 @@ std::string convert_ms_to_ns_units(std::string expression);
 
 size_t get_index_from_expression_str(std::string expression);
 
-std::string reinterpret_timestamp(std::string expression, std::vector<cudf::data_type> table_schema);
+std::string reinterpret_timestamp(std::string expression, std::vector<std::shared_ptr<arrow::DataType>> table_schema);
 
-std::string apply_interval_conversion(std::string expression, std::vector<cudf::data_type> table_schema);
+std::string apply_interval_conversion(std::string expression, std::vector<std::shared_ptr<arrow::DataType>>table_schema);
 
 std::string modify_multi_column_count_expression(std::string expression, std::vector<int> & indices);

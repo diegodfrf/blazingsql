@@ -1,5 +1,6 @@
 #include "OrcParser.h"
 #include "metadata/orc_metadata.h"
+#include "parser/types_parser_utils.h"
 
 #include <arrow/io/file.h>
 

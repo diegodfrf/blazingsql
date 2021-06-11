@@ -122,10 +122,10 @@ std::unique_ptr<cudf::column> ComputeWindowKernel::compute_column_from_window_fu
                                                             );
 
                 // Because the values column is unordered, we want to sort it
-                std::vector<cudf::null_order> null_orders(join_table->num_columns(), cudf::null_order::AFTER);
+                std::vector<voltron::compute::NullOrder> null_orders(join_table->num_columns(), voltron::compute::NullOrder::AFTER);
 
                 // partition by is always in ASCENDING order
-                std::vector<cudf::order> sortOrderTypes(join_table->num_columns(), cudf::order::ASCENDING);
+                std::vector<voltron::compute::SortOrder> sortOrderTypes(join_table->num_columns(), voltron::compute::SortOrder::ASCENDING);
                 std::unique_ptr<cudf::table> sorted_table = cudf::sort(join_table->view(), sortOrderTypes, null_orders);
 
                 size_t position_of_values_column = left_table->num_columns() - 1;

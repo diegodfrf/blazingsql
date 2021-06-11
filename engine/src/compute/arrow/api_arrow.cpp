@@ -136,8 +136,8 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_wo_filter_
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator()<ral::frame::BlazingArrowTable>(
 		std::vector<std::shared_ptr<ral::frame::BlazingTableView>> tables,
-		const std::vector<cudf::order> & sortOrderTypes,
-		const std::vector<int> & sortColIndices, const std::vector<cudf::null_order> & sortOrderNulls) const
+		const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
+		const std::vector<int> & sortColIndices, const std::vector<voltron::compute::NullOrder> & sortOrderNulls) const
 {
   throw std::runtime_error("ERROR: sorted_merger_functor BlazingSQL doesn't support this Arrow operator yet.");
   return nullptr;
@@ -179,7 +179,7 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> aggregations_without_groupby_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::vector<std::string> aggregation_input_expressions,
-    std::vector<AggregateKind> aggregation_types,
+    std::vector<voltron::compute::AggregateKind> aggregation_types,
     std::vector<std::string> aggregation_column_assigned_aliases) const
 {
   auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
@@ -190,7 +190,7 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> aggregations_with_groupby_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::vector<std::string> aggregation_input_expressions,
-    std::vector<AggregateKind> aggregation_types,
+    std::vector<voltron::compute::AggregateKind> aggregation_types,
     std::vector<std::string> aggregation_column_assigned_aliases,
     std::vector<int> group_column_indices) const
 {
@@ -314,8 +314,8 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::shared_ptr<ral::frame::BlazingTableView> sortColumns_view,
-    const std::vector<cudf::order> & sortOrderTypes,
-    std::vector<cudf::null_order> null_orders) const
+    const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
+    std::vector<voltron::compute::NullOrder> null_orders) const
 {
   auto table = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
   auto sortColumns = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(sortColumns_view);
@@ -361,7 +361,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
     const std::vector<std::string> &column_names,
-	  const std::vector<cudf::data_type> &dtypes) const
+	  const std::vector<std::shared_ptr<arrow::DataType>> &dtypes) const
 {
   // TODO percy
   throw std::runtime_error("ERROR: create_empty_table_functor BlazingSQL doesn't support this Arrow operator yet.");
@@ -458,7 +458,7 @@ template <>
 inline void
 normalize_types_functor::operator()<ral::frame::BlazingArrowTable>(
     std::unique_ptr<ral::frame::BlazingTable> & table,
-    const std::vector<cudf::data_type> & types,
+    const std::vector<std::shared_ptr<arrow::DataType>>  & types,
     std::vector<cudf::size_type> column_indices) const
 {
   throw std::runtime_error("ERROR: normalize_types_functor BlazingSQL doesn't support this Arrow operator yet.");
@@ -490,8 +490,8 @@ upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> sortedTable_view,
     std::shared_ptr<ral::frame::BlazingTableView> t,
     std::shared_ptr<ral::frame::BlazingTableView> values,
-    std::vector<cudf::order> const& column_order,
-    std::vector<cudf::null_order> const& null_precedence) const
+    std::vector<voltron::compute::SortOrder> const& column_order,
+    std::vector<voltron::compute::NullOrder> const& null_precedence) const
 {
   auto sortedTable = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(sortedTable_view)->view();
   auto columns_to_search = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(t)->view();  

@@ -22,17 +22,17 @@ public:
 
 	Schema(std::vector<std::string> names,
 		std::vector<size_t> calcite_to_file_indices,
-		std::vector<cudf::type_id> types,
+		std::vector<arrow::Type::type> types,
 		std::vector<std::vector<int>> row_groups_ids = {}
 		);
 
 	Schema(std::vector<std::string> names,
 		std::vector<size_t> calcite_to_file_indices,
-		std::vector<cudf::type_id> types,
+		std::vector<arrow::Type::type> types,
 		std::vector<bool> in_file,
 		std::vector<std::vector<int>> row_groups_ids = {});
 
-	Schema(std::vector<std::string> names, std::vector<cudf::type_id> types);
+	Schema(std::vector<std::string> names, std::vector<arrow::Type::type> types);
 
 	Schema(const Schema& ) = default;
 
@@ -45,9 +45,9 @@ public:
 	std::vector<std::string> get_files() const;
 	std::vector<bool> get_in_file() const;
 	bool all_in_file() const;
-	std::vector<cudf::type_id> get_dtypes() const;
-	std::vector<cudf::data_type> get_data_types() const;
-	cudf::type_id get_dtype(size_t schema_index) const;
+	std::vector<arrow::Type::type> get_dtypes() const;
+	std::vector<std::shared_ptr<arrow::DataType>> get_data_types() const;
+	arrow::Type::type get_dtype(size_t schema_index) const;
 	std::string get_name(size_t schema_index) const;
 	std::vector<size_t> get_calcite_to_file_indices() const { return this->calcite_to_file_indices; }
 	Schema fileSchema(size_t current_file_index) const;
@@ -64,7 +64,7 @@ public:
 	void add_file(std::string file);
 
 	void add_column(std::string name,
-		cudf::type_id type,
+		arrow::Type::type type,
 		size_t file_index,
 		bool is_in_file = true);
 
@@ -79,7 +79,7 @@ public:
 private:
 	std::vector<std::string> names;
 	std::vector<size_t> calcite_to_file_indices;  // maps calcite columns to our columns
-	std::vector<cudf::type_id> types;
+	std::vector<arrow::Type::type> types;
 	std::vector<bool> in_file;
 	std::vector<std::string> files;
 	std::vector<std::vector<int>> row_groups_ids;

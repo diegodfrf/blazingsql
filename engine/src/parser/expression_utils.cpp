@@ -5,6 +5,7 @@
 
 #include "expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
+#include "parser/types_parser_utils.h"
 #include "utilities/error.hpp"
 
 bool is_nullary_operator(operator_type op){
@@ -262,6 +263,160 @@ cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type, c
 	default:
 		assert(false);
 		return cudf::type_id::EMPTY;
+	}
+}
+
+arrow::Type::type get_output_arrow_type(operator_type op) {
+	switch (op)
+	{
+	case operator_type::BLZ_RAND:
+		return arrow::Type::DOUBLE;
+	default:
+	 	assert(false);
+		return arrow::Type::NA;
+	}
+}
+
+arrow::Type::type get_output_arrow_type(operator_type op, arrow::Type::type input_left_type) {
+	switch (op)
+	{
+	case operator_type::BLZ_CAST_TINYINT:
+		return arrow::Type::INT8;
+	case operator_type::BLZ_CAST_SMALLINT:
+		return arrow::Type::INT16;
+	case operator_type::BLZ_CAST_INTEGER:
+		return arrow::Type::INT32;
+	case operator_type::BLZ_CAST_BIGINT:
+		return arrow::Type::INT64;
+	case operator_type::BLZ_CAST_FLOAT:
+		return arrow::Type::FLOAT;
+	case operator_type::BLZ_CAST_DOUBLE:
+		return arrow::Type::DOUBLE;
+	case operator_type::BLZ_CAST_DATE:
+		return arrow::Type::DATE32;
+	case operator_type::BLZ_CAST_TIMESTAMP_SECONDS:
+	case operator_type::BLZ_CAST_TIMESTAMP_MILLISECONDS:
+	case operator_type::BLZ_CAST_TIMESTAMP_MICROSECONDS:
+	case operator_type::BLZ_CAST_TIMESTAMP:
+		return arrow::Type::TIMESTAMP;
+	case operator_type::BLZ_STR_LOWER:
+	case operator_type::BLZ_STR_UPPER:
+	case operator_type::BLZ_STR_INITCAP:
+	case operator_type::BLZ_STR_REVERSE:
+	case operator_type::BLZ_STR_LEFT:
+	case operator_type::BLZ_STR_RIGHT:
+	case operator_type::BLZ_CAST_VARCHAR:
+		return arrow::Type::STRING;
+	case operator_type::BLZ_YEAR:
+	case operator_type::BLZ_MONTH:
+	case operator_type::BLZ_DAY:
+	case operator_type::BLZ_DAYOFWEEK:
+	case operator_type::BLZ_HOUR:
+	case operator_type::BLZ_MINUTE:
+	case operator_type::BLZ_SECOND:
+		return arrow::Type::INT16;
+	case operator_type::BLZ_SIN:
+	case operator_type::BLZ_COS:
+	case operator_type::BLZ_ASIN:
+	case operator_type::BLZ_ACOS:
+	case operator_type::BLZ_TAN:
+	case operator_type::BLZ_COTAN:
+	case operator_type::BLZ_ATAN:
+	case operator_type::BLZ_LN:
+	case operator_type::BLZ_LOG:
+	case operator_type::BLZ_FLOOR:
+	case operator_type::BLZ_CEIL:
+		if(is_type_float_arrow(input_left_type)) {
+			return input_left_type;
+		} else {
+			return arrow::Type::DOUBLE;
+		}
+	case operator_type::BLZ_ABS:
+		return input_left_type;
+	case operator_type::BLZ_NOT:
+	case operator_type::BLZ_IS_TRUE:
+	case operator_type::BLZ_IS_NULL:
+	case operator_type::BLZ_IS_NOT_NULL:
+	case operator_type::BLZ_IS_NOT_TRUE:
+	case operator_type::BLZ_IS_NOT_FALSE:
+	case operator_type::BLZ_IS_NOT_DISTINCT_FROM:
+		return arrow::Type::BOOL;
+	case operator_type::BLZ_CHAR_LENGTH:
+		return arrow::Type::INT32;
+	default:
+	 	assert(false);
+		return arrow::Type::NA;
+	}
+}
+
+arrow::Type::type get_output_arrow_type(operator_type op, arrow::Type::type input_left_type, arrow::Type::type input_right_type) {
+	RAL_EXPECTS(input_left_type != arrow::Type::NA || input_right_type != arrow::Type::NA, "In get_output_type function: both operands types are empty");
+
+	std::shared_ptr<arrow::DataType> left_dtype = get_right_arrow_datatype(input_left_type);
+	std::shared_ptr<arrow::DataType> right_dtype = get_right_arrow_datatype(input_right_type);
+	std::shared_ptr<arrow::DataType> float_dtype = get_right_arrow_datatype(arrow::Type::INT32);
+
+	if(input_left_type == arrow::Type::NA) {
+		input_left_type = input_right_type;
+	} else if(input_right_type == arrow::Type::NA) {
+		input_right_type = input_left_type;
+	}
+
+	switch (op)
+	{
+	case operator_type::BLZ_ADD:
+	case operator_type::BLZ_SUB:
+	case operator_type::BLZ_MUL:
+	case operator_type::BLZ_DIV:
+	case operator_type::BLZ_MOD:
+		if(is_type_float_arrow(input_left_type) && is_type_float_arrow(input_right_type)) {
+			return (arrow::internal::GetByteWidth(*left_dtype) >= arrow::internal::GetByteWidth(*right_dtype))
+							? input_left_type
+							: input_right_type;
+		}	else if(is_type_float_arrow(input_left_type)) {
+			return input_left_type;
+		} else if(is_type_float_arrow(input_right_type)) {
+			return input_right_type;
+		} else {
+			return (arrow::internal::GetByteWidth(*left_dtype) >= arrow::internal::GetByteWidth(*right_dtype))
+							? input_left_type
+							: input_right_type;
+		}
+	case operator_type::BLZ_EQUAL:
+	case operator_type::BLZ_NOT_EQUAL:
+	case operator_type::BLZ_LESS:
+	case operator_type::BLZ_GREATER:
+	case operator_type::BLZ_LESS_EQUAL:
+	case operator_type::BLZ_GREATER_EQUAL:
+	case operator_type::BLZ_LOGICAL_AND:
+	case operator_type::BLZ_LOGICAL_OR:
+		return arrow::Type::BOOL;
+	case operator_type::BLZ_POW:
+	case operator_type::BLZ_ROUND:
+		return (arrow::internal::GetByteWidth(*left_dtype) <= arrow::internal::GetByteWidth(*float_dtype))
+							? arrow::Type::FLOAT
+							: arrow::Type::DOUBLE;
+	case operator_type::BLZ_MAGIC_IF_NOT:
+		return input_right_type;
+	case operator_type::BLZ_FIRST_NON_MAGIC:
+		return (arrow::internal::GetByteWidth(*left_dtype) >= arrow::internal::GetByteWidth(*float_dtype))
+				   ? input_left_type
+				   : input_right_type;
+	case operator_type::BLZ_STR_LIKE:
+		return arrow::Type::BOOL;
+	case operator_type::BLZ_STR_SUBSTRING:
+	case operator_type::BLZ_STR_REPLACE:
+	case operator_type::BLZ_STR_REGEXP_REPLACE:
+	case operator_type::BLZ_STR_CONCAT:
+	case operator_type::BLZ_STR_TRIM:
+		return arrow::Type::STRING;
+	case operator_type::BLZ_TO_DATE:
+		return arrow::Type::DATE32;
+	case operator_type::BLZ_TO_TIMESTAMP:
+		return arrow::Type::TIMESTAMP;
+	default:
+		assert(false);
+		return arrow::Type::NA;
 	}
 }
 
@@ -1338,7 +1493,7 @@ size_t get_index_from_expression_str(std::string expression) {
 // By default any TIMESTAMP literal expression is handled as TIMESTAMP_NANOSECONDS
 // Using the `Reinterpret` clause we can get the right TIMESTAMP unit using the expression
 // expression: CAST(/INT(Reinterpret(-(1996-12-01 12:00:01, $0)), 86400000)):INTEGER
-std::string reinterpret_timestamp(std::string expression, std::vector<cudf::data_type> table_schema) {
+std::string reinterpret_timestamp(std::string expression, std::vector<std::shared_ptr<arrow::DataType>> table_schema) {
 	if (table_schema.size() == 0) return expression;
 
 	std::string reint_express = "Reinterpret(-(";
@@ -1376,14 +1531,20 @@ std::string reinterpret_timestamp(std::string expression, std::vector<cudf::data
 		return expression;
 	}
 
-	if (table_schema[col_indice].id() == cudf::type_id::TIMESTAMP_SECONDS) {
-		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_SECONDS");
-	} else if (table_schema[col_indice].id() == cudf::type_id::TIMESTAMP_MILLISECONDS) {
-		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_MILLISECONDS");
-	} else if (table_schema[col_indice].id() == cudf::type_id::TIMESTAMP_MICROSECONDS) {
-		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_MICROSECONDS");
+	auto type = std::dynamic_pointer_cast<arrow::TimestampType>(table_schema[col_indice]);
+
+	if(type!=nullptr){
+		if (type->unit() == arrow::TimeUnit::type::SECOND) {
+			expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_SECONDS");
+		} else if (type->unit() == arrow::TimeUnit::type::MILLI) {
+			expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_MILLISECONDS");
+		} else if (type->unit() == arrow::TimeUnit::type::MICRO) {
+			expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP_MICROSECONDS");
+		} else {
+			expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP"); //default
+		}
 	} else {
-		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP");
+		expression = StringUtil::replace(expression, timest_str, "CAST(" + timest_str + "):TIMESTAMP"); //default
 	}
 
 	return expression;
@@ -1392,7 +1553,7 @@ std::string reinterpret_timestamp(std::string expression, std::vector<cudf::data
 // By default Calcite returns Interval types in ms unit. So we want to convert them to the right INTERVAL unit
 // to do correct operations
 // TODO: any issue related with INTERVAL operations (and parsing expressions) should be handled here
-std::string apply_interval_conversion(std::string expression, std::vector<cudf::data_type> table_schema) {
+std::string apply_interval_conversion(std::string expression, std::vector<std::shared_ptr<arrow::DataType>> table_schema) {
 	std::string interval_expr = ":INTERVAL";
 	if (table_schema.size() == 0 || expression.find(interval_expr) == expression.npos) return expression;
 
@@ -1412,11 +1573,12 @@ std::string apply_interval_conversion(std::string expression, std::vector<cudf::
 		new_expr = new_expr.substr(0, last_pos);
 		int col_indice =  std::stoi(new_expr);
 
-		if (table_schema[col_indice].id() == cudf::type_id::DURATION_SECONDS) {
+		auto type = std::dynamic_pointer_cast<arrow::TimestampType>(table_schema[col_indice]);
+		if (type->unit() == arrow::TimeUnit::type::SECOND) {
 			return StringUtil::replace(expression, "000" + interval_expr, interval_expr);
-		} else if (table_schema[col_indice].id() == cudf::type_id::DURATION_MICROSECONDS) {
+		} else if (type->unit() == arrow::TimeUnit::type::MICRO) {
 			return StringUtil::replace(expression, "000" + interval_expr, "000000" + interval_expr);
-		} else if (table_schema[col_indice].id() == cudf::type_id::DURATION_NANOSECONDS) {
+		} else if (type->unit() == arrow::TimeUnit::type::NANO) {
 			return StringUtil::replace(expression, "000" + interval_expr, "000000000" + interval_expr);
 		} else return expression; // duration ms
 	}

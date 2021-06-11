@@ -30,7 +30,7 @@ public:
 
     ~BlazingHostTable();
 
-    std::vector<cudf::data_type> column_types() const;
+    std::vector<std::shared_ptr<arrow::DataType>> column_types() const;
 
     std::vector<std::string> column_names() const;
 

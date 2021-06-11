@@ -6,6 +6,7 @@
  */
 
 #include "CSVParser.h"
+#include "parser/types_parser_utils.h"
 #include <arrow/buffer.h>
 #include <arrow/io/memory.h>
 #include <numeric>
@@ -55,6 +56,7 @@ std::unique_ptr<ral::frame::BlazingTable> csv_parser::parse_batch(ral::execution
 void csv_parser::parse_schema(ral::execution::execution_backend preferred_compute,
 	ral::io::data_handle handle, ral::io::Schema & schema) {
   auto file = handle.file_handle;
+
   ral::execution::backend_dispatcher(
         preferred_compute,
         io_parse_file_schema_functor<ral::io::DataType::CSV>(),

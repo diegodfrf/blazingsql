@@ -1,12 +1,14 @@
 #pragma once
 
 #include "blazing_table/BlazingCudfTable.h"
+#include "operators/operators_definitions.h"
+#include "parser/expression_utils.hpp"
 
-void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table,  const std::vector<cudf::data_type> & types,
-	 		std::vector<cudf::size_type> column_indices = std::vector<cudf::size_type>() );
+void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table, const std::vector<std::shared_ptr<arrow::DataType>> & types,
+	std::vector<cudf::size_type> column_indices = std::vector<cudf::size_type>() );
 
 std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
-	const std::vector<cudf::data_type> &dtypes, std::vector<size_t> column_indices = std::vector<size_t>());
+	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes, std::vector<size_t> column_indices = std::vector<size_t>());
 
 std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<cudf::type_id> &dtypes);
 
@@ -23,3 +25,9 @@ std::vector<T> column_to_vector(cudf::column_view column){
   	CUDA_TRY(cudaMemcpy(host_data.data(), column.data<T>(), column.size() * sizeof(T), cudaMemcpyDeviceToHost));
 	return host_data;
 }
+
+std::vector<cudf::order> toCudfOrderTypes(std::vector<voltron::compute::SortOrder> sortOrderTypes);
+
+std::vector<cudf::null_order> toCudfNullOrderTypes(std::vector<voltron::compute::NullOrder> sortOrderNulls);
+
+cudf::data_type get_common_cudf_type(cudf::data_type type1, cudf::data_type type2, bool strict);

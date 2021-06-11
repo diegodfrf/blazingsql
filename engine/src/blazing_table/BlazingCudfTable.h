@@ -22,7 +22,7 @@ public:
     size_t num_columns() const override;
     size_t num_rows() const override;
     std::vector<std::string> column_names() const override;
-    std::vector<cudf::data_type> column_types() const override;
+    std::vector<std::shared_ptr<arrow::DataType>> column_types() const override;
     void set_column_names(const std::vector<std::string> & column_names) override;
     unsigned long long size_in_bytes() const override;
     std::unique_ptr<BlazingTable> clone() const override;
@@ -40,10 +40,10 @@ private:
 };
 
 
-std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<cudf::data_type> column_types,
+std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<std::shared_ptr<arrow::DataType>> column_types,
                                     std::vector<std::string> column_names);
 
-std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<cudf::type_id> column_types,
+std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(std::vector<arrow::Type::type> column_types,
                                     std::vector<std::string> column_names);
 
 std::vector<std::unique_ptr<BlazingColumn>> cudfTableViewToBlazingColumns(const cudf::table_view & table);

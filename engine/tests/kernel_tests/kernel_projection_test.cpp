@@ -14,6 +14,7 @@
 #include "execution_graph/port.h"
 #include "execution_kernels/BatchProcessing.h"
 #include "execution_graph/executor.h"
+#include "parser/types_parser_utils.h"
 
 #include "parser/expression_utils.hpp"
 #include "bmr/initializer.h"
@@ -227,9 +228,11 @@ TYPED_TEST(ProjectionTest, OneBatchEmptyWithoutDelay) {
 
 	// Empty Data
 	std::vector<std::string> names{"A", "B", "C"};
-	std::vector<cudf::data_type> types { cudf::data_type{cudf::type_id::INT32},
-										 cudf::data_type{cudf::type_id::STRING},
-										 cudf::data_type{cudf::type_id::FLOAT64} };
+	std::vector<std::shared_ptr<arrow::DataType>> types {
+    cudf_type_id_to_arrow_data_type(cudf::type_id::INT32),
+    cudf_type_id_to_arrow_data_type(cudf::type_id::STRING),
+    cudf_type_id_to_arrow_data_type(cudf::type_id::FLOAT64)
+  };
 	std::unique_ptr<BlazingCudfTable> batch_empty = create_empty_cudf_table(names, types);
 
 	// Context
@@ -340,8 +343,9 @@ TYPED_TEST(ProjectionTest, TwoBatchsFirstFullSecondEmptyWithoutDelays) {
     std::unique_ptr<BlazingCudfTable> batch_full = std::make_unique<BlazingCudfTable>(std::move(cudf_table_1), names);
 
 	// Batch 2
-    std::vector<cudf::data_type> types { cudf::data_type{cudf::type_id::INT32},
-										 cudf::data_type{cudf::type_id::STRING} };
+    std::vector<std::shared_ptr<arrow::DataType>> types {
+      cudf_type_id_to_arrow_data_type(cudf::type_id::INT32),
+      cudf_type_id_to_arrow_data_type(cudf::type_id::STRING) };
 	std::unique_ptr<BlazingCudfTable> batch_empty = create_empty_cudf_table(names, types);
 
 	// Context
@@ -431,9 +435,10 @@ TYPED_TEST(ProjectionTest, OneBatchEmptyWithDelay) {
 
 	// Empty Data
 	std::vector<std::string> names{"A", "B", "C"};
-	std::vector<cudf::data_type> types { cudf::data_type{cudf::type_id::INT32},
-										 cudf::data_type{cudf::type_id::STRING},
-										 cudf::data_type{cudf::type_id::FLOAT64} };
+	std::vector<std::shared_ptr<arrow::DataType>> types {
+    cudf_type_id_to_arrow_data_type(cudf::type_id::INT32),
+    cudf_type_id_to_arrow_data_type(cudf::type_id::STRING),
+    cudf_type_id_to_arrow_data_type(cudf::type_id::FLOAT64) };
 	std::unique_ptr<BlazingCudfTable> batch_empty = create_empty_cudf_table(names, types);
 
 	// Context
@@ -535,10 +540,12 @@ TYPED_TEST(ProjectionTest, TwoBatchsEmptyWithDelays) {
 
 	// Empty Data
 	std::vector<std::string> names{"A", "B", "C", "D"};
-	std::vector<cudf::data_type> types { cudf::data_type{cudf::type_id::INT32},
-										 cudf::data_type{cudf::type_id::STRING},
-										 cudf::data_type{cudf::type_id::FLOAT64},
-										 cudf::data_type{cudf::type_id::STRING} };
+	std::vector<std::shared_ptr<arrow::DataType>> types {
+    cudf_type_id_to_arrow_data_type(cudf::type_id::INT32),
+		cudf_type_id_to_arrow_data_type(cudf::type_id::STRING),
+    cudf_type_id_to_arrow_data_type(cudf::type_id::FLOAT64),
+		cudf_type_id_to_arrow_data_type(cudf::type_id::STRING)
+  };
 	std::unique_ptr<BlazingCudfTable> batch_empty_1 = create_empty_cudf_table(names, types);
 	std::unique_ptr<BlazingCudfTable> batch_empty_2 = create_empty_cudf_table(names, types);
 
@@ -586,8 +593,9 @@ TYPED_TEST(ProjectionTest, TwoBatchsFirstEmptySecondFullWithDelays) {
 	std::vector<std::string> names({"A", "B"});
 
 	// Batch 1 - empty
-	std::vector<cudf::data_type> types { cudf::data_type{cudf::type_id::INT32},
-										 cudf::data_type{cudf::type_id::STRING} };
+	std::vector<std::shared_ptr<arrow::DataType>> types {
+    cudf_type_id_to_arrow_data_type(cudf::type_id::INT32),
+    cudf_type_id_to_arrow_data_type(cudf::type_id::STRING) };
 	std::unique_ptr<BlazingCudfTable> batch_empty = create_empty_cudf_table(names, types);
 
 	// Batch2

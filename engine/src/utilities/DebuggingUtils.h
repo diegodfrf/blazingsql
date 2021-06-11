@@ -18,6 +18,8 @@ namespace utilities {
 
 std::string type_string(cudf::data_type dtype);
 
+std::string type_string_arrow(arrow::Type::type dtype);
+
 void print_blazing_cudf_table_view(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string table_name="");
 
 void print_blazing_table_view_schema(std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::string table_name="");

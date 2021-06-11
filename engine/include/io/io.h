@@ -8,7 +8,9 @@
 #include <vector>
 #include <set>
 #include <arrow/table.h>
+#include <arrow/type.h>
 #include <memory>
+
 #include "blazing_table/BlazingTableView.h"
 #include "blazing_table/BlazingCudfTableView.h"
 #include "../../src/utilities/error.hpp"
@@ -48,7 +50,7 @@ struct TableSchema {
 	TableSchema & operator=(TableSchema &&) = default;
 
 	std::vector<std::shared_ptr<ral::frame::BlazingCudfTableView>> blazingTableViews;
-	std::vector<cudf::type_id> types;
+	std::vector<arrow::Type::type> types;
 	std::vector<std::string> files;
 	std::vector<std::string> datasource;
 	std::vector<std::string> names;
@@ -99,14 +101,14 @@ struct GCS {
 struct FolderPartitionMetadata {
 	std::string name;
 	std::set<std::string> values;
-	cudf::type_id data_type;
+	arrow::Type::type data_type;
 };
 
 TableSchema parseSchema(std::vector<std::string> files,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
-	std::vector<std::pair<std::string, cudf::type_id>> extra_columns,
+	std::vector<std::pair<std::string, arrow::Type::type>> extra_columns,
 	bool ignore_missing_paths,
   std::string preferred_compute);
 
@@ -131,7 +133,7 @@ std::pair<TableSchema, error_code_t> parseSchema_C(std::vector<std::string> file
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
-	std::vector<std::pair<std::string, cudf::type_id>> extra_columns,
+	std::vector<std::pair<std::string, arrow::Type::type>> extra_columns,
 	bool ignore_missing_paths,
   std::string preferred_compute);
 

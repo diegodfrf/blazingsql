@@ -64,13 +64,12 @@ void parse_parquet_schema(
   // TODO percy arrow handle error
   parquet::arrow::FromParquetSchema(parquet_metadata->schema(), props, &arrow_schema);
   for(int i = 0; i < arrow_schema->fields().size(); i++) {
-		cudf::type_id type = cudf::detail::arrow_to_cudf_type(*arrow_schema->field(i)->type()).id();
 		std::string name = arrow_schema->field(i)->name();
     size_t file_index = i;
 		bool is_in_file = true;
     schema_out.add_column(
           name,
-          type,
+          arrow_schema->field(i)->type()->id(),
           file_index, is_in_file);
   }
 }

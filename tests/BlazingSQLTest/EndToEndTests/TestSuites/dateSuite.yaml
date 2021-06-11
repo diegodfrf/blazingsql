@@ -75,6 +75,9 @@ TEST_SUITE:
                     on lineitem.l_receiptdate = orders.o_orderdate
                     where orders.o_orderkey < 30 and lineitem.l_orderkey < 20
                     order by orders.o_orderkey, lineitem.l_linenumber
+    SETUP:
+      SKIP_WITH:
+        - ORC
 
 # Tests for `CURRENT_DATE`, `CURRENT_TIME` and `CURRENT_TIMESTAMP`
   TEST_06:
@@ -116,4 +119,6 @@ TEST_SUITE:
                     where orders.o_orderkey < 40 and lineitem.l_orderkey < 30
                     order by orders.o_orderkey, lineitem.l_linenumber
     SETUP:
+      SKIP_WITH:
+        - ORC
       COMPARING: False

@@ -1,53 +1,50 @@
 package com.blazingdb.calcite.catalog.domain;
 
-//// TODO: handle situations where our column type is timestamp of not the default millisecond resolution
-//GDF_invalid,
-//GDF_INT8,
-//GDF_INT16,
-//GDF_INT32,
-//GDF_INT64,
-//GDF_FLOAT32,
-//GDF_FLOAT64,
-//GDF_BOOL8,
-//GDF_DATE32,	/**< int32_t days since the UNIX epoch */
-//GDF_DATE64,	/**< int64_t milliseconds since the UNIX epoch */
-//GDF_TIMESTAMP, /**< Exact timestamp encoded with int64 since UNIX epoch (Default unit millisecond) */
-//GDF_CATEGORY,
-//GDF_STRING,
-//GDF_STRING_CATEGORY;
-
 public enum CatalogColumnDataType {
-	// See cudf/types.hpp type_id enum
-	EMPTY(0, "EMPTY"), /// < Always null with no underlying data
-	INT8(1, "INT8"), /// < 1 byte signed integer
-	INT16(2, "INT16"), /// < 2 byte signed integer
-	INT32(3, "INT32"), /// < 4 byte signed integer
-	INT64(4, "INT64"), /// < 8 byte signed integer
-	UINT8(5, "UINT8"), ///< 1 byte unsigned integer
-	UINT16(6, "UINT16"), ///< 2 byte unsigned integer
-	UINT32(7, "UINT32"), ///< 4 byte unsigned integer
-	UINT64(8, "UINT64"), ///< 8 byte unsigned integer
-	FLOAT32(9, "FLOAT32"), ///< 4 byte floating point
-	FLOAT64(10, "FLOAT64"), ///< 8 byte floating point
-	BOOL8(11, "BOOL8"), ///< Boolean using one byte per value, 0 == false, else true
-	TIMESTAMP_DAYS(12, "TIMESTAMP_DAYS"), ///< point in time in days since Unix Epoch in int32
-	TIMESTAMP_SECONDS(13, "TIMESTAMP_SECONDS"), ///< point in time in seconds since Unix Epoch in int64
-	TIMESTAMP_MILLISECONDS(14, "TIMESTAMP_MILLISECONDS"), ///< point in time in milliseconds since Unix Epoch in int64
-	TIMESTAMP_MICROSECONDS(15, "TIMESTAMP_MICROSECONDS"), ///< point in time in microseconds since Unix Epoch in int64
-	TIMESTAMP_NANOSECONDS(16, "TIMESTAMP_NANOSECONDS"), ///< point in time in nanoseconds since Unix Epoch in int64
-	DURATION_DAYS(17, "DURATION_DAYS"), ///< time interval of days in int32
-	DURATION_SECONDS(18, "DURATION_SECONDS"), ///< time interval of seconds in int64
-	DURATION_MILLISECONDS(19, "DURATION_MILLISECONDS"), ///< time interval of milliseconds in int64
-	DURATION_MICROSECONDS(20, "DURATION_MICROSECONDS"), ///< time interval of microseconds in int64
-	DURATION_NANOSECONDS(21, "DURATION_NANOSECONDS"), ///< time interval of nanoseconds in int64
-	DICTIONARY32(22, "DICTIONARY32"), ///< Dictionary type using int32 indices
-	STRING(23, "STRING"), ///< String elements
-	LIST(24, "LIST"), ///< List elements
-	DECIMAL32(25, "DECIMAL32"), ///< Fixed-point type with int32_t
-	DECIMAL64(26, "DECIMAL64"), ///< Fixed-point type with int64_t
-	STRUCT(27, "STRUCT"), ///< Fixed-point type with int64_t
-	// `NUM_TYPE_IDS` must be last!
-	NUM_TYPE_IDS(28, "NUM_TYPE_IDS");  ///< Total number of type ids
+	// See arrow/type_fwwd.h type enum
+	NA(0, "NA"),
+	BOOL(1, "BOOL"), /// Boolean as 1 bit  (As BOOL8 in cudf)
+	UINT8(2, "UINT8"), /// Unsigned 8-bit little-endian integer
+	INT8(3, "INT8"), /// Signed 8-bit little-endian integer
+	UINT16(4, "UINT16"), /// Unsigned 16-bit little-endian integer
+	INT16(5, "INT16"), /// Signed 16-bit little-endian integer
+	UINT32(6, "UINT32"), /// Unsigned 32-bit little-endian integer
+	INT32(7, "INT32"), /// Signed 32-bit little-endian integer
+	UINT64(8, "UINT64"), /// Unsigned 64-bit little-endian integer
+	INT64(9, "INT64"),/// Signed 64-bit little-endian integer
+	HALF_FLOAT(10, "HALF_FLOAT"), /// 2-byte floating point value
+	FLOAT(11, "FLOAT"), /// 4-byte floating point value
+	DOUBLE(12, "DOUBLE"), /// 8-byte floating point value
+	STRING(13, "STRING"), ///< String elements
+	BINARY(14, "BINARY"),
+	FIXED_SIZE_BINARY(15, "FIXED_SIZE_BINARY"),
+	DATE32(16, "DATE32"),
+	DATE64(17, "DATE64"),
+	TIMESTAMP(18, "TIMESTAMP"),
+	TIME32(19, "TIME32"),
+    TIME64(20, "TIME64"),		/// Time as signed 64-bit integer, representing either microseconds or nanoseconds since midnight
+    INTERVAL_MONTHS(21, "INTERVAL_MONTHS"),	/// YEAR_MONTH interval in SQL style
+    INTERVAL_DAY_TIME(22, "INTERVAL_DAY_TIME"),  	/// DAY_TIME interval in SQL style
+    DECIMAL128(23, "DECIMAL128"),		/// Precision- and scale-based decimal type with 128 bits.
+    DECIMAL(24, "DECIMAL"),	/// Defined for backward-compatibility.
+    DECIMAL256(25, "DECIMAL256"),    /// Precision- and scale-based decimal type with 256 bits.
+    LIST(26, "LIST"),	/// A list of some logical data type
+    STRUCT(27, "STRUCT"),	/// Struct of logical types
+    SPARSE_UNION(28, "SPARSE_UNION"),	/// Sparse unions of logical types
+    DENSE_UNION(29, "DENSE_UNION"),	/// Dense unions of logical types
+    /// Dictionary-encoded type, also called "categorical" or "factor"
+    /// in other programming languages. Holds the dictionary value
+    /// type but not the dictionary itself, which is part of the
+    /// ArrayData struct
+    DICTIONARY(30, "DICTIONARY"),
+    MAP(31, "MAP"),	/// Map, a repeated struct logical type
+    EXTENSION(32, "EXTENSION"), /// Custom data type, implemented by user
+    FIXED_SIZE_LIST(33, "FIXED_SIZE_LIST"), /// Fixed size list of some logical type
+    DURATION(34, "DURATION"),    /// Measure of elapsed time in either seconds, milliseconds, microseconds  or nanoseconds.
+    LARGE_STRING(35, "LARGE_STRING"),  /// Like STRING, but with 64-bit offsets
+    LARGE_BINARY(36, "LARGE_BINARY"),  /// Like BINARY, but with 64-bit offsets
+    LARGE_LIST(37, "LARGE_LIST"),   /// Like LIST, but with 64-bit offsets
+    MAX_ID(38, "MAX_ID");     // Leave this at the end
 
 	private final int type_id;
 	private final String type_id_name;
@@ -71,39 +68,51 @@ public enum CatalogColumnDataType {
 				return verbosity;
 		}
 
-		return EMPTY;
+		return NA;
 	}
 
 	public static CatalogColumnDataType fromString(final String type_id_name) {
 		CatalogColumnDataType dataType = null;
 		switch (type_id_name) {
-			case "EMPTY": return EMPTY;
-			case "INT8": return INT8;
-			case "INT16": return INT16;
-			case "INT32": return INT32;
-			case "INT64": return INT64;
+			case "NA": return NA;
+			case "BOOL": return BOOL;
 			case "UINT8": return UINT8;
+			case "INT8": return INT8;
 			case "UINT16": return UINT16;
+			case "INT16": return INT16;
 			case "UINT32": return UINT32;
+			case "INT32": return INT32;
 			case "UINT64": return UINT64;
-			case "FLOAT32": return FLOAT32;
-			case "FLOAT64": return FLOAT64;
-			case "BOOL8": return BOOL8;
-			case "TIMESTAMP_DAYS": return TIMESTAMP_DAYS;
-			case "TIMESTAMP_SECONDS": return TIMESTAMP_SECONDS;
-			case "TIMESTAMP_MILLISECONDS": return TIMESTAMP_MILLISECONDS;
-			case "TIMESTAMP_MICROSECONDS": return TIMESTAMP_MICROSECONDS;
-			case "TIMESTAMP_NANOSECONDS": return TIMESTAMP_NANOSECONDS;
-			case "DURATION_DAYS": return DURATION_DAYS;
-			case "DURATION_SECONDS": return DURATION_SECONDS;
-			case "DURATION_MILLISECONDS": return DURATION_MILLISECONDS;
-			case "DURATION_MICROSECONDS": return DURATION_MICROSECONDS;
-			case "DURATION_NANOSECONDS": return DURATION_NANOSECONDS;
-			case "DICTIONARY32": return DICTIONARY32;
+			case "INT64": return INT64;
+			case "HALF_FLOAT": return HALF_FLOAT;
+			case "FLOAT": return FLOAT;
+			case "DOUBLE": return DOUBLE;
 			case "STRING": return STRING;
+			case "BINARY": return BINARY;
+			case "FIXED_SIZE_BINARY": return FIXED_SIZE_BINARY;
+			case "DATE32": return DATE32;
+			case "DATE64": return DATE64;
+			case "TIMESTAMP": return TIMESTAMP;
+			case "TIME32": return TIME32;
+			case "TIME64": return TIME64;
+			case "INTERVAL_MONTHS": return INTERVAL_MONTHS;
+			case "INTERVAL_DAY_TIME": return INTERVAL_DAY_TIME;
+			case "DECIMAL128": return DECIMAL128;
+			case "DECIMAL": return DECIMAL;
+			case "DECIMAL256": return DECIMAL256;
 			case "LIST": return LIST;
-			case "DECIMAL64": return DECIMAL64;
-			case "NUM_TYPE_IDS": return NUM_TYPE_IDS;
+			case "STRUCT": return STRUCT;
+			case "SPARSE_UNION": return SPARSE_UNION;
+			case "DENSE_UNION": return DENSE_UNION;
+			case "DICTIONARY": return DICTIONARY;
+			case "MAP": return MAP;
+			case "EXTENSION": return EXTENSION;
+			case "FIXED_SIZE_LIST": return FIXED_SIZE_LIST;
+			case "DURATION": return DURATION;
+			case "LARGE_STRING": return LARGE_STRING;
+			case "LARGE_BINARY": return LARGE_BINARY;
+			case "LARGE_LIST": return LARGE_LIST;
+			case "MAX_ID": return MAX_ID;
 		}
 		return dataType;
 	}

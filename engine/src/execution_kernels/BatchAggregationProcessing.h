@@ -27,7 +27,7 @@ public:
     std::pair<bool, uint64_t> get_estimated_output_num_rows();
 
 private:
-    std::vector<AggregateKind> aggregation_types;
+    std::vector<voltron::compute::AggregateKind> aggregation_types;
     std::vector<int> group_column_indices;
     std::vector<std::string> aggregation_input_expressions;
     std::vector<std::string> aggregation_column_assigned_aliases;
@@ -51,7 +51,7 @@ public:
 private:
     std::vector<int> group_column_indices;
     std::vector<std::string> aggregation_input_expressions, aggregation_column_assigned_aliases; // not used in this kernel
-    std::vector<AggregateKind> aggregation_types; // not used in this kernel
+    std::vector<voltron::compute::AggregateKind> aggregation_types; // not used in this kernel
     std::vector<cudf::size_type> columns_to_hash;
     bool set_empty_part_for_non_master_node = false; // this is only for aggregation without group by
 };
