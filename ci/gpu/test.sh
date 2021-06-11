@@ -1,7 +1,7 @@
 #!/bin/bash
 
-OPTIONS=t:c:vkh
-LONGOPTS=io,libengine,algebra,pyblazing,e2e,tests:,config-file:,verbose,skipe2e,help
+OPTIONS=t:c:vkhb:
+LONGOPTS=io,libengine,algebra,pyblazing,e2e,tests:,config-file:,verbose,skipe2e,help,branch-testing-files:
 
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
@@ -20,6 +20,7 @@ configfile=""
 verbose=No
 skipe2e=No
 printhelp=No
+branch_testing_files="master"
 testAll=true
 
 while true; do
@@ -69,6 +70,10 @@ while true; do
             printhelp=Yes
             shift
             ;;
+        -b|--branch-testing-files)
+          branch_testing_files="$2"
+          shift 2
+          ;;
         --)
             shift
             break
@@ -141,6 +146,56 @@ fi
 #    GSPREAD_CACHE="true"
 #fi
 
+function get_blazingtesting_files {
+  echo "clone repository asdlkjsadlkjsadlkjsalkdj"
+  if [ -z $BLAZINGSQL_E2E_DATA_DIRECTORY ] || [ -z $BLAZINGSQL_E2E_FILE_RESULT_DIRECTORY ]; then
+      if [ -d $CONDA_PREFIX/blazingsql-testing-files/data/ ]; then
+          logger "Using $CONDA_PREFIX/blazingsql-testing-files folder for end to end tests..."
+          cd $CONDA_PREFIX
+          cd blazingsql-testing-files
+          git pull
+      else
+          set +e
+          logger "Preparing $CONDA_PREFIX/blazingsql-testing-files folder for end to end tests..."
+          cd $CONDA_PREFIX
+
+          # Only for PRs
+          PR_BR="blazingdb:"${TARGET_BRANCH}
+          if [ ! -z "${PR_AUTHOR}" ]; then
+              echo "PR_AUTHOR: "${PR_AUTHOR}
+              git clone --depth 1 https://github.com/${PR_AUTHOR}/blazingsql-testing-files.git --branch ${SOURCE_BRANCH} --single-branch
+              # if branch exits
+              if [ $? -eq 0 ]; then
+                  echo "The fork exists"
+                  PR_BR=${PR_AUTHOR}":"${SOURCE_BRANCH}
+              else
+                  echo "The fork doesn't exist"
+                  git clone --depth 1 https://github.com/BlazingDB/blazingsql-testing-files.git --branch ${TARGET_BRANCH} --single-branch
+              fi
+          else
+              echo "PR_AUTHOR not found cloning blazingsql testing files from $branch_testing_files branch"
+              git clone --depth 1 https://github.com/BlazingDB/blazingsql-testing-files.git --branch $branch_testing_files --single-branch
+          fi
+          set -e
+
+          echo "Cloned from "${PR_BR}
+          cd blazingsql-testing-files/data
+          tar xf tpch.tar.gz
+          tar xf tpch-with-nulls.tar.gz
+          tar xf tpch-json.tar.gz -C .
+          tar xf smiles.tar.gz
+          logger "$CONDA_PREFIX/blazingsql-testing-files folder for end to end tests... ready!"
+      fi
+      export BLAZINGSQL_E2E_DATA_DIRECTORY=$CONDA_PREFIX/blazingsql-testing-files/data/
+      export BLAZINGSQL_E2E_FILE_RESULT_DIRECTORY=$CONDA_PREFIX/blazingsql-testing-files/results/
+  else
+      blazingsql_testing_files_dir=$(realpath $BLAZINGSQL_E2E_FILE_RESULT_DIRECTORY/../)
+      logger "Using $blazingsql_testing_files_dir folder for end to end tests..."
+      cd $blazingsql_testing_files_dir
+      git pull
+  fi
+}
+
 ################################################################################
 if $testAll || [ "$io" == "Yes" ]; then
     logger "Running IO Unit tests..."
@@ -157,6 +212,8 @@ fi
 
 if $testAll || [ "$libengine" == "Yes" ]; then
     logger "Running Engine Unit tests..."
+    get_blazingtesting_files
+
     cd ${WORKSPACE}/engine/build
     SECONDS=0
     if [ "$verbose" == "Yes" ]; then
@@ -190,52 +247,7 @@ if [ "$skipe2e" == "Yes" ]; then
     logger "Skipping end to end tests..."
 else
     if $testAll || [ "$e2e" == "Yes" ]; then
-        if [ -z $BLAZINGSQL_E2E_DATA_DIRECTORY ] || [ -z $BLAZINGSQL_E2E_FILE_RESULT_DIRECTORY ]; then
-            if [ -d $CONDA_PREFIX/blazingsql-testing-files/data/ ]; then
-                logger "Using $CONDA_PREFIX/blazingsql-testing-files folder for end to end tests..."
-                cd $CONDA_PREFIX
-                cd blazingsql-testing-files
-                git pull
-            else
-                set +e
-                logger "Preparing $CONDA_PREFIX/blazingsql-testing-files folder for end to end tests..."
-                cd $CONDA_PREFIX
-
-                # Only for PRs
-                PR_BR="blazingdb:"${TARGET_BRANCH}
-                if [ ! -z "${PR_AUTHOR}" ]; then
-                    echo "PR_AUTHOR: "${PR_AUTHOR}
-                    git clone --depth 1 https://github.com/${PR_AUTHOR}/blazingsql-testing-files.git --branch ${SOURCE_BRANCH} --single-branch
-                    # if branch exits
-                    if [ $? -eq 0 ]; then
-                        echo "The fork exists"
-                        PR_BR=${PR_AUTHOR}":"${SOURCE_BRANCH}
-                    else
-                        echo "The fork doesn't exist"
-                        git clone --depth 1 https://github.com/BlazingDB/blazingsql-testing-files.git --branch ${TARGET_BRANCH} --single-branch
-                    fi
-                else
-                    echo "PR_AUTHOR not found cloning blazingsql testing files from master branch"
-                    git clone --depth 1 https://github.com/BlazingDB/blazingsql-testing-files.git --branch master --single-branch
-                fi
-                set -e
-
-                echo "Cloned from "${PR_BR}
-                cd blazingsql-testing-files/data
-                tar xf tpch.tar.gz
-                tar xf tpch-with-nulls.tar.gz
-                tar xf tpch-json.tar.gz -C .
-                tar xf smiles.tar.gz
-                logger "$CONDA_PREFIX/blazingsql-testing-files folder for end to end tests... ready!"
-            fi
-            export BLAZINGSQL_E2E_DATA_DIRECTORY=$CONDA_PREFIX/blazingsql-testing-files/data/
-            export BLAZINGSQL_E2E_FILE_RESULT_DIRECTORY=$CONDA_PREFIX/blazingsql-testing-files/results/
-        else
-            blazingsql_testing_files_dir=$(realpath $BLAZINGSQL_E2E_FILE_RESULT_DIRECTORY/../)
-            logger "Using $blazingsql_testing_files_dir folder for end to end tests..."
-            cd $blazingsql_testing_files_dir
-            git pull
-        fi
+        get_blazingtesting_files
 
         # TODO william kharoly felipe we should try to enable and use this param in the future (compare result from spreadsheet)
         #export BLAZINGSQL_E2E_GSPREAD_CACHE=$GSPREAD_CACHE

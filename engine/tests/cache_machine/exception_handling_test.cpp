@@ -1,13 +1,15 @@
-#include <thread>
-#include <cudf_test/base_fixture.hpp>
-#include "cudf_test/column_wrapper.hpp"
+#include <execution_kernels/BatchProjectionProcessing.h>
 
-#include "tests/utilities/MemoryConsumer.cuh"
-#include "tests/utilities/BlazingUnitTest.h"
-#include "execution_kernels/BatchProcessing.h"
-#include "execution_kernels/BatchUnionProcessing.h"
-#include "execution_kernels/BatchOrderByProcessing.h"
+#include <cudf_test/base_fixture.hpp>
+#include <string>
+#include <thread>
+
+#include "bmr/initializer.h"
+#include "cudf_test/column_wrapper.hpp"
 #include "execution_graph/executor.h"
+#include "execution_kernels/BatchOrderByProcessing.h"
+#include "execution_kernels/BatchUnionProcessing.h"
+#include "tests/utilities/MemoryConsumer.cuh"
 
 using blazingdb::transport::Node;
 using ral::cache::kstatus;
@@ -24,7 +26,8 @@ struct ExceptionHandlingTest : public ::testing::Test {
 		ral::memory::set_allocation_pools(4000000, 10,
 										4000000, 10, false,nullptr);
 		int executor_threads = 10;
-		ral::execution::executor::init_executor(executor_threads, 0.8);
+		ral::execution::execution_backend preferred_compute(ral::execution::backend_id::CUDF);
+		ral::execution::executor::init_executor(executor_threads, 0.8, preferred_compute);
 	}
 
 	virtual void TearDown() override {
@@ -40,7 +43,7 @@ std::shared_ptr<Context> make_context() {
 	std::string logicalPlan;
 	std::map<std::string, std::string> config_options;
 	std::string current_timestamp;
-	std::shared_ptr<Context> context = std::make_shared<Context>(0, nodes, master_node, logicalPlan, config_options, current_timestamp);
+	std::shared_ptr<Context> context = std::make_shared<Context>(0, nodes, master_node, logicalPlan, config_options, current_timestamp, "cudf", "cudf");
 
 	return context;
 }
@@ -167,7 +170,7 @@ TEST_F(ExceptionHandlingTest, cpu_data_fail_on_decache) {
 	cudf::size_type size = 16*1024*1024; //this input does not fit on the pool
 	auto input = make_table<int32_t>(size);
 	add_data_to_cache(inputCacheMachine, std::move(input));
-	
+
 	EXPECT_THROW(project_kernel->run(), rmm::bad_alloc);
 }
 
