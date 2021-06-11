@@ -1,6 +1,11 @@
 #pragma once
 
+// TODO percy make sub mod io
+#include <arrow/io/file.h>
+#include "io/DataType.h"
+
 #include "blazing_table/BlazingTable.h"
+#include "io/Schema.h"
 
 // TODO percy arrow delete all cudf related stuff
 #include <cudf/detail/rolling.hpp>
@@ -336,6 +341,32 @@ struct upper_bound_split_functor {
       std::vector<voltron::compute::NullOrder> const& null_precedence) const
   {
     throw std::runtime_error("ERROR: upper_bound_split_functor This default dispatcher operator should not be called.");
+  }
+};
+
+template <ral::io::DataType DataSourceType>
+struct io_read_file_data_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(
+      std::shared_ptr<arrow::io::RandomAccessFile> file,
+      std::vector<int> column_indices,
+      std::vector<std::string> col_names,
+      std::vector<cudf::size_type> row_groups,
+      const std::map<std::string, std::string> &args_map = {}) const
+  {
+    throw std::runtime_error("ERROR: io_read_parquet_functor This default dispatcher operator should not be called.");
+  }
+};
+
+template <ral::io::DataType DataSourceType>
+struct io_parse_file_schema_functor {
+  template <typename T>
+  void operator()(
+      ral::io::Schema & schema_out,
+      std::shared_ptr<arrow::io::RandomAccessFile> file,
+      const std::map<std::string, std::string> &args_map = {}) const
+  {
+    throw std::runtime_error("ERROR: io_read_parquet_functor This default dispatcher operator should not be called.");
   }
 };
 

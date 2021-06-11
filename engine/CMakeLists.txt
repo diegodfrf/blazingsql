@@ -294,6 +294,7 @@ set(COMPUTE_CUDF_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/search.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/concatenate.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/types.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/io.cpp
 
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTableView.cpp
@@ -306,6 +307,7 @@ set(COMPUTE_CUDF_SRC_FILES
 set(COMPUTE_ARROW_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/aggregations.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/types.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/io.cpp
 )
 
 ## Target source files
