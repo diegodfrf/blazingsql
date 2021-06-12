@@ -10,6 +10,12 @@ fi
 
 eval set -- "$PARSED"
 
+function get_default_branch {
+  revis=git describe --abbrev=0 --tags
+  # TODO romulo mario cc fernando 21.06 use git describe
+  echo "branch-21.06"
+}
+
 io=No
 libengine=No
 algebra=No
@@ -20,7 +26,7 @@ configfile=""
 verbose=No
 skipe2e=No
 printhelp=No
-branch_testing_files="master"
+branch_testing_files="$(get_default_branch)"
 testAll=true
 
 while true; do
@@ -147,7 +153,7 @@ fi
 #fi
 
 function get_blazingtesting_files {
-  echo "clone repository asdlkjsadlkjsadlkjsalkdj"
+  echo "clone repository"
   if [ -z $BLAZINGSQL_E2E_DATA_DIRECTORY ] || [ -z $BLAZINGSQL_E2E_FILE_RESULT_DIRECTORY ]; then
       if [ -d $CONDA_PREFIX/blazingsql-testing-files/data/ ]; then
           logger "Using $CONDA_PREFIX/blazingsql-testing-files folder for end to end tests..."
