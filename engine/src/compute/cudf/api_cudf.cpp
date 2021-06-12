@@ -24,6 +24,7 @@
 #include <cudf/filling.hpp>
 #include <cudf/scalar/scalar_factories.hpp>
 #include <cudf/reduction.hpp>
+#include <cudf/detail/interop.hpp>
 
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
@@ -38,6 +39,7 @@
 #include "compute/cudf/detail/concatenate.h"
 #include "compute/cudf/detail/types.h"
 #include "compute/cudf/detail/io.h"
+#include "compute/cudf/detail/scalars.h"
 
 #include "utilities/error.hpp"
 #include "blazing_table/BlazingCudfTable.h"
@@ -491,6 +493,20 @@ io_parse_file_schema_functor<ral::io::DataType::JSON>::operator()<ral::frame::Bl
         const std::map<std::string, std::string> &args_map) const
 {
     voltron::compute::cudf_backend::io::parse_json_schema(schema_out, file, args_map);
+}
+
+template <>
+inline std::shared_ptr<arrow::Scalar>
+get_scalar_from_string_functor::operator()<ral::frame::BlazingCudfTable>(
+        const std::string & scalar_string,
+        std::shared_ptr<arrow::DataType> type,
+        bool strings_have_quotes) const
+{
+    cudf::data_type cudf_type = cudf::detail::arrow_to_cudf_type(*type);
+    std::unique_ptr<cudf::scalar> cudf_scalar = get_scalar_from_string(scalar_string, cudf_type, strings_have_quotes);
+    //std::unique_ptr<cudf::scalar> to_cudf_scalar(std::shared_ptr<arrow::Scalar> arrow_scalar)
+    // TODO: cordova convert to arrow::Scalar
+    return nullptr;
 }
 
 //} // compute

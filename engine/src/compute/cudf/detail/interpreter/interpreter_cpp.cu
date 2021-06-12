@@ -9,6 +9,7 @@
 #include <random>
 
 #include "interpreter_ops.cuh"
+#include "compute/cudf/detail/scalars.h"
 #include "parser/CalciteExpressionParsing.h"
 #include "utilities/error.hpp"
 #include <curand_kernel.h>

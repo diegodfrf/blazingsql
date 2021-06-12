@@ -1,5 +1,5 @@
 #include "compute/cudf/detail/aggregations.h"
-
+#include "compute/cudf/detail/scalars.h"
 #include "compute/cudf/detail/interops.h"
 
 #include "parser/expression_utils.hpp"

@@ -23,6 +23,7 @@
 #include <cudf/strings/convert/convert_integers.hpp>
 #include <cudf/unary.hpp>
 
+#include "compute/cudf/detail/scalars.h"
 #include "compute/cudf/detail/types.h"
 #include "compute/cudf/detail/transform.hpp"
 #include "parser/project_parser_utils.h"

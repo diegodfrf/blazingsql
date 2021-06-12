@@ -5,6 +5,8 @@
 
 // TODO percy arrow delete this include, we should not use details here
 #include "compute/arrow/detail/types.h"
+#include "compute/arrow/detail/scalars.h"
+#include "compute/cudf/detail/scalars.h"
 
 namespace ral {
 namespace cache {
@@ -77,12 +79,13 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execut
         names.push_back(name);
         arrow::Type::type type = schema.get_dtype(col_ind);
         std::string literal_str = handle.column_values[name];
-        cudf::data_type cudf_type = arrow_type_to_cudf_data_type(type);
         if (backend.id() == ral::execution::backend_id::CUDF) {
-          std::unique_ptr<cudf::scalar> scalar = get_scalar_from_string(literal_str, cudf_type, false);
+          std::unique_ptr<cudf::scalar> scalar = get_scalar_from_string(literal_str, arrow_type_to_cudf_data_type(type), false);
           all_columns[i] = cudf::make_column_from_scalar(*scalar, num_rows);
         } else if (backend.id() == ral::execution::backend_id::ARROW) {
-          auto scalar = get_scalar_from_string_arrow(literal_str, cudf_type, false);
+          auto scalar = get_scalar_from_string_arrow(literal_str,
+                                           cudf_type_id_to_arrow_data_type(arrow_type_to_cudf_data_type(type).id()),
+                                           false);
           std::shared_ptr<arrow::Array> temp = arrow::MakeArrayFromScalar(*scalar, num_rows).ValueOrDie();
           all_columns_arrow[i] = std::make_shared<arrow::ChunkedArray>(temp);
         }

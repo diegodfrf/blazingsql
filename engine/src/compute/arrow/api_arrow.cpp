@@ -16,6 +16,8 @@
 
 #include "compute/arrow/detail/aggregations.h"
 #include "compute/arrow/detail/io.h"
+#include "compute/arrow/detail/scalars.h"
+
 
 inline std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
   std::shared_ptr<arrow::Table> table,
@@ -594,6 +596,17 @@ io_parse_file_schema_functor<ral::io::DataType::PARQUET>::operator()<ral::frame:
 {
     voltron::compute::arrow_backend::io::parse_parquet_schema(schema_out, file);
 }
+
+template <>
+inline std::shared_ptr<arrow::Scalar>
+get_scalar_from_string_functor::operator()<ral::frame::BlazingArrowTable>(
+        const std::string & scalar_string,
+        std::shared_ptr<arrow::DataType> type,
+        bool strings_have_quotes) const
+{
+    return get_scalar_from_string_arrow(scalar_string, type, strings_have_quotes);
+}
+
 
 //} // compute
 //} // voltron

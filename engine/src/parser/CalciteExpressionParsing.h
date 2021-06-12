@@ -3,7 +3,7 @@
 #include "cudf/types.hpp"
 #include <string>
 #include <vector>
-#include <arrow/scalar.h>
+#include <arrow/type.h>
 #include "operators/operators_definitions.h"
 
 bool is_type_float(cudf::type_id type);
@@ -30,10 +30,5 @@ std::vector<std::string> get_tokens_in_reverse_order(const std::string & express
 std::string get_aggregation_operation_string(std::string operator_expression);
 
 std::string get_string_between_outer_parentheses(std::string operator_string);
-
-std::unique_ptr<cudf::scalar> get_max_integer_scalar(cudf::data_type type);
-
-std::unique_ptr<cudf::scalar> get_scalar_from_string(const std::string & scalar_string, cudf::data_type type, bool strings_have_quotes = true);
-std::shared_ptr<arrow::Scalar> get_scalar_from_string_arrow(const std::string & scalar_string, cudf::data_type type, bool strings_have_quotes);
 
 int count_string_occurrence(std::string haystack, std::string needle);

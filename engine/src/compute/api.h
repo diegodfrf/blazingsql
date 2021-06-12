@@ -2,6 +2,7 @@
 
 // TODO percy make sub mod io
 #include <arrow/io/file.h>
+#include <arrow/scalar.h>
 #include "io/DataType.h"
 
 #include "blazing_table/BlazingTable.h"
@@ -369,6 +370,18 @@ struct io_parse_file_schema_functor {
     throw std::runtime_error("ERROR: io_read_parquet_functor This default dispatcher operator should not be called.");
   }
 };
+
+struct get_scalar_from_string_functor {
+  template <typename T>
+  std::shared_ptr<arrow::Scalar> operator()(
+    const std::string & scalar_string,
+     std::shared_ptr<arrow::DataType> type,
+    bool strings_have_quotes = true) const
+  {
+    throw std::runtime_error("ERROR: get_scalar_from_string_functor This default dispatcher operator should not be called.");
+  }
+};
+
 
 //} // compute
 //} // voltron

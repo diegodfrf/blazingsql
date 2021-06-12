@@ -294,6 +294,7 @@ set(COMPUTE_CUDF_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/search.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/concatenate.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/types.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/scalars.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/io.cpp
 
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
@@ -307,6 +308,7 @@ set(COMPUTE_CUDF_SRC_FILES
 set(COMPUTE_ARROW_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/aggregations.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/types.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/scalars.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/io.cpp
 )
 
@@ -373,7 +375,7 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/parquet_metadata.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/orc_metadata.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/common_metadata.cpp
-        ${PROJECT_SOURCE_DIR}/src/utilities/scalar_timestamp_parser.cpp
+
         ${PROJECT_SOURCE_DIR}/src/utilities/DebuggingUtils.cpp
         ${PROJECT_SOURCE_DIR}/src/parser/CalciteExpressionParsing.cpp
         ${PROJECT_SOURCE_DIR}/src/io/DataLoader.cpp

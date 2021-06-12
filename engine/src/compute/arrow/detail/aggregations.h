@@ -18,3 +18,6 @@ std::shared_ptr<arrow::Scalar> arrow_reduce(std::shared_ptr<arrow::ChunkedArray>
 std::unique_ptr<ral::frame::BlazingTable> compute_aggregations_without_groupby(
  		std::shared_ptr<ral::frame::BlazingArrowTableView> table_view, const std::vector<std::string> & aggregation_input_expressions,
  		const std::vector<voltron::compute::AggregateKind> & aggregation_types, const std::vector<std::string> & aggregation_column_assigned_aliases);
+
+
+std::unique_ptr<cudf::scalar> to_cudf_scalar(std::shared_ptr<arrow::Scalar> arrow_scalar);
