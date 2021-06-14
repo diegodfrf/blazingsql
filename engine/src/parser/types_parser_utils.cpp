@@ -82,38 +82,7 @@ std::shared_ptr<arrow::DataType> cudf_type_id_to_arrow_data_type(cudf::type_id t
 }
 
 arrow::Type::type cudf_type_id_to_arrow_type(cudf::type_id type) {
-	switch (type)
-	{
-    case cudf::type_id::BOOL8: return arrow::Type::BOOL;
-    case cudf::type_id::INT8: return arrow::Type::INT8;
-    case cudf::type_id::INT16: return arrow::Type::INT16;
-    case cudf::type_id::INT32: return arrow::Type::INT32;
-    case cudf::type_id::INT64: return arrow::Type::INT64;
-    case cudf::type_id::UINT8: return arrow::Type::UINT8;
-    case cudf::type_id::UINT16: return arrow::Type::UINT16;
-    case cudf::type_id::UINT32: return arrow::Type::UINT32;
-    case cudf::type_id::UINT64: return arrow::Type::UINT64;
-    case cudf::type_id::FLOAT32: return arrow::Type::FLOAT;
-    case cudf::type_id::FLOAT64: return arrow::Type::DOUBLE;
-    case cudf::type_id::STRING: return arrow::Type::STRING;
-    case cudf::type_id::TIMESTAMP_DAYS: return arrow::Type::DATE32;
-    case cudf::type_id::TIMESTAMP_SECONDS: //return arrow::TimeUnit::type::SECOND;
-    case cudf::type_id::TIMESTAMP_MILLISECONDS: //arrow::TimeUnit::type::MILLI;
-    case cudf::type_id::TIMESTAMP_MICROSECONDS: //return arrow::TimeUnit::type::MICRO;
-    case cudf::type_id::TIMESTAMP_NANOSECONDS: //return arrow::TimeUnit::type::NANO;
-		return arrow::Type::TIMESTAMP;
-    case cudf::type_id::DURATION_DAYS: return arrow::Type::DURATION; 
-    case cudf::type_id::DURATION_SECONDS: //return arrow::TimeUnit::type::SECOND;
-    case cudf::type_id::DURATION_MILLISECONDS: //return arrow::TimeUnit::type::MILLI;
-    case cudf::type_id::DURATION_MICROSECONDS: //return arrow::TimeUnit::type::MICRO;
-    case cudf::type_id::DURATION_NANOSECONDS: //return arrow::TimeUnit::type::NANO;
-			return arrow::Type::DURATION;
-    case cudf::type_id::LIST: return arrow::Type::LIST;
-    case cudf::type_id::STRUCT: return arrow::Type::STRUCT;
-    case cudf::type_id::DICTIONARY32: return arrow::Type::DICTIONARY;
-    // TODO: DECIMAL32, DECIMAL64
-    default: return arrow::Type::NA;
-	}
+  return cudf_type_id_to_arrow_data_type(type)->id();
 }
 
 cudf::data_type arrow_type_to_cudf_data_type(arrow::Type::type arrow_type) {

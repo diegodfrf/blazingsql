@@ -278,9 +278,10 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
     const std::vector<std::string> &column_names,
-	  const std::vector<std::shared_ptr<arrow::DataType>> &dtypes) const
+	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes,
+    std::vector<int> column_indices) const
 {
-  return create_empty_cudf_table(column_names, dtypes);
+  return create_empty_cudf_table(column_names, dtypes, column_indices);
 }
 
 template <>

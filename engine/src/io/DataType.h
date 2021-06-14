@@ -16,7 +16,8 @@ typedef enum {
   MYSQL = 7,
   POSTGRESQL = 8,
   SQLITE = 9,
-  SNOWFLAKE = 10
+  SNOWFLAKE = 10,
+  PANDAS_DF = 11,
 } DataType;
 
 } /* namespace io */

@@ -31,7 +31,7 @@ void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table, 
 }
 
 std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
-	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes, std::vector<size_t> column_indices) {
+	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes, std::vector<int> column_indices) {
 
 	if (column_indices.size() == 0){
 		column_indices.resize(column_names.size());

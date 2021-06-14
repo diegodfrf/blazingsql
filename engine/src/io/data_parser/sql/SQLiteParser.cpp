@@ -83,7 +83,7 @@ sqlite_parser::sqlite_parser() : abstractsql_parser{DataType::SQLITE} {}
 sqlite_parser::~sqlite_parser() = default;
 
 void sqlite_parser::read_sql_loop(void * src,
-    const std::vector<arrow::Type::type> & cudf_types,
+    const std::vector<std::shared_ptr<arrow::DataType>> & cudf_types,
     const std::vector<int> & column_indices,
     std::vector<void *> & host_cols,
     std::vector<std::vector<cudf::bitmask_type>> & null_masks) {

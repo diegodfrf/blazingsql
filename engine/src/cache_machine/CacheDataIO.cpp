@@ -17,7 +17,7 @@ CacheDataIO::CacheDataIO(ral::io::data_handle handle,
 	ral::io::Schema file_schema,
 	std::vector<int> row_group_ids,
 	std::vector<int> projections)
-	: CacheData(CacheDataType::IO_FILE, schema.get_names(), schema.get_data_types(), 1),
+	: CacheData(CacheDataType::IO_FILE, schema.get_names(), schema.get_dtypes(), 1),
 	handle(handle), parser(parser), schema(schema),
 	file_schema(file_schema), row_group_ids(row_group_ids),
 	projections(projections)
@@ -77,14 +77,14 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execut
       if(!schema.get_in_file()[col_ind]) {
         std::string name = schema.get_name(col_ind);
         names.push_back(name);
-        arrow::Type::type type = schema.get_dtype(col_ind);
+        auto type = schema.get_dtype(col_ind);
         std::string literal_str = handle.column_values[name];
         if (backend.id() == ral::execution::backend_id::CUDF) {
-          std::unique_ptr<cudf::scalar> scalar = get_scalar_from_string(literal_str, arrow_type_to_cudf_data_type(type), false);
+          std::unique_ptr<cudf::scalar> scalar = get_scalar_from_string(literal_str, arrow_type_to_cudf_data_type(type->id()), false);
           all_columns[i] = cudf::make_column_from_scalar(*scalar, num_rows);
         } else if (backend.id() == ral::execution::backend_id::ARROW) {
           auto scalar = get_scalar_from_string_arrow(literal_str,
-                                           cudf_type_id_to_arrow_data_type(arrow_type_to_cudf_data_type(type).id()),
+                                           cudf_type_id_to_arrow_data_type(arrow_type_to_cudf_data_type(type->id()).id()),
                                            false);
           std::shared_ptr<arrow::Array> temp = arrow::MakeArrayFromScalar(*scalar, num_rows).ValueOrDie();
           all_columns_arrow[i] = std::make_shared<arrow::ChunkedArray>(temp);

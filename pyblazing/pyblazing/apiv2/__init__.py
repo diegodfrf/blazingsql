@@ -15,7 +15,8 @@ class DataType(IntEnum):
     MYSQL = 7,
     POSTGRESQL = 8,
     SQLITE = 9,
-    SNOWFLAKE = 10
+    SNOWFLAKE = 10,
+    PANDAS_DF = 11
 
 
 # NOTE Same values from io

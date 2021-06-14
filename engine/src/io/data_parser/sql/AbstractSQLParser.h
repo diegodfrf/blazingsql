@@ -37,7 +37,7 @@ public:
 
 protected:
   virtual void read_sql_loop(void *src,
-      const std::vector<arrow::Type::type> &cudf_types,
+      const std::vector<std::shared_ptr<arrow::DataType>> &cudf_types,
       const std::vector<int> &column_indices,
       std::vector<void*> &host_cols,
       std::vector<std::vector<cudf::bitmask_type>> &null_masks) = 0;
@@ -77,7 +77,7 @@ protected:
 protected:
   void parse_sql(void *src,
       const std::vector<int> &column_indices,
-      const std::vector<arrow::Type::type> &cudf_types,
+      const std::vector<std::shared_ptr<arrow::DataType>> &cudf_types,
       size_t row,
       std::vector<void*> &host_cols,
       std::vector<std::vector<cudf::bitmask_type>> &null_masks);
@@ -85,10 +85,12 @@ protected:
 private:
   cudf::io::table_with_metadata read_sql(void *src,
       const std::vector<int> &column_indices,
-      const std::vector<arrow::Type::type> &cudf_types,
+      const std::vector<std::shared_ptr<arrow::DataType>> &cudf_types,
       size_t total_rows);
 
-  std::unique_ptr<ral::frame::BlazingTable> parse_raw_batch(void *src,
+  std::unique_ptr<ral::frame::BlazingTable> parse_raw_batch(
+      ral::execution::execution_backend preferred_compute,
+      void *src,
       const Schema & schema,
       std::vector<int> column_indices,
       std::vector<cudf::size_type> row_groups,

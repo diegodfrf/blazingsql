@@ -233,11 +233,13 @@ struct create_empty_table_like_functor {
   }
 };
 
+// if column_indices.size>0 will create based on those indexes
 struct create_empty_table_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       const std::vector<std::string> &column_names,
-	    const std::vector<std::shared_ptr<arrow::DataType>> &dtypes) const
+	    const std::vector<std::shared_ptr<arrow::DataType>> &dtypes,
+      std::vector<int> column_indices = {}) const
   {
     throw std::runtime_error("ERROR: create_empty_table_functor This default dispatcher operator should not be called.");
     return nullptr;

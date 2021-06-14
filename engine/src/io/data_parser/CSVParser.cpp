@@ -41,7 +41,9 @@ std::unique_ptr<ral::frame::BlazingTable> csv_parser::parse_batch(ral::execution
 	std::shared_ptr<arrow::io::RandomAccessFile> file = handle.file_handle;
 
 	if(file == nullptr) {
-		return schema.makeEmptyBlazingCudfTable(column_indices);
+    return ral::execution::backend_dispatcher(preferred_compute,
+                                           create_empty_table_functor(),
+                                           schema.get_names(), schema.get_dtypes(), column_indices);
 	}
 
 	if(column_indices.size() > 0) {

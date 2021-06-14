@@ -363,7 +363,8 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
     const std::vector<std::string> &column_names,
-	  const std::vector<std::shared_ptr<arrow::DataType>> &dtypes) const
+	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes,
+    std::vector<int> column_indices) const
 {
   // TODO percy
   throw std::runtime_error("ERROR: create_empty_table_functor BlazingSQL doesn't support this Arrow operator yet.");
