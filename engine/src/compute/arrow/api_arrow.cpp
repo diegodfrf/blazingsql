@@ -17,6 +17,7 @@
 #include "compute/arrow/detail/aggregations.h"
 #include "compute/arrow/detail/io.h"
 #include "compute/arrow/detail/scalars.h"
+#include "compute/arrow/detail/types.h"
 
 
 inline std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
@@ -598,15 +599,49 @@ io_parse_file_schema_functor<ral::io::DataType::PARQUET>::operator()<ral::frame:
 }
 
 template <>
-inline std::shared_ptr<arrow::Scalar>
-get_scalar_from_string_functor::operator()<ral::frame::BlazingArrowTable>(
-        const std::string & scalar_string,
-        std::shared_ptr<arrow::DataType> type,
-        bool strings_have_quotes) const
+inline std::unique_ptr<ral::frame::BlazingTable>
+decache_io_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::unique_ptr<ral::frame::BlazingTable> table,
+    std::vector<int> projections,
+    ral::io::Schema schema,
+    std::vector<int> column_indices_in_file,
+    std::map<std::string, std::string> column_values) const
 {
-    return get_scalar_from_string_arrow(scalar_string, type, strings_have_quotes);
-}
+      std::vector<std::shared_ptr<arrow::ChunkedArray>> all_columns_arrow(projections.size());
+      std::vector<std::shared_ptr<arrow::ChunkedArray>> file_columns_arrow;
+      std::shared_ptr<const arrow::KeyValueMetadata> arrow_metadata;
 
+      std::vector<std::string> names;
+      cudf::size_type num_rows;
+      if (column_indices_in_file.size() > 0){
+          names = table->column_names();
+          ral::frame::BlazingArrowTable* table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
+          std::shared_ptr<arrow::Table> current_table = table_ptr->view();
+          num_rows = current_table->num_rows();
+          file_columns_arrow = current_table->columns();
+          arrow_metadata = current_table->schema()->metadata();
+      }
+
+      int in_file_column_counter = 0;
+      for(std::size_t i = 0; i < projections.size(); i++) {
+        int col_ind = projections[i];
+        if(!schema.get_in_file()[col_ind]) {
+          std::string name = schema.get_name(col_ind);
+          names.push_back(name);
+          arrow::Type::type type = schema.get_dtype(col_ind);
+          std::string literal_str = column_values[name];
+            auto scalar = get_scalar_from_string_arrow(literal_str, get_right_arrow_datatype(type),  false);
+            std::shared_ptr<arrow::Array> temp = arrow::MakeArrayFromScalar(*scalar, num_rows).ValueOrDie();
+            all_columns_arrow[i] = std::make_shared<arrow::ChunkedArray>(temp);
+        } else {
+            all_columns_arrow[i] = file_columns_arrow[in_file_column_counter];
+          in_file_column_counter++;
+        }
+      }
+
+    auto new_schema = build_arrow_schema(all_columns_arrow, names, arrow_metadata);
+    return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(new_schema, all_columns_arrow, num_rows));
+}
 
 //} // compute
 //} // voltron

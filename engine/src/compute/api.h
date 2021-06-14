@@ -371,14 +371,16 @@ struct io_parse_file_schema_functor {
   }
 };
 
-struct get_scalar_from_string_functor {
+struct decache_io_functor {
   template <typename T>
-  std::shared_ptr<arrow::Scalar> operator()(
-    const std::string & scalar_string,
-     std::shared_ptr<arrow::DataType> type,
-    bool strings_have_quotes = true) const
+  std::unique_ptr<ral::frame::BlazingTable>  operator()(
+    std::unique_ptr<ral::frame::BlazingTable> table,
+    std::vector<int> projections,
+    ral::io::Schema schema,
+    std::vector<int> column_indices_in_file,
+    std::map<std::string, std::string> column_values) const
   {
-    throw std::runtime_error("ERROR: get_scalar_from_string_functor This default dispatcher operator should not be called.");
+    throw std::runtime_error("ERROR: decache_io_functor This default dispatcher operator should not be called.");
   }
 };
 

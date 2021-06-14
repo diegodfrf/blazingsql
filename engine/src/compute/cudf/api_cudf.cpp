@@ -28,6 +28,7 @@
 
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
+#include "parser/types_parser_utils.h"
 
 #include "compute/cudf/detail/aggregations.h"
 
@@ -496,17 +497,45 @@ io_parse_file_schema_functor<ral::io::DataType::JSON>::operator()<ral::frame::Bl
 }
 
 template <>
-inline std::shared_ptr<arrow::Scalar>
-get_scalar_from_string_functor::operator()<ral::frame::BlazingCudfTable>(
-        const std::string & scalar_string,
-        std::shared_ptr<arrow::DataType> type,
-        bool strings_have_quotes) const
+inline std::unique_ptr<ral::frame::BlazingTable>
+decache_io_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::unique_ptr<ral::frame::BlazingTable> table,
+    std::vector<int> projections,
+    ral::io::Schema schema,
+    std::vector<int> column_indices_in_file,
+    std::map<std::string, std::string> column_values) const
 {
-    cudf::data_type cudf_type = cudf::detail::arrow_to_cudf_type(*type);
-    std::unique_ptr<cudf::scalar> cudf_scalar = get_scalar_from_string(scalar_string, cudf_type, strings_have_quotes);
-    //std::unique_ptr<cudf::scalar> to_cudf_scalar(std::shared_ptr<arrow::Scalar> arrow_scalar)
-    // TODO: cordova convert to arrow::Scalar
-    return nullptr;
+      std::vector<std::unique_ptr<cudf::column>> all_columns(projections.size());
+      std::vector<std::unique_ptr<cudf::column>> file_columns;
+      std::vector<std::string> names;
+      cudf::size_type num_rows;
+
+      if (column_indices_in_file.size() > 0){
+        names = table->column_names();
+          ral::frame::BlazingCudfTable* table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+          std::unique_ptr<cudf::table> current_table = table_ptr->releaseCudfTable();
+          num_rows = current_table->num_rows();
+          file_columns = current_table->release();
+      }
+
+      int in_file_column_counter = 0;
+      for(std::size_t i = 0; i < projections.size(); i++) {
+        int col_ind = projections[i];
+        if(!schema.get_in_file()[col_ind]) {
+          std::string name = schema.get_name(col_ind);
+          arrow::Type::type type = schema.get_dtype(col_ind);
+          names.push_back(name);
+          std::string literal_str = column_values[name];
+            std::unique_ptr<cudf::scalar> scalar = get_scalar_from_string(literal_str, arrow_type_to_cudf_data_type(type), false);
+            all_columns[i] = cudf::make_column_from_scalar(*scalar, num_rows);
+        } else {
+            all_columns[i] = std::move(file_columns[in_file_column_counter]);
+          in_file_column_counter++;
+        }
+      }
+
+      auto unique_table = std::make_unique<cudf::table>(std::move(all_columns));
+      return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), names);
 }
 
 //} // compute

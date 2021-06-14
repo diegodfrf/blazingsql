@@ -4,9 +4,9 @@
 #include <arrow/api.h>
 
 // TODO percy arrow delete this include, we should not use details here
-#include "compute/arrow/detail/types.h"
-#include "compute/arrow/detail/scalars.h"
-#include "compute/cudf/detail/scalars.h"
+//#include "compute/arrow/detail/types.h"
+
+#include "compute/api.h"
 
 namespace ral {
 namespace cache {
@@ -29,86 +29,31 @@ size_t CacheDataIO::size_in_bytes() const{
 	return 0;
 }
 
-std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execution_backend backend){
-  if (schema.all_in_file()){
-    return parser->parse_batch(backend,handle, file_schema, projections, row_group_ids);
-  } else {
-    std::vector<int> column_indices_in_file;  // column indices that are from files
-    for (auto projection_idx : projections){
-      if(schema.get_in_file()[projection_idx]) {
-        column_indices_in_file.push_back(projection_idx);
-      }
-    }
-
-    std::vector<std::unique_ptr<cudf::column>> all_columns(projections.size());
-    std::vector<std::unique_ptr<cudf::column>> file_columns;
-
-    // TODO percy arrow
-    std::vector<std::shared_ptr<arrow::ChunkedArray>> all_columns_arrow(projections.size());
-    std::vector<std::shared_ptr<arrow::ChunkedArray>> file_columns_arrow;
-    std::shared_ptr<const arrow::KeyValueMetadata> arrow_metadata;
-
-    std::vector<std::string> names;
-    cudf::size_type num_rows;
-    if (column_indices_in_file.size() > 0){
-      std::unique_ptr<ral::frame::BlazingTable> current_blazing_table = parser->parse_batch(backend, handle, file_schema, column_indices_in_file, row_group_ids);
-      names = current_blazing_table->column_names();
-      if (backend.id() == ral::execution::backend_id::CUDF) {
-        ral::frame::BlazingCudfTable* current_blazing_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(current_blazing_table.get());
-        std::unique_ptr<cudf::table> current_table = current_blazing_table_ptr->releaseCudfTable();
-        num_rows = current_table->num_rows();
-        file_columns = current_table->release();
-      } else if (backend.id() == ral::execution::backend_id::ARROW) {
-        ral::frame::BlazingArrowTable* current_blazing_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(current_blazing_table.get());
-        std::shared_ptr<arrow::Table> current_table = current_blazing_table_ptr->view();
-        num_rows = current_table->num_rows();
-        file_columns_arrow = current_table->columns();
-        arrow_metadata = current_table->schema()->metadata();
-      }
-    } else { // all tables we are "loading" are from hive partitions, so we dont know how many rows we need unless we load something to get the number of rows
-      std::vector<int> temp_column_indices = {0};
-      std::unique_ptr<ral::frame::BlazingTable> loaded_table = parser->parse_batch(backend, handle, file_schema, temp_column_indices, row_group_ids);
-      num_rows = loaded_table->num_rows();
-    }
-
-    int in_file_column_counter = 0;
-    for(std::size_t i = 0; i < projections.size(); i++) {
-      int col_ind = projections[i];
-      if(!schema.get_in_file()[col_ind]) {
-        std::string name = schema.get_name(col_ind);
-        names.push_back(name);
-        arrow::Type::type type = schema.get_dtype(col_ind);
-        std::string literal_str = handle.column_values[name];
-        if (backend.id() == ral::execution::backend_id::CUDF) {
-          std::unique_ptr<cudf::scalar> scalar = get_scalar_from_string(literal_str, arrow_type_to_cudf_data_type(type), false);
-          all_columns[i] = cudf::make_column_from_scalar(*scalar, num_rows);
-        } else if (backend.id() == ral::execution::backend_id::ARROW) {
-          auto scalar = get_scalar_from_string_arrow(literal_str,
-                                           cudf_type_id_to_arrow_data_type(arrow_type_to_cudf_data_type(type).id()),
-                                           false);
-          std::shared_ptr<arrow::Array> temp = arrow::MakeArrayFromScalar(*scalar, num_rows).ValueOrDie();
-          all_columns_arrow[i] = std::make_shared<arrow::ChunkedArray>(temp);
+std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execution_backend backend)
+{
+    if (schema.all_in_file()){
+      return parser->parse_batch(backend,handle, file_schema, projections, row_group_ids);
+    } else {
+      std::vector<int> column_indices_in_file;  // column indices that are from files
+      for (auto projection_idx : projections){
+        if(schema.get_in_file()[projection_idx]) {
+          column_indices_in_file.push_back(projection_idx);
         }
-      } else {
-        if (backend.id() == ral::execution::backend_id::CUDF) {
-          all_columns[i] = std::move(file_columns[in_file_column_counter]);
-        } else if (backend.id() == ral::execution::backend_id::ARROW) {
-          all_columns_arrow[i] = file_columns_arrow[in_file_column_counter];
-        }
-        in_file_column_counter++;
       }
-    }
 
-    if (backend.id() == ral::execution::backend_id::CUDF) {
-      auto unique_table = std::make_unique<cudf::table>(std::move(all_columns));
-      return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), names);
-    } else if (backend.id() == ral::execution::backend_id::ARROW) {
-      auto new_schema = build_arrow_schema(all_columns_arrow, names, arrow_metadata);
-      return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(new_schema, all_columns_arrow, num_rows));
-    }
-  }
+      std::unique_ptr<ral::frame::BlazingTable> table = parser->parse_batch(backend, handle, file_schema, column_indices_in_file, row_group_ids);
 
-  return nullptr;
+      std::unique_ptr<ral::frame::BlazingTable> table_to_return = ral::execution::backend_dispatcher(
+                                                                  backend,
+                                                                  decache_io_functor(),
+                                                                  std::move(table),
+                                                                  this->projections,
+                                                                  this->schema,
+                                                                  column_indices_in_file,
+                                                                  handle.column_values);
+
+      return table_to_return;
+   }
 }
 
 void CacheDataIO::set_names(const std::vector<std::string> & names) {
