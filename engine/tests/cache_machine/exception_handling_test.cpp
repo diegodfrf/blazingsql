@@ -43,7 +43,7 @@ std::shared_ptr<Context> make_context() {
 	std::string logicalPlan;
 	std::map<std::string, std::string> config_options;
 	std::string current_timestamp;
-	std::shared_ptr<Context> context = std::make_shared<Context>(0, nodes, master_node, logicalPlan, config_options, current_timestamp, "cudf", "cudf");
+	std::shared_ptr<Context> context = std::make_shared<Context>(0, nodes, master_node, logicalPlan, config_options, current_timestamp, ral::io::DataType::CUDF, ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 
 	return context;
 }

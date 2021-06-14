@@ -73,7 +73,7 @@ snowflake_parser::~snowflake_parser() = default;
 
 void snowflake_parser::read_sql_loop(
     void * src,
-    const std::vector<arrow::Type::type> & cudf_types,
+    const std::vector<std::shared_ptr<arrow::DataType>> & cudf_types,
     const std::vector<int> & column_indices,
     std::vector<void *> & host_cols,
     std::vector<std::vector<cudf::bitmask_type>> & null_masks) {

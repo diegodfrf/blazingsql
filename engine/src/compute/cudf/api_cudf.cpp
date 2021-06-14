@@ -279,9 +279,10 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
     const std::vector<std::string> &column_names,
-	  const std::vector<std::shared_ptr<arrow::DataType>> &dtypes) const
+	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes,
+    std::vector<int> column_indices) const
 {
-  return create_empty_cudf_table(column_names, dtypes);
+  return create_empty_cudf_table(column_names, dtypes, column_indices);
 }
 
 template <>
@@ -523,10 +524,11 @@ decache_io_functor::operator()<ral::frame::BlazingCudfTable>(
         int col_ind = projections[i];
         if(!schema.get_in_file()[col_ind]) {
           std::string name = schema.get_name(col_ind);
-          arrow::Type::type type = schema.get_dtype(col_ind);
+          //std::shared_ptr<arrow::DataType> type = ;
+          cudf::data_type cudf_dtype = cudf::detail::arrow_to_cudf_type(*schema.get_dtype(col_ind));
           names.push_back(name);
           std::string literal_str = column_values[name];
-            std::unique_ptr<cudf::scalar> scalar = get_scalar_from_string(literal_str, arrow_type_to_cudf_data_type(type), false);
+            std::unique_ptr<cudf::scalar> scalar = get_scalar_from_string(literal_str, cudf_dtype, false);
             all_columns[i] = cudf::make_column_from_scalar(*scalar, num_rows);
         } else {
             all_columns[i] = std::move(file_columns[in_file_column_counter]);

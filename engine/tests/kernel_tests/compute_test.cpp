@@ -53,9 +53,16 @@ std::shared_ptr<Context> make_context(const std::string& output_type = "cudf",
   std::string logicalPlan;
   std::map<std::string, std::string> config_options;
   std::string current_timestamp;
+  
+  // TODO percy arrow improve pyblazing dont use strings
+  ral::io::DataType output_type_t =
+      output_type=="pandas"? ral::io::DataType::PANDAS_DF : ral::io::DataType::CUDF;
+  ral::execution::execution_backend preferred_compute_t(
+    preferred_compute=="arrow"? ral::execution::backend_id::ARROW : ral::execution::backend_id::CUDF);
+  
   std::shared_ptr<Context> context =
       std::make_shared<Context>(0, nodes, master_node, logicalPlan, config_options,
-                                current_timestamp, output_type, preferred_compute);
+                                current_timestamp, output_type_t, preferred_compute_t);
   return context;
 }
 

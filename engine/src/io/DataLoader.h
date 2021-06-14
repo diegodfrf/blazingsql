@@ -38,7 +38,7 @@ public:
 
 	virtual ~data_loader();
 
-	void get_schema(ral::execution::execution_backend preferred_compute,Schema & schema, std::vector<std::pair<std::string, arrow::Type::type>> non_file_columns);
+	void get_schema(ral::execution::execution_backend preferred_compute,Schema & schema, std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> non_file_columns);
 
 	std::unique_ptr<ral::frame::BlazingTable> get_metadata(ral::execution::execution_backend preferred_compute,int offset, std::map<std::string, std::string> args_map);
 

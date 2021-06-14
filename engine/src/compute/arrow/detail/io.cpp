@@ -69,7 +69,7 @@ void parse_parquet_schema(
 		bool is_in_file = true;
     schema_out.add_column(
           name,
-          arrow_schema->field(i)->type()->id(),
+          arrow_schema->field(i)->type(),
           file_index, is_in_file);
   }
 }

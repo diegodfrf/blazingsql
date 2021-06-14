@@ -7,8 +7,9 @@
 void normalize_types_gpu(std::unique_ptr<ral::frame::BlazingTable> & gpu_table, const std::vector<std::shared_ptr<arrow::DataType>> & types,
 	std::vector<cudf::size_type> column_indices = std::vector<cudf::size_type>() );
 
-std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(const std::vector<std::string> &column_names,
-	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes, std::vector<size_t> column_indices = std::vector<size_t>());
+std::unique_ptr<ral::frame::BlazingCudfTable> create_empty_cudf_table(
+  const std::vector<std::string> &column_names,
+  const std::vector<std::shared_ptr<arrow::DataType>> &dtypes, std::vector<int> column_indices = {});
 
 std::unique_ptr<cudf::table> create_empty_cudf_table(const std::vector<cudf::type_id> &dtypes);
 

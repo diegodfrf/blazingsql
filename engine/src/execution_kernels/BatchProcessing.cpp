@@ -91,7 +91,7 @@ kstatus Print::run() {
 
 kstatus OutputKernel::run() {
   ral::execution::backend_id output_type = ral::execution::backend_id::CUDF;
-  if (this->context->output_type() == "pandas") {
+  if (this->context->output_type() == ral::io::DataType::PANDAS_DF) {
     output_type = ral::execution::backend_id::ARROW;
   }
 

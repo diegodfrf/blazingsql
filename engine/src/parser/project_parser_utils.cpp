@@ -122,7 +122,7 @@ std::vector<int> get_projections_wrapper(size_t num_columns, const std::string &
   if (expression.empty()) {
     std::vector<int> projections(num_columns);
     std::iota(projections.begin(), projections.end(), 0);
-return projections;
+    return projections;
   }
 
   std::vector<int> projections = get_projections(expression);

@@ -58,7 +58,7 @@ TableSchema parseSchema(std::vector<std::string> files,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
-	std::vector<std::pair<std::string, arrow::Type::type>> extra_columns,
+	std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> extra_columns,
 	bool ignore_missing_paths,
   std::string preferred_compute) {
 
@@ -422,7 +422,7 @@ std::pair<TableSchema, error_code_t> parseSchema_C(std::vector<std::string> file
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
-	std::vector<std::pair<std::string, arrow::Type::type>> extra_columns,
+	std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> extra_columns,
 	bool ignore_missing_paths,
   std::string preferred_compute) {
 

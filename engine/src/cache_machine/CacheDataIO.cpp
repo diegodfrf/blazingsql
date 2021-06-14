@@ -3,9 +3,6 @@
 #include "parser/types_parser_utils.h"
 #include <arrow/api.h>
 
-// TODO percy arrow delete this include, we should not use details here
-//#include "compute/arrow/detail/types.h"
-
 #include "compute/api.h"
 
 namespace ral {
@@ -17,7 +14,7 @@ CacheDataIO::CacheDataIO(ral::io::data_handle handle,
 	ral::io::Schema file_schema,
 	std::vector<int> row_group_ids,
 	std::vector<int> projections)
-	: CacheData(CacheDataType::IO_FILE, schema.get_names(), schema.get_data_types(), 1),
+	: CacheData(CacheDataType::IO_FILE, schema.get_names(), schema.get_dtypes(), 1),
 	handle(handle), parser(parser), schema(schema),
 	file_schema(file_schema), row_group_ids(row_group_ids),
 	projections(projections)
@@ -54,6 +51,8 @@ std::unique_ptr<ral::frame::BlazingTable> CacheDataIO::decache(execution::execut
 
       return table_to_return;
    }
+
+  return nullptr;
 }
 
 void CacheDataIO::set_names(const std::vector<std::string> & names) {

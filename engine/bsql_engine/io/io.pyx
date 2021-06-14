@@ -138,7 +138,7 @@ class InferFolderPartitionMetadataError(BlazingError):
     """InferFolderPartitionMetadata Error."""
 cdef public PyObject * InferFolderPartitionMetadataError_ = <PyObject *>InferFolderPartitionMetadataError
 
-cdef cio.TableSchema parseSchemaPython(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values,vector[pair[string, Type]] extra_columns, bool ignore_missing_paths, string preferred_compute) nogil except *:
+cdef cio.TableSchema parseSchemaPython(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values,vector[pair[string, shared_ptr[ArrowDataType]]] extra_columns, bool ignore_missing_paths, string preferred_compute) nogil except *:
     with nogil:
         return cio.parseSchema(files, file_format_hint, arg_keys, arg_values, extra_columns, ignore_missing_paths, preferred_compute)
 
@@ -385,13 +385,23 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
       arg_keys.push_back(str.encode(key))
       arg_values.push_back(str.encode(str(value)))
 
-    cdef vector[pair[string, Type]] extra_columns_cpp
-    cdef pair[string, Type] extra_column_cpp
+    cdef vector[pair[string, shared_ptr[ArrowDataType]]] extra_columns_cpp
+    cdef pair[string, shared_ptr[ArrowDataType]] extra_column_cpp
 
     for extra_column in extra_columns:
         extra_column_cpp.first = extra_column[0].encode()
         #extra_column_cpp.second = <type_id>(<underlying_type_t_type_id>(extra_column[1]))
-        extra_column_cpp.second = extra_column[1]
+        #extra_column_cpp.second = extra_column[1]
+        #extra_columns_cpp.push_back(extra_column_cpp)
+        cudf_typeid = <underlying_type_t_type_id>(extra_column[1])
+        pyarrow_type_obj = None
+        if cudf_typeid == 12: # NOTE percy arrow cudf internal doesnt want to use days here dont know why
+            pyarrow_type_obj = pa.date32()
+        else:
+            numpy_dtype = cudf_to_np_types[cudf_typeid]
+            pyarrow_type_obj = pa.from_numpy_dtype(numpy_dtype)
+        print(pyarrow_type_obj)
+        extra_column_cpp.second = pyarrow_unwrap_data_type(pyarrow_type_obj)
         extra_columns_cpp.push_back(extra_column_cpp)
 
     tableSchema = parseSchemaPython(files,str.encode(file_format_hint), arg_keys,arg_values, extra_columns_cpp, ignore_missing_paths, preferred_compute)
@@ -403,7 +413,7 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
     return_object['args'] = args
     return_object['types'] = []
     for type in tableSchema.types:
-        return_object['types'].append(<underlying_type_t_type_id>(type))
+        return_object['types'].append(pyarrow_wrap_data_type(type).id)
     return_object['names'] = tableSchema.names
     return_object['calcite_to_file_indices']= tableSchema.calcite_to_file_indices
     return_object['has_header_csv']= tableSchema.has_header_csv
@@ -421,7 +431,7 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, pref
     cdef vector[string] arg_keys
     cdef vector[string] arg_values
     cdef TableSchema cpp_schema
-    cdef Type tid
+    cdef shared_ptr[ArrowDataType] tid
 
     preferred_compute = str.encode(preferred_compute_py)
 
@@ -430,7 +440,18 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, pref
 
     for col_type in schema['types']:
         #tid = <type_id>(<underlying_type_t_type_id>(col_type))
-        tid = col_type
+        #tid = col_type
+        
+        #extra_columns_cpp.push_back(extra_column_cpp)
+        cudf_typeid = <underlying_type_t_type_id>(col_type)
+        pyarrow_type_obj = None
+        if cudf_typeid == 12: # NOTE percy arrow cudf internal doesnt want to use days here dont know why
+            pyarrow_type_obj = pa.date32()
+        else:
+            numpy_dtype = cudf_to_np_types[cudf_typeid]
+            pyarrow_type_obj = pa.from_numpy_dtype(numpy_dtype)
+        print(pyarrow_type_obj)
+        tid = pyarrow_unwrap_data_type(pyarrow_type_obj)
         cpp_schema.types.push_back(tid)
 
     for key, value in args.items():
@@ -518,7 +539,7 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
     cdef vector[string] currentTableSchemaCppArgValues
     cdef vector[string] tableNames
     cdef vector[string] tableScans
-    cdef vector[Type] types
+    cdef vector[shared_ptr[ArrowDataType]] types
     cdef vector[string] names
     cdef TableSchema currentTableSchemaCpp
 
@@ -575,7 +596,17 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
 
       for col_type in table.column_types:
         #types.push_back(<type_id>(<underlying_type_t_type_id>(col_type)))
-        types.push_back(col_type)
+        #types.push_back(col_type)
+        print(col_type)
+        cudf_typeid = <underlying_type_t_type_id>(col_type)
+        pyarrow_type_obj = None
+        if cudf_typeid == 12: # NOTE percy arrow cudf internal doesnt want to use days here dont know why
+            pyarrow_type_obj = pa.date32()
+        else:
+            numpy_dtype = cudf_to_np_types[cudf_typeid]
+            pyarrow_type_obj = pa.from_numpy_dtype(numpy_dtype)
+        print(pyarrow_type_obj)
+        types.push_back(pyarrow_unwrap_data_type(pyarrow_type_obj))
 
       if table.fileType in (4, 5): # if cudf DataFrame or dask.cudf DataFrame
         blazingTableViews.resize(0)

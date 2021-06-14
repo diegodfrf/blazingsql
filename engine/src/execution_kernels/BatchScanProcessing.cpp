@@ -21,6 +21,7 @@
 #endif
 
 #include "parser/project_parser_utils.h"
+#include "compute/api.h"
 
 namespace ral {
 namespace batch {
@@ -86,7 +87,9 @@ kstatus TableScan::run() {
 
     //if its empty we can just add it to the cache without scheduling
     if (!provider->has_next()) {
-        this->add_to_output_cache(schema.makeEmptyBlazingCudfTable(projections));
+        this->add_to_output_cache(ral::execution::backend_dispatcher(this->context->preferred_compute(),
+                                                                     create_empty_table_functor(),
+                                                                     schema.get_names(), schema.get_dtypes(), projections));
     } else {
         bool is_batched_csv = false;
         while(provider->has_next()) {
@@ -225,11 +228,13 @@ ral::execution::task_result BindableTableScan::do_process(std::vector< std::uniq
 kstatus BindableTableScan::run() {
     CodeTimer timer;
 
-    std::vector<int> projections = get_projections_wrapper(schema.get_num_columns(), expression);
+    auto projections = get_projections_wrapper(schema.get_num_columns(), expression);
 
     //if its empty we can just add it to the cache without scheduling
     if (!provider->has_next()) {
-        auto empty = schema.makeEmptyBlazingCudfTable(projections);
+        auto empty = ral::execution::backend_dispatcher(this->context->preferred_compute(),
+                                                        create_empty_table_functor(),
+                                                        schema.get_names(), schema.get_dtypes(), projections);
         empty->set_column_names(fix_column_aliases(empty->column_names(), expression));
         this->add_to_output_cache(std::move(empty));
     } else {

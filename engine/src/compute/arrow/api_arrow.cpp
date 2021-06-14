@@ -364,7 +364,8 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingArrowTable>(
     const std::vector<std::string> &column_names,
-	  const std::vector<std::shared_ptr<arrow::DataType>> &dtypes) const
+	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes,
+    std::vector<int> column_indices) const
 {
   // TODO percy
   throw std::runtime_error("ERROR: create_empty_table_functor BlazingSQL doesn't support this Arrow operator yet.");
@@ -628,9 +629,8 @@ decache_io_functor::operator()<ral::frame::BlazingArrowTable>(
         if(!schema.get_in_file()[col_ind]) {
           std::string name = schema.get_name(col_ind);
           names.push_back(name);
-          arrow::Type::type type = schema.get_dtype(col_ind);
           std::string literal_str = column_values[name];
-            auto scalar = get_scalar_from_string_arrow(literal_str, get_right_arrow_datatype(type),  false);
+            auto scalar = get_scalar_from_string_arrow(literal_str, schema.get_dtype(col_ind),  false);
             std::shared_ptr<arrow::Array> temp = arrow::MakeArrayFromScalar(*scalar, num_rows).ValueOrDie();
             all_columns_arrow[i] = std::make_shared<arrow::ChunkedArray>(temp);
         } else {

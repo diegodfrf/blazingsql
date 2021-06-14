@@ -70,7 +70,7 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 
 		auto args_map = ral::io::to_map(tableSchemaCppArgKeys[i], tableSchemaCppArgValues[i]);
 
-		std::vector<arrow::Type::type> types;
+    std::vector<std::shared_ptr<arrow::DataType>> types;
 		for(size_t col = 0; col < tableSchemas[i].types.size(); col++) {
 			types.push_back(tableSchemas[i].types[col]);
 		}
@@ -216,12 +216,18 @@ std::string runGeneratePhysicalGraph(uint32_t masterIndex,
     using blazingdb::manager::Context;
     using blazingdb::transport::Node;
 
+    // TODO percy arrow improve pyblazing dont use strings
+    ral::io::DataType output_type_t =
+        output_type=="pandas"? ral::io::DataType::PANDAS_DF : ral::io::DataType::CUDF;
+    ral::execution::execution_backend preferred_compute_t(
+      preferred_compute=="arrow"? ral::execution::backend_id::ARROW : ral::execution::backend_id::CUDF);
+
     std::vector<Node> contextNodes;
     for (const auto &worker_id : worker_ids) {
         contextNodes.emplace_back(worker_id);
     }
     Context queryContext{static_cast<uint32_t>(ctxToken), contextNodes, contextNodes[masterIndex], "", {}, "",
-                         output_type, preferred_compute};
+                         output_type_t, preferred_compute_t};
 
     return get_physical_plan(query, queryContext);
 }
@@ -253,8 +259,15 @@ std::shared_ptr<ral::cache::graph> runGenerateGraph(uint32_t masterIndex,
   for (const auto &worker_id : worker_ids) {
     contextNodes.emplace_back(worker_id);
   }
+  
+  // TODO percy arrow improve pyblazing dont use strings
+  ral::io::DataType output_type_t =
+      output_type=="pandas"? ral::io::DataType::PANDAS_DF : ral::io::DataType::CUDF;
+  ral::execution::execution_backend preferred_compute_t(
+    preferred_compute=="arrow"? ral::execution::backend_id::ARROW : ral::execution::backend_id::CUDF);
+
 	Context queryContext{static_cast<uint32_t>(ctxToken), contextNodes, contextNodes[masterIndex], "", config_options, current_timestamp,
-                       output_type, preferred_compute};
+                       output_type_t, preferred_compute_t};
   	auto& self_node = ral::communication::CommunicationData::getInstance().getSelfNode();
   	int self_node_idx = queryContext.getNodeIndex(self_node);
 
