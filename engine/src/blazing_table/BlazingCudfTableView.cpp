@@ -1,6 +1,7 @@
 #include "BlazingCudfTableView.h"
 #include "BlazingCudfTable.h"
 #include "parser/types_parser_utils.h"
+#include "compute/cudf/detail/types.h"
 
 namespace ral {
 namespace frame {

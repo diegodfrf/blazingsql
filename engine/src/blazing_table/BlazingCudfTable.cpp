@@ -4,6 +4,7 @@
 #include "parser/types_parser_utils.h"
 #include <cudf/detail/interop.hpp> //cudf::from_arrow
 #include <cudf/column/column_factories.hpp> //cudf::make_empty_column
+#include "compute/cudf/detail/types.h"
 
 namespace ral {
 namespace frame {

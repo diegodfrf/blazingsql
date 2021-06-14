@@ -32,3 +32,7 @@ std::vector<cudf::order> toCudfOrderTypes(std::vector<voltron::compute::SortOrde
 std::vector<cudf::null_order> toCudfNullOrderTypes(std::vector<voltron::compute::NullOrder> sortOrderNulls);
 
 cudf::data_type get_common_cudf_type(cudf::data_type type1, cudf::data_type type2, bool strict);
+
+std::shared_ptr<arrow::DataType> cudf_type_id_to_arrow_data_type(cudf::type_id type);
+
+cudf::data_type arrow_type_to_cudf_data_type(arrow::Type::type arrow_type);
