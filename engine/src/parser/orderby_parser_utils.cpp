@@ -1,19 +1,9 @@
 #include "orderby_parser_utils.h"
 
 #include "parser/CalciteExpressionParsing.h"
-#include "utilities/CodeTimer.h"
-#include "communication/CommunicationData.h"
 #include <blazingdb/io/Library/Logging/Logger.h>
-#include <cudf/copying.hpp>
-#include <cudf/sorting.hpp>
-#include <cudf/search.hpp>
-#include <random>
 #include "parser/expression_utils.hpp"
 #include <blazingdb/io/Util/StringUtil.h>
-#include "compute/backend_dispatcher.h"
-#include <thrust/binary_search.h>
-#include <thrust/host_vector.h>
-#include "compute/api.h"
 
 std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder>, cudf::size_type>
 get_sort_vars(const std::string & query_part) {

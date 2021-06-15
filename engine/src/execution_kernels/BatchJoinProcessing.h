@@ -46,10 +46,16 @@ public:
 		std::shared_ptr<ral::frame::BlazingTableView> table_left,
 		std::shared_ptr<ral::frame::BlazingTableView> table_right);
 
+#ifdef CUDF_SUPPORT
 	ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream, const std::map<std::string, std::string>& args) override;
-
+#else
+  ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+		const std::map<std::string, std::string>& args) override;
+#endif
+  
 	kstatus run() override;
 
 	std::string get_join_type();
@@ -97,9 +103,15 @@ class JoinPartitionKernel : public distributing_kernel {
 public:
 	JoinPartitionKernel(std::size_t kernel_id, const std::string & queryString, std::shared_ptr<Context> context, std::shared_ptr<ral::cache::graph> query_graph);
 
+#ifdef CUDF_SUPPORT
 	ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream, const std::map<std::string, std::string>& args) override;
+#else
+  ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+		const std::map<std::string, std::string>& args) override;
+#endif
 
 	kstatus run() override;
 

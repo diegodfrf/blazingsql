@@ -6,8 +6,6 @@
 #include "utilities/CodeTimer.h"
 #include <blazingdb/io/Library/Logging/Logger.h>
 #include "ExceptionHandling/BlazingThread.h"
-#include <cudf/filling.hpp>
-#include <cudf/column/column_factories.hpp>
 #include "parser/CalciteExpressionParsing.h"
 #include "operators/LogicalFilter.h"
 #include "operators/Concatenate.h"

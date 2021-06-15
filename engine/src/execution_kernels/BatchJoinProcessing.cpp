@@ -4,9 +4,6 @@
 #include "parser/expression_tree.hpp"
 #include "parser/types_parser_utils.h"
 #include "utilities/CodeTimer.h"
-#include <cudf/partitioning.hpp>
-#include <cudf/join.hpp>
-#include <cudf/stream_compaction.hpp>
 #include <src/operators/LogicalFilter.h>
 #include "execution_graph/executor.h"
 #include "cache_machine/CPUCacheData.h"
@@ -439,10 +436,16 @@ std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 	return result_table;
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 	std::shared_ptr<ral::cache::CacheMachine> /*output*/,
 	cudaStream_t /*stream*/, const std::map<std::string, std::string>& args) {
-	CodeTimer eventTimer;
+#else
+ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
+	std::shared_ptr<ral::cache::CacheMachine> /*output*/,
+	const std::map<std::string, std::string>& args) {
+#endif
+  CodeTimer eventTimer;
 
 	auto & left_batch = inputs[0];
 	auto & right_batch = inputs[1];
@@ -475,8 +478,11 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 			eventTimer.stop();
 			this->add_to_output_cache(std::move(joined));
 		}
-
+#ifdef CUDF_SUPPORT
 	}catch(const rmm::bad_alloc& e){
+#else
+  }catch(const std::bad_alloc& e){
+#endif
 		return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
 	}catch(const std::exception& e){
 		return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -485,7 +491,11 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 	try{
 		this->leftArrayCache->put(std::stoi(args.at("left_idx")), std::move(left_batch));
 		this->rightArrayCache->put(std::stoi(args.at("right_idx")), std::move(right_batch));
+#ifdef CUDF_SUPPORT
 	}catch(const rmm::bad_alloc& e){
+#else
+  }catch(const std::bad_alloc& e){
+#endif
 		//can still recover if the input was not a GPUCacheData
 		return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
 	}catch(const std::exception& e){
@@ -1041,9 +1051,16 @@ void JoinPartitionKernel::small_table_scatter_distribution(std::unique_ptr<ral::
 	this->output_cache(small_output_cache_name)->wait_for_count(total_count);	
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 	std::shared_ptr<ral::cache::CacheMachine> /*output*/,
 	cudaStream_t /*stream*/, const std::map<std::string, std::string>& args) {
+#else
+ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
+	std::shared_ptr<ral::cache::CacheMachine> /*output*/,
+	const std::map<std::string, std::string>& args) {
+#endif
+
 	bool input_consumed = false;
 	try{
 		auto& operation_type = args.at("operation_type");
@@ -1122,7 +1139,11 @@ ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::uni
 
 			return {ral::execution::task_status::FAIL, std::string("In JoinPartitionKernel::do_process Invalid operation_type"), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
 		}
+#ifdef CUDF_SUPPORT
 	}catch(const rmm::bad_alloc& e){
+#else
+  }catch(const std::bad_alloc& e){
+#endif
 		return {ral::execution::task_status::RETRY, std::string(e.what()), input_consumed ? std::vector< std::unique_ptr<ral::frame::BlazingTable> > () : std::move(inputs)};
 	}catch(const std::exception& e){
 		return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};

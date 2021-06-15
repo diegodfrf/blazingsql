@@ -15,15 +15,24 @@ UnionKernel::UnionKernel(std::size_t kernel_id, const std::string & queryString,
     this->input_.add_port("input_a", "input_b");
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result UnionKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable>> inputs,
     std::shared_ptr<ral::cache::CacheMachine> /*output*/,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
-
+#else
+ral::execution::task_result UnionKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable>> inputs,
+    std::shared_ptr<ral::cache::CacheMachine> /*output*/,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
     auto & input = inputs[0];
     try{
         input->set_column_names(common_names);
         normalize_types(input, common_types);
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::runtime_error& e){
+#endif
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
         return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -31,7 +40,11 @@ ral::execution::task_result UnionKernel::do_process(std::vector< std::unique_ptr
 
     try{
         this->add_to_output_cache(std::move(input));
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::runtime_error& e){
+#endif
         //can still recover if the input was not a GPUCacheData
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){

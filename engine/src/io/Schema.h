@@ -10,9 +10,8 @@
 
 #include <string>
 #include <vector>
+#include <arrow/type.h>
 
-#include "cudf/types.hpp"
-#include "blazing_table/BlazingCudfTable.h"
 namespace ral {
 namespace io {
 

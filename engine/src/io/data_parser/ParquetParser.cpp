@@ -11,8 +11,6 @@
 namespace ral {
 namespace io {
 
-namespace cudf_io = cudf::io;
-
 parquet_parser::parquet_parser(){
 	// TODO Auto-generated constructor stub
 }

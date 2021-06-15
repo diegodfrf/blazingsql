@@ -42,12 +42,14 @@ using namespace fmt::literals;
 ResultTable::ResultTable() {
 }
 
+#ifdef CUDF_SUPPORT
 ResultTable::ResultTable(std::unique_ptr<cudf::table> cudf_table)
-  : is_arrow(false), cudf_table(std::move(cudf_table)), arrow_table(nullptr){
+  : is_arrow(false), cudf_table(std::move(cudf_table)) {
 }
+#endif
 
 ResultTable::ResultTable(std::shared_ptr<arrow::Table> arrow_table)
-  : is_arrow(true), cudf_table(nullptr), arrow_table(arrow_table){
+  : is_arrow(true), arrow_table(arrow_table){
 }
 
 TableSchema::TableSchema() {
@@ -281,12 +283,14 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	try{
 		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(preferred_compute_backend,offset.first, args_map);
 		// ral::utilities::print_blazing_table_view(metadata->to_table_view());
+#ifdef CUDF_SUPPORT
 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
 		result->names = metadata->column_names();
 		ral::frame::BlazingCudfTable* current_metadata_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(metadata.get());
 		result->table = std::make_unique<ResultTable>(current_metadata_ptr->releaseCudfTable());
 		result->skipdata_analysis_fail = false;
 		return result;
+#endif
 	} catch(std::exception & e) {
 		std::cerr << e.what() << std::endl;
 		throw;

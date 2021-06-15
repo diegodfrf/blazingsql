@@ -1,8 +1,6 @@
 #pragma once
 
 #include <arrow/io/interfaces.h>
-#include <cudf/io/datasource.hpp>
-#include <cudf/io/json.hpp>
 #include <memory>
 #include <vector>
 

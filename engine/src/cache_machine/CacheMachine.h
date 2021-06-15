@@ -193,12 +193,14 @@ std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::Blazin
 	return std::make_unique<ArrowCacheData>(std::move(arrow_table));
 }
 
+#ifdef CUDF_SUPPORT
 template<>
 inline
 std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::BlazingCudfTable>(std::unique_ptr<ral::frame::BlazingTable> table){
 	std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
 	return std::make_unique<GPUCacheData>(std::move(cudf_table));
 }
+#endif
 
 }  // namespace cache
 }  // namespace ral

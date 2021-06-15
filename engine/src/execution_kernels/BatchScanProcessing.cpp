@@ -65,12 +65,23 @@ TableScan::TableScan(std::size_t kernel_id, const std::string & queryString, std
     this->query_graph = query_graph;
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result TableScan::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
+#else
+ral::execution::task_result TableScan::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
+
     try{
         output->addToCache(std::move(inputs[0]));
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::bad_alloc& e){
+#endif
         //can still recover if the input was not a GPUCacheData
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
@@ -200,9 +211,15 @@ BindableTableScan::BindableTableScan(std::size_t kernel_id, const std::string & 
     }
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result BindableTableScan::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
+#else
+ral::execution::task_result BindableTableScan::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
     auto & input = inputs[0];
     std::unique_ptr<ral::frame::BlazingTable> filtered_input;
 
@@ -215,7 +232,11 @@ ral::execution::task_result BindableTableScan::do_process(std::vector< std::uniq
             input->set_column_names(fix_column_aliases(input->column_names(), expression));
             output->addToCache(std::move(input));
         }
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::bad_alloc& e){
+#endif
         //can still recover if the input was not a GPUCacheData
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){

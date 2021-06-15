@@ -3,7 +3,10 @@
 #include <cassert>
 #include <atomic>
 #include <set>
+#include <mutex>
+#include <memory>
 
+#ifdef CUDF_SUPPORT
 #include <cuda_runtime_api.h>
 
 #pragma GCC diagnostic ignored "-Wreorder"
@@ -19,6 +22,7 @@
 #pragma GCC diagnostic pop
 
 #include "config/GPUManager.cuh"
+#endif
 
 #include <sys/sysinfo.h>
 #include <sys/statvfs.h>
@@ -40,7 +44,11 @@ public:
 /**
 	@brief This class represents the internal implementation of a custom device  memory resource.
 */
+#ifdef CUDF_SUPPORT
 class internal_blazing_device_memory_resource : public rmm::mr::device_memory_resource { 
+#else
+class internal_blazing_device_memory_resource { 
+#endif
 public:
     // TODO: use another constructor for memory in bytes
 
@@ -58,24 +66,34 @@ public:
     size_t get_total_memory();
     size_t get_memory_limit();
     std::string get_type();
+
+    #ifdef CUDF_SUPPORT
     bool supports_streams() const noexcept override;
     bool supports_get_mem_info() const noexcept override;
+    #else
+    bool supports_streams() const noexcept;
+    bool supports_get_mem_info() const noexcept;
+    #endif
+
     std::string get_full_memory_summary();
     void reset_max_memory_used(size_t to = 0) noexcept;
 
 private:
+#ifdef CUDF_SUPPORT
     void* do_allocate(size_t bytes, rmm::cuda_stream_view stream) override;
     void do_deallocate(void* p, size_t bytes, rmm::cuda_stream_view stream) override;
     bool do_is_equal(device_memory_resource const& other) const noexcept override;
     std::pair<size_t, size_t> do_get_mem_info(rmm::cuda_stream_view stream) const override;
 
+    std::shared_ptr<rmm::mr::device_memory_resource> memory_resource_owner;
+    rmm::mr::device_memory_resource * memory_resource;
+    std::unique_ptr<rmm::mr::logging_resource_adaptor<rmm::mr::device_memory_resource>> logging_adaptor;
+#endif
+
     size_t total_memory_size;
     size_t memory_limit;
     std::atomic<size_t> used_memory;
     std::atomic<size_t> max_used_memory;
-    std::shared_ptr<rmm::mr::device_memory_resource> memory_resource_owner;
-    rmm::mr::device_memory_resource * memory_resource;
-    std::unique_ptr<rmm::mr::logging_resource_adaptor<rmm::mr::device_memory_resource>> logging_adaptor;
     std::string type;
 };
 

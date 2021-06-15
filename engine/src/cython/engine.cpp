@@ -7,7 +7,11 @@
 #include "io/data_parser/OrcParser.h"
 #include "io/data_parser/ArrowParser.h"
 #include "io/data_parser/ParquetParser.h"
+
+#ifdef CUDF_SUPPORT
 #include "io/data_provider/GDFDataProvider.h"
+#endif
+
 #include "io/data_provider/ArrowDataProvider.h"
 #include "io/data_provider/UriDataProvider.h"
 //#include "../skip_data/SkipDataProcessor.h" //Todo arrow rommel arrow
@@ -157,8 +161,10 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 
 		if (!isSqlProvider) {
 			if(fileType == ral::io::DataType::CUDF || fileType == ral::io::DataType::DASK_CUDF) {
+#ifdef CUDF_SUPPORT
 				// is gdf
 				provider = std::make_shared<ral::io::gdf_data_provider>(tableSchema.blazingTableViews, uri_values[i]);
+#endif
 			} else if (fileType == ral::io::DataType::ARROW) {
 				std::vector<std::shared_ptr<arrow::Table>> arrow_tables = {tableSchema.arrow_table};
 				provider = std::make_shared<ral::io::arrow_data_provider>(arrow_tables, uri_values[i]);
@@ -306,9 +312,11 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
     if (is_arrow) {
       result->tables.emplace_back(std::make_unique<ResultTable>(arrow_table->view()));
     } else {
+#ifdef CUDF_SUPPORT
       auto cudf_table = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
       assert(cudf_table != nullptr);
       result->tables.emplace_back(std::make_unique<ResultTable>(cudf_table->releaseCudfTable()));
+#endif
     }
 	}
 

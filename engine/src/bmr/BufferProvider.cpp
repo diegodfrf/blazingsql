@@ -3,8 +3,11 @@
 #include <iostream>
 #include <mutex>
 #include <cstring>
+
+#ifdef CUDF_SUPPORT
 #include <cuda.h>
 #include <cuda_runtime.h>
+#endif
 
 #include <ucs/type/status.h>
 
@@ -43,7 +46,7 @@ void host_allocator::do_allocate(void ** ptr, std::size_t size){
 }
 
 void pinned_allocator::do_allocate(void ** ptr, std::size_t size){
-
+#ifdef CUDF_SUPPORT
   // do we really want to do a host allocation instead of a device one? (have to try zero-copy later)
   cudaError_t err = cudaMallocHost(ptr, size);
   if (err != cudaSuccess) {
@@ -66,6 +69,7 @@ void pinned_allocator::do_allocate(void ** ptr, std::size_t size){
         throw std::runtime_error("Error on ucp_mem_map");
         }
   }
+#endif
 }
 
 void host_allocator::do_deallocate(void * ptr){
@@ -73,6 +77,7 @@ void host_allocator::do_deallocate(void * ptr){
 }
 
 void pinned_allocator::do_deallocate(void * ptr){
+#ifdef CUDF_SUPPORT
   if (use_ucx)
      {
      ucs_status_t status = ucp_mem_unmap(context, mem_handle);
@@ -85,6 +90,7 @@ void pinned_allocator::do_deallocate(void * ptr){
   if (err != cudaSuccess) {
     throw std::runtime_error("Couldn't free pinned allocation.");
   }
+#endif
 }
 
 

@@ -5,9 +5,6 @@
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/schema.h>
 
-// TODO percy arrow c.cordova remove this header
-#include <cudf/detail/interop.hpp>
-
 namespace voltron {
 namespace compute {
 namespace arrow_backend {

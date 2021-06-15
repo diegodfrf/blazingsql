@@ -1,24 +1,8 @@
 #include "project_parser_utils.h"
 
-#include <cudf/copying.hpp>
-#include <cudf/replace.hpp>
-#include <cudf/strings/capitalize.hpp>
-#include <cudf/strings/combine.hpp>
-#include <cudf/strings/contains.hpp>
-#include <cudf/strings/replace_re.hpp>
-#include <cudf/strings/replace.hpp>
-#include <cudf/strings/substring.hpp>
-#include <cudf/strings/case.hpp>
-#include <cudf/strings/strip.hpp>
-#include <cudf/strings/convert/convert_booleans.hpp>
-#include <cudf/strings/convert/convert_datetime.hpp>
-#include <cudf/strings/convert/convert_floats.hpp>
-#include <cudf/strings/convert/convert_integers.hpp>
-#include <cudf/unary.hpp>
-#include "blazing_table/BlazingColumnOwner.h"
-#include "parser/expression_utils.hpp"
-#include "compute/api.h"
+#include <numeric>
 
+#include "parser/expression_utils.hpp"
 
 std::string like_expression_to_regex_str(const std::string & like_exp) {
 	if(like_exp.empty()) {
@@ -38,6 +22,7 @@ std::string like_expression_to_regex_str(const std::string & like_exp) {
 	return (match_start ? "^" : "") + re + (match_end ? "$" : "");
 }
 
+#ifdef CUDF_SUPPORT
 cudf::strings::strip_type map_trim_flag_to_strip_type(const std::string & trim_flag)
 {
     if (trim_flag == "BOTH")
@@ -50,33 +35,6 @@ cudf::strings::strip_type map_trim_flag_to_strip_type(const std::string & trim_f
         // Should not reach here
         assert(false);
 }
-
-std::string get_current_date_or_timestamp(std::string expression, blazingdb::manager::Context * context) {
-    // We want `CURRENT_TIME` holds the same value as `CURRENT_TIMESTAMP`
-	if (expression.find("CURRENT_TIME") != expression.npos) {
-		expression = StringUtil::replace(expression, "CURRENT_TIME", "CURRENT_TIMESTAMP");
-	}
-
-	std::size_t date_pos = expression.find("CURRENT_DATE");
-	std::size_t timestamp_pos = expression.find("CURRENT_TIMESTAMP");
-
-	if (date_pos == expression.npos && timestamp_pos == expression.npos) {
-		return expression;
-	}
-
-    // CURRENT_TIMESTAMP will return a `ms` format
-	std::string	timestamp_str = context->getCurrentTimestamp().substr(0, 23);
-    std::string str_to_replace = "CURRENT_TIMESTAMP";
-
-	// In case CURRENT_DATE we want only the date value
-	if (date_pos != expression.npos) {
-		str_to_replace = "CURRENT_DATE";
-        timestamp_str = timestamp_str.substr(0, 10);
-	}
-
-	return StringUtil::replace(expression, str_to_replace, timestamp_str);
-}
-
 
 expr_output_type_visitor::expr_output_type_visitor(const cudf::table_view & table) : table_{table} { }
 
@@ -114,6 +72,33 @@ void expr_output_type_visitor::visit(const ral::parser::operator_node& node)  {
 cudf::data_type expr_output_type_visitor::get_expr_output_type() { return expr_output_type_; }
 
 const std::vector<cudf::size_type> & expr_output_type_visitor::get_variable_indices() { return variable_indices_; }
+#endif
+
+std::string get_current_date_or_timestamp(std::string expression, blazingdb::manager::Context * context) {
+    // We want `CURRENT_TIME` holds the same value as `CURRENT_TIMESTAMP`
+	if (expression.find("CURRENT_TIME") != expression.npos) {
+		expression = StringUtil::replace(expression, "CURRENT_TIME", "CURRENT_TIMESTAMP");
+	}
+
+	std::size_t date_pos = expression.find("CURRENT_DATE");
+	std::size_t timestamp_pos = expression.find("CURRENT_TIMESTAMP");
+
+	if (date_pos == expression.npos && timestamp_pos == expression.npos) {
+		return expression;
+	}
+
+    // CURRENT_TIMESTAMP will return a `ms` format
+	std::string	timestamp_str = context->getCurrentTimestamp().substr(0, 23);
+    std::string str_to_replace = "CURRENT_TIMESTAMP";
+
+	// In case CURRENT_DATE we want only the date value
+	if (date_pos != expression.npos) {
+		str_to_replace = "CURRENT_DATE";
+        timestamp_str = timestamp_str.substr(0, 10);
+	}
+
+	return StringUtil::replace(expression, str_to_replace, timestamp_str);
+}
 
 // Use get_projections and if there are no projections or expression is empty
 // then returns a filled array with the sequence of all columns (0, 1, ..., n)

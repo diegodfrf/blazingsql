@@ -1,17 +1,18 @@
 #include <sstream>
 
 #include "BlazingHostTable.h"
+
 #include "bmr/BlazingMemoryResource.h"
-#include "bmr/BufferProvider.h"
+
+#ifdef CUDF_SUPPORT
 #include "communication/CommunicationInterface/serializer.hpp"
+#endif
+
+#include "bmr/BufferProvider.h"
 #include "parser/types_parser_utils.h"
-#include "cudf/types.hpp"
 #include <arrow/array/builder_binary.h>
 #include <arrow/array/builder_primitive.h>
 #include <arrow/table.h>
-
-
-using namespace fmt::literals;
 
 namespace ral {
 namespace frame {
@@ -297,6 +298,7 @@ std::unique_ptr<BlazingArrowTable> BlazingHostTable::get_arrow_table() const {
 	return std::make_unique<ral::frame::BlazingArrowTable>(table);
 }
 
+#ifdef CUDF_SUPPORT
 std::unique_ptr<BlazingCudfTable> BlazingHostTable::get_cudf_table() const {
     std::vector<rmm::device_buffer> gpu_raw_buffers(chunked_column_infos.size());
    try{
@@ -325,6 +327,7 @@ std::unique_ptr<BlazingCudfTable> BlazingHostTable::get_cudf_table() const {
 
    return std::move(comm::deserialize_from_gpu_raw_buffers(columns_offsets, gpu_raw_buffers));
 }
+#endif
 
 std::vector<ral::memory::blazing_allocation_chunk> BlazingHostTable::get_raw_buffers() const {
     std::vector<ral::memory::blazing_allocation_chunk> chunks;

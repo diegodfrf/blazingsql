@@ -30,9 +30,9 @@ function(configure_test TEST_NAME Tests_SRCS)
         blazingdb-io
         Threads::Threads
 
-        cudf
+        ${CUDF_COMPUTE_LIBRARIES}
+
         zmq
-        cudart
 
         parquet
         arrow
@@ -58,6 +58,7 @@ function(configure_test TEST_NAME Tests_SRCS)
         #spdlog::spdlog
         libspdlog.so
 
+        # TODO percy arrow 4 unit tests!
         cudftestutil
 
         # TODO percy use cmake::find

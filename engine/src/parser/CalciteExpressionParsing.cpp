@@ -7,7 +7,6 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 //#include <cudf.h>
-#include <cudf/table/table_view.hpp>
 #include <iomanip>
 #include <map>
 #include <regex>

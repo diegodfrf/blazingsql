@@ -186,9 +186,15 @@ public:
 	/**
 	* @brief Invokes the do_process function.
 	*/
+#ifdef CUDF_SUPPORT
 	ral::execution::task_result process(std::vector<std::unique_ptr<ral::frame::BlazingTable > >  inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream, const std::map<std::string, std::string>& args);
+#else
+  ral::execution::task_result process(std::vector<std::unique_ptr<ral::frame::BlazingTable > >  inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+		const std::map<std::string, std::string>& args);
+#endif
 
 	/**
 	* @brief Implemented by all derived classes and is the function which actually performs transformations on dataframes.
@@ -197,11 +203,18 @@ public:
 	* @param stream the cudastream to to use
 	* @param args any additional arguments the kernel may need to perform its execution that may not be available to the kernel at instantiation.
 	*/
+#ifdef CUDF_SUPPORT
 	virtual ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable> > /*inputs*/,
 		std::shared_ptr<ral::cache::CacheMachine> /*output*/,
 		cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/){
 			return {ral::execution::task_status::SUCCESS, std::string(), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
 	}
+#else
+  virtual ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable> > /*inputs*/,
+		std::shared_ptr<ral::cache::CacheMachine> /*output*/, const std::map<std::string, std::string>& /*args*/){
+			return {ral::execution::task_status::SUCCESS, std::string(), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
+	}
+#endif
 
 	/**
 	* @brief given the inputs, estimates the number of bytes that will be necessary for holding the output after performing a transformation. For many kernels this is not an estimate but rather a certainty. For operations whose outputs are of indeterminate size it provides an estimate.

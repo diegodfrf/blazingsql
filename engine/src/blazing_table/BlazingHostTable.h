@@ -3,11 +3,13 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "cudf/types.hpp"
 #include "transport/ColumnTransport.h"
 #include "bmr/BufferProvider.h"
-#include "blazing_table/BlazingCudfTable.h"
 #include "blazing_table/BlazingArrowTable.h"
+
+#ifdef CUDF_SUPPORT
+#include "blazing_table/BlazingCudfTable.h"
+#endif
 
 namespace ral {
 namespace frame {
@@ -50,7 +52,10 @@ public:
 
     const std::vector<ColumnTransport> & get_columns_offsets() const ;
 
+#ifdef CUDF_SUPPORT
     std::unique_ptr<BlazingCudfTable> get_cudf_table() const;
+#endif
+
     std::unique_ptr<BlazingArrowTable> get_arrow_table() const;
 
     std::vector<ral::memory::blazing_allocation_chunk> get_raw_buffers() const;

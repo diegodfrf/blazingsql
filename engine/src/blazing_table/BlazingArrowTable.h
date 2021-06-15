@@ -10,7 +10,9 @@ namespace frame {
 class BlazingArrowTable : public BlazingTable, public BlazingArrowTableView {
 public:
   BlazingArrowTable(std::shared_ptr<arrow::Table> arrow_table);
+#ifdef CUDF_SUPPORT
   BlazingArrowTable(std::unique_ptr<BlazingCudfTable> blazing_cudf_table);
+#endif
   BlazingArrowTable(BlazingArrowTable &&other) = default;
 
   size_t num_columns() const override { return BlazingArrowTableView::num_columns(); }

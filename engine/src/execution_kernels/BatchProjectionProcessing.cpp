@@ -15,15 +15,24 @@ Projection::Projection(std::size_t kernel_id, const std::string & queryString, s
     this->query_graph = query_graph;
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result Projection::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
-
+#else
+ral::execution::task_result Projection::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
     try{
         auto & input = inputs[0];
         auto columns = ral::operators::process_project(std::move(input), expression, this->context.get());
         output->addToCache(std::move(columns));
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::bad_alloc& e){
+#endif
         //can still recover if the input was not a GPUCacheData
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){

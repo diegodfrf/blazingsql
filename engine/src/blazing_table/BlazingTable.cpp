@@ -1,5 +1,4 @@
 #include "BlazingTable.h"
-#include <cudf/detail/interop.hpp>
 
 namespace ral {
 namespace frame {

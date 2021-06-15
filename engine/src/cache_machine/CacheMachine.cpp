@@ -6,7 +6,6 @@
 
 #include <sys/stat.h>
 #include <random>
-#include <cudf/io/orc.hpp>
 #include "parser/CalciteExpressionParsing.h"
 #include "communication/CommunicationData.h"
 #include <Util/StringUtil.h>
@@ -305,17 +304,20 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
     // we dont want to add empty tables to a cache, unless we have never added anything
 	if (!this->something_added || table->num_rows() > 0 || always_add){
         // WSM TODO do we want to use the backend_dispatcher here too? This is more business logic, not data transformation
-		if (table->get_execution_backend().id() == ral::execution::backend_id::CUDF ){
-            ral::frame::BlazingCudfTable *cudf_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
-            for (auto col_ind = 0; col_ind < table->num_columns(); col_ind++){
-                
-                if (cudf_table_ptr->view().column(col_ind).offset() > 0){
-                    cudf_table_ptr->ensureOwnership();
-                    break;
-                }
+		if (table->get_execution_backend().id() == ral::execution::backend_id::CUDF )
+    {
+#ifdef CUDF_SUPPORT
+      ral::frame::BlazingCudfTable *cudf_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+      for (auto col_ind = 0; col_ind < table->num_columns(); col_ind++){
+          
+          if (cudf_table_ptr->view().column(col_ind).offset() > 0){
+              cudf_table_ptr->ensureOwnership();
+              break;
+          }
 
-            }
-        }
+      }
+#endif
+    }
 
 		if (message_id == ""){
 			message_id = this->cache_machine_name;
@@ -336,29 +338,29 @@ bool CacheMachine::addToCache(std::unique_ptr<ral::frame::BlazingTable> table, s
 					cacheIndex = cache_level_override;
 				}
 				if(cacheIndex == 0 && table->get_execution_backend().id() == ral::execution::backend_id::CUDF) {
-					
-                    std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
-                    // before we put into a cache, we need to make sure we fully own the table
-                    cudf_table->ensureOwnership();
+#ifdef CUDF_SUPPORT
+          std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
+          // before we put into a cache, we need to make sure we fully own the table
+          cudf_table->ensureOwnership();
 					std::unique_ptr<CacheData> cache_data = std::make_unique<GPUCacheData>(std::move(cudf_table),metadata);
 					auto item =	std::make_unique<message>(std::move(cache_data), message_id);
 					this->waitingCache->put(std::move(item));
 
-                    cacheEventTimer.stop();
-                    if(cache_events_logger) {
-                        cache_events_logger->info("{ral_id}|{query_id}|{message_id}|{cache_id}|{num_rows}|{num_bytes}|{event_type}|{timestamp_begin}|{timestamp_end}|{description}",
-                                                  "ral_id"_a=(ctx ? ctx->getNodeIndex(ral::communication::CommunicationData::getInstance().getSelfNode()) : -1),
-                                                  "query_id"_a=(ctx ? ctx->getContextToken() : -1),
-                                                  "message_id"_a=message_id,
-                                                  "cache_id"_a=cache_id,
-                                                  "num_rows"_a=num_rows_added,
-                                                  "num_bytes"_a=num_bytes_added,
-                                                  "event_type"_a="AddToCache",
-                                                  "timestamp_begin"_a=cacheEventTimer.start_time(),
-                                                  "timestamp_end"_a=cacheEventTimer.end_time(),
-                                                  "description"_a="Add to CacheMachine into GPU cache");
-                    }
-
+          cacheEventTimer.stop();
+          if(cache_events_logger) {
+              cache_events_logger->info("{ral_id}|{query_id}|{message_id}|{cache_id}|{num_rows}|{num_bytes}|{event_type}|{timestamp_begin}|{timestamp_end}|{description}",
+                                        "ral_id"_a=(ctx ? ctx->getNodeIndex(ral::communication::CommunicationData::getInstance().getSelfNode()) : -1),
+                                        "query_id"_a=(ctx ? ctx->getContextToken() : -1),
+                                        "message_id"_a=message_id,
+                                        "cache_id"_a=cache_id,
+                                        "num_rows"_a=num_rows_added,
+                                        "num_bytes"_a=num_bytes_added,
+                                        "event_type"_a="AddToCache",
+                                        "timestamp_begin"_a=cacheEventTimer.start_time(),
+                                        "timestamp_end"_a=cacheEventTimer.end_time(),
+                                        "description"_a="Add to CacheMachine into GPU cache");
+          }
+#endif
 				} else {
 					if(cacheIndex == 1) {
                         std::unique_ptr<CacheData> cache_data;

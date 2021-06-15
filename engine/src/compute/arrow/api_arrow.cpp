@@ -2,23 +2,20 @@
 
 #include "compute/api.h"
 
-#include <cudf/detail/interop.hpp>
-
+#include <random>
+#include <arrow/builder.h>
+#include <arrow/compute/api.h>
 
 #include "compute/backend_dispatcher.h"
-
-#include "parser/expression_utils.hpp"
-#include "parser/CalciteExpressionParsing.h"
-
-#include <cudf/scalar/scalar_factories.hpp>
-
-#include <thrust/binary_search.h>
-
 #include "compute/arrow/detail/aggregations.h"
 #include "compute/arrow/detail/io.h"
 #include "compute/arrow/detail/scalars.h"
 #include "compute/arrow/detail/types.h"
+#include "parser/expression_utils.hpp"
+#include "parser/CalciteExpressionParsing.h"
 
+// TODO percy arrow 4 move these functions into hosttbale ctor
+#include "communication/messages/GPUComponentMessage.h"
 
 inline std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
   std::shared_ptr<arrow::Table> table,
@@ -146,6 +143,8 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator
   return nullptr;
 }
 
+// TODO percy arrow rommel enable this when we have arrow 4
+#ifdef CUDF_SUPPORT
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingArrowTable>(
 		std::shared_ptr<ral::frame::BlazingTableView> table,
@@ -168,6 +167,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral:
   std::shared_ptr<arrow::Table> ret = arrow::compute::Take(*arrow_table, *idx).ValueOrDie();
   return std::make_unique<ral::frame::BlazingArrowTable>(ret);
 }
+#endif
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> groupby_without_aggregations_functor::operator()<ral::frame::BlazingArrowTable>(
@@ -324,31 +324,13 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::op
   auto sortColumns = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(sortColumns_view);
   //std::unique_ptr<cudf::column> output = cudf::sorted_order( sortColumns->view(), sortOrderTypes, null_orders );
   auto col = table->view()->column(0); // TODO percy arrow
-  std::shared_ptr<arrow::Array> vals = arrow::Concatenate(col->chunks()).ValueOrDie();
-  std::shared_ptr<arrow::Array> output = arrow::compute::SortToIndices(*vals).ValueOrDie();
-  std::shared_ptr<arrow::Table> gathered = arrow::compute::Take(*table->view(), *output).ValueOrDie();
-  return std::make_unique<ral::frame::BlazingArrowTable>(gathered);
-
   
-  /*
-  auto table = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
-  auto arrow_table = table->view();
-  for (int c = 0; c < arrow_table->columns().size(); ++c) {
-    auto col = arrow_table->column(c);
-    std::shared_ptr<arrow::Array> flecha = arrow::Concatenate(col->chunks()).ValueOrDie();
-    std::shared_ptr<arrow::Array> sorted_indx = arrow::compute::SortToIndices(*flecha).ValueOrDie();
-    arrow::compute::Take(sorted_indx);
-  }
-*/
-//    std::unique_ptr<> arrayBuilder;
-//    arrow::ArrayBuilder()
-//    arrayBuilder->
-//    std::shared_ptr<arrow::Array> temp = std::make_shared<arrow::Array>(col);
-    //arrow::compute::SortToIndices();
-  //arrow::compute::SortToIndices(
-//    arrow::compute::Take();
-//  }
-  // TODO percy arrow
+  // TODO percy arrow complete this when we have arrow 4
+//  std::shared_ptr<arrow::Array> vals = arrow::Concatenate(col->chunks()).ValueOrDie();
+//  std::shared_ptr<arrow::Array> output = arrow::compute::SortToIndices(*vals).ValueOrDie();
+//  std::shared_ptr<arrow::Table> gathered = arrow::compute::Take(*table->view(), *output).ValueOrDie();
+//  return std::make_unique<ral::frame::BlazingArrowTable>(gathered);
+
 }
 
 template <>
@@ -488,6 +470,8 @@ inline std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<
   return std::make_shared<ral::frame::BlazingArrowTableView>(selected);
 }
 
+// TODO percy arrow rommel enable this when we have arrow 4
+#ifdef CUDF_SUPPORT
 template <>
 inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
 upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
@@ -548,6 +532,7 @@ upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
   //return nullptr;
   throw std::runtime_error("ERROR: upper_bound_split_functor BlazingSQL doesn't support this Arrow operator yet.");
 }
+#endif
 
 template <> template <>
 inline std::unique_ptr<ral::frame::BlazingTable>
@@ -641,6 +626,14 @@ decache_io_functor::operator()<ral::frame::BlazingArrowTable>(
 
     auto new_schema = build_arrow_schema(all_columns_arrow, names, arrow_metadata);
     return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(new_schema, all_columns_arrow, num_rows));
+}
+
+template<>
+inline std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::operator()<ral::frame::BlazingArrowTable>(
+	std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
+
+  ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
+  return ral::communication::messages::serialize_arrow_message_to_host_table(arrow_table_ptr->to_table_view(), use_pinned);
 }
 
 //} // compute

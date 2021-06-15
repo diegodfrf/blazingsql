@@ -182,10 +182,16 @@ void tcp_message_listener::start_polling() {
 							//   std::cout<<"Transfer duration before finish "<<duration <<" Throughput was "<<
 							//   (( (float) total_size) / 1000000.0)/(((float) duration)/1000.0)<<" MB/s"<<std::endl;
 
+#ifdef CUDF_SUPPORT
 							receiver->finish(stream);
+#else
+              receiver->finish();
+#endif
 						}
+#ifdef CUDF_SUPPORT
 						cudaStreamSynchronize(stream);
 						//	cudaStreamDestroy(stream);
+#endif
 					}catch(std::exception & e){
 						close(connection_fd);
 						std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
@@ -205,7 +211,7 @@ void tcp_message_listener::start_polling() {
 }
 
 void ucx_message_listener::poll_begin_message_tag(bool running_from_unit_test){
-
+#ifdef CUDF_SUPPORT
 	if (!polling_started){
 		polling_started = true;
 		auto thread = std::thread([running_from_unit_test, this]{
@@ -260,8 +266,8 @@ void ucx_message_listener::poll_begin_message_tag(bool running_from_unit_test){
 		});
 		thread.detach();
 	}
+#endif
 }
-
 
 void ucx_message_listener::add_receiver(ucp_tag_t tag,std::shared_ptr<message_receiver> receiver){
 	std::lock_guard<std::mutex> lock(this->receiver_mutex);

@@ -3,7 +3,6 @@
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
 #include "blazing_table/BlazingArrowTable.h"
-#include <cudf/scalar/scalar_factories.hpp>
 
 #include <arrow/compute/api.h>
 #include "operators/operators_definitions.h"

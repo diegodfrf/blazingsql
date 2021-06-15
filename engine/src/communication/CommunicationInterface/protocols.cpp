@@ -128,11 +128,13 @@ ucp_progress_manager * ucp_progress_manager::get_instance() {
 
 ucp_progress_manager::ucp_progress_manager(ucp_worker_h ucp_worker, size_t request_size) :
  _request_size{request_size}, ucp_worker{ucp_worker} {
+#ifdef CUDF_SUPPORT
     std::thread t([this]{
         cudaSetDevice(0);
         this->check_progress();
     });
     t.detach();
+#endif
 }
 
 void ucp_progress_manager::add_recv_request(char * request, std::function<void()> callback, ucs_status_t status){

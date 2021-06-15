@@ -1,33 +1,9 @@
 #include "CPUCacheData.h"
-#include "compute/backend_dispatcher.h"
+#include "compute/api.h"
 #include "parser/types_parser_utils.h"
 
 namespace ral {
 namespace cache {
-
-struct make_blazinghosttable_functor {
-	template <typename T>
-	std::unique_ptr<ral::frame::BlazingHostTable> operator()(std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
-		throw std::runtime_error("ERROR: make_blazinghosttable_functor This default dispatcher operator should not be called.");
-    	return nullptr;
-	}
-};
-
-template<>
-std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::operator()<ral::frame::BlazingArrowTable>(
-	std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
-
-  ral::frame::BlazingArrowTable *arrow_table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
-  return ral::communication::messages::serialize_arrow_message_to_host_table(arrow_table_ptr->to_table_view(), use_pinned);
-}
-
-template<>
-std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::operator()<ral::frame::BlazingCudfTable>(
-	std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
-
-	ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
-    return ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
-}
 
 CPUCacheData::CPUCacheData(std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned)
 	: CacheData(CacheDataType::CPU, table->column_names(), table->column_types(), table->num_rows())

@@ -1,7 +1,5 @@
 #pragma once
 
-//#include "cudf/cudf.h"
-
 #include "../src/io/DataType.h"
 #include <map>
 #include <string>
@@ -12,21 +10,28 @@
 #include <memory>
 
 #include "blazing_table/BlazingTableView.h"
+#include "utilities/error.hpp"
+
+#ifdef CUDF_SUPPORT
 #include "blazing_table/BlazingCudfTableView.h"
-#include "../../src/utilities/error.hpp"
+#endif
 
 typedef ral::io::DataType DataType;
 
 struct ResultTable {
   ResultTable();
+#ifdef CUDF_SUPPORT
   ResultTable(std::unique_ptr<cudf::table> cudf_table);
+#endif
   ResultTable(std::shared_ptr<arrow::Table> arrow_table);
   ResultTable(ResultTable &&) = default;
   virtual ~ResultTable() = default;
   ResultTable & operator=(ResultTable &&) = default;
   bool is_arrow = false;
-  std::unique_ptr<cudf::table> cudf_table;
-  std::shared_ptr<arrow::Table> arrow_table;
+#ifdef CUDF_SUPPORT
+  std::unique_ptr<cudf::table> cudf_table = nullptr;
+#endif
+  std::shared_ptr<arrow::Table> arrow_table = nullptr;
 };
 
 struct PartitionedResultSet {
@@ -49,7 +54,10 @@ struct TableSchema {
 	TableSchema & operator=(TableSchema const &other) = default;
 	TableSchema & operator=(TableSchema &&) = default;
 
+#ifdef CUDF_SUPPORT
 	std::vector<std::shared_ptr<ral::frame::BlazingCudfTableView>> blazingTableViews;
+#endif
+
 	std::vector<std::shared_ptr<arrow::DataType>> types;
 	std::vector<std::string> files;
 	std::vector<std::string> datasource;

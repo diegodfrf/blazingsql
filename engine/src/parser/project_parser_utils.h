@@ -1,31 +1,14 @@
 #pragma once
 
 #include <execution_graph/Context.h>
-#include "blazing_table/BlazingColumn.h"
-#include <cudf/copying.hpp>
-#include "utilities/error.hpp"
-#include <cudf/stream_compaction.hpp>
-#include <cudf/copying.hpp>
 #include <regex>
 
-#include <cudf/strings/capitalize.hpp>
-#include <cudf/strings/combine.hpp>
-#include <cudf/strings/contains.hpp>
-#include <cudf/strings/replace_re.hpp>
-#include <cudf/strings/replace.hpp>
-#include <cudf/strings/substring.hpp>
-#include <cudf/strings/case.hpp>
-#include <cudf/strings/strip.hpp>
-#include <cudf/strings/convert/convert_booleans.hpp>
-#include <cudf/strings/convert/convert_datetime.hpp>
-#include <cudf/strings/convert/convert_floats.hpp>
-#include <cudf/strings/convert/convert_integers.hpp>
-#include <cudf/unary.hpp>
 #include "parser/expression_tree.hpp"
 #include "parser/expression_utils.hpp"
 
 std::string like_expression_to_regex_str(const std::string & like_exp);
 
+#ifdef CUDF_SUPPORT
 struct cast_to_str_functor {
     template<typename T, std::enable_if_t<cudf::is_boolean<T>()> * = nullptr>
     inline std::unique_ptr<cudf::column> operator()(const cudf::column_view & col) {
@@ -58,9 +41,7 @@ struct cast_to_str_functor {
     }
 };
 
-
 cudf::strings::strip_type map_trim_flag_to_strip_type(const std::string & trim_flag);
-
 
 /**
  * @brief A class that traverses an expression tree and calculates the final
@@ -86,6 +67,7 @@ private:
 	std::map<const ral::parser::node*, cudf::data_type> node_to_type_map_;
 	cudf::table_view table_;
 };
+#endif
 
 // Use get_projections and if there are no projections or expression is empty
 // then returns a filled array with the sequence of all columns (0, 1, ..., n)

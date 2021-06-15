@@ -17,7 +17,13 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 
 #include <algorithm>
+
+#ifdef CUDF_SUPPORT
 #include <cuda_runtime.h>
+#include "communication/ucx_init.h"
+#include "cudf/detail/gather.hpp"
+#endif
+
 #include <memory>
 #include <chrono>
 #include <thread>         // std::this_thread::sleep_for
@@ -31,7 +37,6 @@
 #include "blazingdb/io/Library/Logging/ServiceLogging.h"
 #include <blazingdb/io/Util/StringUtil.h>
 
-#include "communication/ucx_init.h"
 #include "communication/CommunicationData.h"
 #include "communication/CommunicationInterface/protocols.hpp"
 
@@ -40,7 +45,6 @@
 
 #include "utilities/error.hpp"
 
-#include "cudf/detail/gather.hpp"
 #include "communication/CommunicationInterface/node.hpp"
 #include "communication/CommunicationInterface/protocols.hpp"
 #include "communication/CommunicationInterface/messageSender.hpp"
@@ -480,6 +484,7 @@ std::pair<std::pair<std::shared_ptr<CacheMachine>,std::shared_ptr<CacheMachine> 
 
 		ucp_worker_h self_worker = nullptr;
 		if(protocol == comm::blazing_protocol::ucx){
+#ifdef CUDF_SUPPORT
 			ucp_context = reinterpret_cast<ucp_context_h>(workers_ucp_info[0].context_handle);
 
 			self_worker = ral::communication::CreatetUcpWorker(ucp_context);
@@ -579,7 +584,7 @@ std::pair<std::pair<std::shared_ptr<CacheMachine>,std::shared_ptr<CacheMachine> 
 				ucp_context, self_worker,nodes_info_map,20, output_input_caches.second);
 			comm::ucx_message_listener::get_instance()->poll_begin_message_tag(true);
 			output_input_caches.second = comm::ucx_message_listener::get_instance()->get_input_cache();
-
+#endif
 		}else{
 
 

@@ -1,6 +1,8 @@
 #include "BlazingArrowTable.h"
-#include <cudf/detail/interop.hpp>
+
+#ifdef CUDF_SUPPORT
 #include "blazing_table/BlazingCudfTable.h"
+#endif
 
 namespace ral {
 namespace frame {
@@ -10,6 +12,7 @@ BlazingArrowTable::BlazingArrowTable(std::shared_ptr<arrow::Table> arrow_table)
 	, BlazingArrowTableView(arrow_table) {
 }
 
+#ifdef CUDF_SUPPORT
 BlazingArrowTable::BlazingArrowTable(std::unique_ptr<BlazingCudfTable> blazing_cudf_table)
   : BlazingTable(execution::backend_id::ARROW, true), BlazingArrowTableView(nullptr) {
 	
@@ -20,6 +23,7 @@ BlazingArrowTable::BlazingArrowTable(std::unique_ptr<BlazingCudfTable> blazing_c
 	// TODO this also takes in an arrow::MemoryPool.
 	this->arrow_table = cudf::to_arrow(blazing_cudf_table->view(), arrow_metadata);
 }
+#endif
 
 std::unique_ptr<BlazingTable> BlazingArrowTable::clone() const {
   return this->to_table_view()->clone();

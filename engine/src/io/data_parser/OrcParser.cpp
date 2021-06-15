@@ -64,6 +64,7 @@ std::unique_ptr<ral::frame::BlazingTable> orc_parser::get_metadata(ral::executio
 	std::vector<ral::io::data_handle> handles, int offset,
 	std::map<std::string, std::string> args_map)
 {
+#ifdef CUDF_SUPPORT
 	std::vector<size_t> num_stripes(handles.size());
 	std::vector<cudf::io::parsed_orc_statistics> statistics(handles.size());
 	for(size_t file_index = 0; file_index < handles.size(); file_index++) {
@@ -76,6 +77,7 @@ std::unique_ptr<ral::frame::BlazingTable> orc_parser::get_metadata(ral::executio
 	std::unique_ptr<ral::frame::BlazingTable> minmax_metadata_table = get_minmax_metadata(statistics, total_num_stripes, offset);
 
 	return minmax_metadata_table;
+#endif
 }
 
 } /* namespace io */

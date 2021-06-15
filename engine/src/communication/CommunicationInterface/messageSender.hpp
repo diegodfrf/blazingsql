@@ -2,7 +2,11 @@
 
 #include <transport/ColumnTransport.h>
 #include <memory>
+
+#ifdef CUDF_SUPPORT
 #include <rmm/device_buffer.hpp>
+#endif
+
 #include <utility>
 #include <Util/StringUtil.h>
 

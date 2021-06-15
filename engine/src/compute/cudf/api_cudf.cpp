@@ -57,6 +57,8 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator
 	return sorted_merger(tables, sortOrderTypes, sortColIndices, sortOrderNulls);
 }
 
+// TODO percy arrow rommel enable this when we have arrow 4
+#ifdef CUDF_SUPPORT
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingCudfTable>(
 		std::shared_ptr<ral::frame::BlazingTableView> table,
@@ -70,6 +72,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral:
 
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(pivots), table->column_names());
 }
+#endif
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> groupby_without_aggregations_functor::operator()<ral::frame::BlazingCudfTable>(
@@ -538,6 +541,15 @@ decache_io_functor::operator()<ral::frame::BlazingCudfTable>(
 
       auto unique_table = std::make_unique<cudf::table>(std::move(all_columns));
       return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), names);
+}
+
+template<>
+inline
+std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::operator()<ral::frame::BlazingCudfTable>(
+	std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
+
+	ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+    return ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
 }
 
 //} // compute

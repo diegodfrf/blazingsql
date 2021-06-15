@@ -2,10 +2,14 @@
 #define BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_COMMON_METADATA_CPP_H_
 
 #include "orc_metadata.h"
-#include "blazing_table/BlazingCudfTable.h"
 
+#include <iostream>
+
+#ifdef CUDF_SUPPORT
+#include "blazing_table/BlazingCudfTable.h"
 // TODO percy arrow delete this include cudf details should never he here
 #include "compute/cudf/detail/types.h"
+#endif
 
 std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_names(std::vector<std::string> col_names) {
 	const int ncols = col_names.size();
@@ -26,6 +30,7 @@ std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_nam
 	metadata_col_names[++metadata_col_index] = "file_handle_index";
 	metadata_col_names[++metadata_col_index] = "row_group_index";  // as `stripe_index` when ORC
 
+#ifdef CUDF_SUPPORT
 	std::vector<std::unique_ptr<cudf::column>> minmax_metadata_gdf_table;
 	minmax_metadata_gdf_table.resize(metadata_col_names.size());
 	for (std::size_t i = 0; i < metadata_col_names.size(); ++i) {
@@ -38,9 +43,11 @@ std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_nam
 	auto metadata_table = std::make_unique<ral::frame::BlazingCudfTable>(std::move(cudf_metadata_table), metadata_col_names);
 
 	return metadata_table;
+#endif
 }
 
 std::unique_ptr<cudf::column> make_cudf_column_from_vector(cudf::data_type dtype, std::basic_string<char> &vector, unsigned long column_size) {
+#ifdef CUDF_SUPPORT
 	size_t width_per_value = cudf::size_of(dtype);
 	if (vector.size() != 0) {
 		auto buffer_size = width_per_value * column_size;
@@ -51,6 +58,7 @@ std::unique_ptr<cudf::column> make_cudf_column_from_vector(cudf::data_type dtype
 		rmm::device_buffer gpu_buffer(buffer_size);
 		return std::make_unique<cudf::column>(dtype, column_size, buffer_size);
 	}
+#endif
 }
 
 std::basic_string<char> get_typed_vector_content(cudf::type_id dtype, std::vector<int64_t> &vector) {

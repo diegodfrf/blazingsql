@@ -66,7 +66,9 @@ void message_sender::run_polling() {
 		std::shared_ptr<spdlog::logger> comms_logger;
 		comms_logger = spdlog::get("output_comms");
 
+#ifdef CUDF_SUPPORT
 		cudaSetDevice(0);
+#endif
 
 		while(true) {
 			std::vector<std::unique_ptr<ral::cache::CacheData> > cache_datas = output_cache->pull_all_cache_data();

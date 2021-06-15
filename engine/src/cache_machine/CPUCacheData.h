@@ -48,7 +48,9 @@ public:
     if (backend.id() == ral::execution::backend_id::ARROW) {
       return std::move(host_table->get_arrow_table());
     }
+    #ifdef CUDF_SUPPORT
 	  return std::move(host_table->get_cudf_table());
+    #endif
 	}
 
 	/**

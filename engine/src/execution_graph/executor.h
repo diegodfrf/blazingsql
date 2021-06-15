@@ -34,7 +34,12 @@ public:
 	* This function does not modify the inputs and can throw an exception. In the case it throws an exception it
 	* gets placed back in the executor if it was a memory exception.
 	*/
+#ifdef CUDF_SUPPORT
 	void run(cudaStream_t stream, executor * executor);
+#else
+void run(executor * executor);
+#endif
+
 	void complete();
 	void fail();
 	std::size_t task_memory_needed();

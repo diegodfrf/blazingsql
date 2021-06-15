@@ -1,8 +1,7 @@
 #include "distributing_kernel.h"
 #include "cache_machine/CPUCacheData.h"
-
-// TODO percy arrow delete this include cudf details should never be here
-#include "compute/cudf/detail/types.h"
+#include "compute/api.h"
+#include "compute/backend_dispatcher.h"
 
 namespace ral {
 namespace cache {
@@ -79,7 +78,9 @@ void distributing_kernel::send_message(std::unique_ptr<ral::frame::BlazingTable>
     bool added;
     std::string message_id = metadata.get_values()[ral::cache::MESSAGE_ID];
     if(table==nullptr) {
-        table = create_empty_cudf_table({}, {});
+      std::vector<std::string> column_names;
+      std::vector<std::shared_ptr<arrow::DataType>> dtypes;
+      table = ral::execution::backend_dispatcher(this->get_context()->preferred_compute(), create_empty_table_functor(), column_names, dtypes);
     } 
     
     added = output_cache->addToCache(std::move(table),"",always_add,metadata,true);

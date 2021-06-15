@@ -14,16 +14,25 @@ Filter::Filter(std::size_t kernel_id, const std::string & queryString, std::shar
     this->query_graph = query_graph;
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result Filter::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
-
+#else
+ral::execution::task_result Filter::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
     std::unique_ptr<ral::frame::BlazingTable> columns;
     try{
         auto & input = inputs[0];
         columns = ral::operators::process_filter(input->to_table_view(), expression, this->context.get());
         output->addToCache(std::move(columns));
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::bad_alloc& e){
+#endif
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
         return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};

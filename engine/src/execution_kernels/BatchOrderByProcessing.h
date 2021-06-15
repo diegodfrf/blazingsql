@@ -22,9 +22,15 @@ public:
 
 	std::string kernel_name() { return "PartitionSingleNode";}
 
+#ifdef CUDF_SUPPORT
 	ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream, const std::map<std::string, std::string>& args) override;
+#else
+  ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+		const std::map<std::string, std::string>& args) override;
+#endif
 
 	kstatus run() override;
 
@@ -53,9 +59,15 @@ public:
 	void compute_partition_plan(
 		std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputSamples);
 
+#ifdef CUDF_SUPPORT
 	ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream, const std::map<std::string, std::string>& args) override;
+#else
+  ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+		const std::map<std::string, std::string>& args) override;
+#endif
 
 	kstatus run() override;
 
@@ -78,9 +90,15 @@ public:
 
 	std::string kernel_name() { return "Partition";}
 
+#ifdef CUDF_SUPPORT
 	ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream, const std::map<std::string, std::string>& args) override;
+#else
+  ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+		const std::map<std::string, std::string>& args) override;
+#endif
 
 	kstatus run() override;
 
@@ -103,9 +121,15 @@ public:
 
 	std::string kernel_name() { return "MergeStream";}
 
+#ifdef CUDF_SUPPORT
 	ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream, const std::map<std::string, std::string>& args) override;
+#else
+  ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+		const std::map<std::string, std::string>& args) override;
+#endif
 
 	kstatus run() override;
 };
@@ -123,9 +147,15 @@ public:
 
 	std::string kernel_name() { return "Limit";}
 
+#ifdef CUDF_SUPPORT
 	ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream, const std::map<std::string, std::string>& args) override;
+#else
+  ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+		const std::map<std::string, std::string>& args) override;
+#endif
 
 	kstatus run() override;
 

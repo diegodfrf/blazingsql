@@ -4,12 +4,6 @@
 
 #include <cmath>
 
-#include <cudf/search.hpp>
-#include <cudf/sorting.hpp>
-#include "cudf/copying.hpp"
-#include <cudf/merge.hpp>
-#include <cudf/utilities/traits.hpp>
-
 #include "operators/OrderBy.h"
 #include "operators/Concatenate.h"
 #include "compute/backend_dispatcher.h"
@@ -17,13 +11,9 @@
 #include "utilities/error.hpp"
 #include "utilities/ctpl_stl.h"
 #include <numeric>
-#include <cudf/detail/interop.hpp>
 #include <spdlog/spdlog.h>
 
 #include "compute/api.h"
-
-// TODO percy arrow delete this include cudf details should never he here
-#include "compute/cudf/detail/types.h"
 
 using namespace fmt::literals;
 
@@ -120,15 +110,17 @@ std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partiti
 	std::iota(sequence.begin(), sequence.end(), 1);
 	std::transform(sequence.begin(), sequence.end(), sequence.begin(), [step](int32_t i){ return i*step;});
 
+#ifdef CUDF_SUPPORT
 	auto gather_map = vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
 
 	// TODO percy rommel arrow
 	std::unique_ptr<ral::frame::BlazingTable> pivots = ral::execution::backend_dispatcher(sortedSamples->get_execution_backend(), gather_functor(),
 													sortedSamples, std::move(gather_map), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED);
 	return std::move(pivots);
+#else
+  return nullptr; // TODO percy arrow 4
+#endif
 }
-
-
 
 }  // namespace distribution
 }  // namespace ral

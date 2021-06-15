@@ -1,20 +1,15 @@
 #pragma once
 
+#include <map>
+
 // TODO percy make sub mod io
 #include <arrow/io/file.h>
 #include <arrow/scalar.h>
 #include "io/DataType.h"
 
 #include "blazing_table/BlazingTable.h"
+#include "blazing_table/BlazingHostTable.h"
 #include "io/Schema.h"
-
-// TODO percy arrow delete all cudf related stuff
-#include <cudf/detail/rolling.hpp>
-#include <cudf/detail/gather.hpp>
-#include <cudf/rolling/range_window_bounds.hpp>
-#include <cudf/rolling.hpp>
-#include <cudf/copying.hpp>
-#include <cudf/aggregation.hpp>
 
 #include "operators/operators_definitions.h"
 
@@ -35,6 +30,8 @@ struct sorted_merger_functor {
   }
 };
 
+// TODO percy arrow rommel enable this when we have arrow 4
+#ifdef CUDF_SUPPORT
 struct gather_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
@@ -47,6 +44,7 @@ struct gather_functor {
     return nullptr;
   }
 };
+#endif
 
 struct groupby_without_aggregations_functor {
   template <typename T>
@@ -334,6 +332,8 @@ struct select_functor {
   }
 };
 
+// TODO percy arrow rommel enable this when we have arrow 4
+#ifdef CUDF_SUPPORT
 struct upper_bound_split_functor {
   template <typename T>
   std::vector<std::shared_ptr<ral::frame::BlazingTableView>> operator()(
@@ -346,6 +346,7 @@ struct upper_bound_split_functor {
     throw std::runtime_error("ERROR: upper_bound_split_functor This default dispatcher operator should not be called.");
   }
 };
+#endif
 
 template <ral::io::DataType DataSourceType>
 struct io_read_file_data_functor {
@@ -386,10 +387,19 @@ struct decache_io_functor {
   }
 };
 
+struct make_blazinghosttable_functor {
+	template <typename T>
+	std::unique_ptr<ral::frame::BlazingHostTable> operator()(std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
+		throw std::runtime_error("ERROR: make_blazinghosttable_functor This default dispatcher operator should not be called.");
+    	return nullptr;
+	}
+};
 
 //} // compute
 //} // voltron
 
-
+#ifdef CUDF_SUPPORT
 #include "compute/cudf/api_cudf.cpp"
+#endif
+
 #include "compute/arrow/api_arrow.cpp"

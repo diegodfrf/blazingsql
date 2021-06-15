@@ -3,6 +3,7 @@
 #include "compute/backend_dispatcher.h"
 #include "compute/backend.h"
 #include "compute/api.h"
+#include "utilities/error.hpp"
 
 bool checkIfConcatenatingStringsWillOverflow(const std::vector<std::shared_ptr<ral::frame::BlazingTableView>> & tables) {
   return ral::execution::backend_dispatcher(tables[0]->get_execution_backend(), checkIfConcatenatingStringsWillOverflow_functor(),

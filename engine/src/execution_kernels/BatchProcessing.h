@@ -162,9 +162,15 @@ public:
 
     std::string kernel_name() { return "Output";}
 
+#ifdef CUDF_SUPPORT
     ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > /*inputs*/,
         std::shared_ptr<ral::cache::CacheMachine> /*output*/,
         cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) override {
+#else
+    ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > /*inputs*/,
+        std::shared_ptr<ral::cache::CacheMachine> /*output*/,
+        const std::map<std::string, std::string>& /*args*/) override {
+#endif
             //for now the output kernel is not using do_process
             //i believe the output should be a cachemachine itself
             //obviating this concern

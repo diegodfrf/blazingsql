@@ -3,15 +3,10 @@
 #include "utilities/CodeTimer.h"
 #include "communication/CommunicationData.h"
 #include <blazingdb/io/Library/Logging/Logger.h>
-#include <cudf/copying.hpp>
-#include <cudf/sorting.hpp>
-#include <cudf/search.hpp>
 #include <random>
 #include "parser/expression_utils.hpp"
 #include <blazingdb/io/Util/StringUtil.h>
 #include "compute/backend_dispatcher.h"
-#include <thrust/binary_search.h>
-#include <thrust/host_vector.h>
 #include "compute/api.h"
 #include "parser/orderby_parser_utils.h"
 #include "operators/Concatenate.h"
@@ -160,8 +155,9 @@ std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partition_table(std::
   std::shared_ptr<ral::frame::BlazingTableView> columns_to_search = ral::execution::backend_dispatcher(
     sortedTable->get_execution_backend(), select_functor(), sortedTable, sortColIndices);
 
-  return ral::execution::backend_dispatcher(columns_to_search->get_execution_backend(), upper_bound_split_functor(),
-    sortedTable, columns_to_search, partitionPlan, sortOrderTypes, sortOrderNulls);
+  // TODO percy arrow 4
+//  return ral::execution::backend_dispatcher(columns_to_search->get_execution_backend(), upper_bound_split_functor(),
+//    sortedTable, columns_to_search, partitionPlan, sortOrderTypes, sortOrderNulls);
 }
 
 std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(

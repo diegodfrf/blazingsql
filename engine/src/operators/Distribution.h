@@ -4,8 +4,6 @@
 #include "communication/factory/MessageFactory.h"
 #include <vector>
 #include "blazing_table/BlazingTableView.h"
-#include <cudf/merge.hpp>
-#include "cudf/detail/gather.hpp"
 #include "operators_definitions.h"
 
 namespace ral {

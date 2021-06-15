@@ -1,6 +1,6 @@
 #include "ArrowParser.h"
-#include <cudf/interop.hpp>
 #include "arrow/api.h"
+#include "blazing_table/BlazingArrowTable.h"
 
 namespace ral {
 namespace io {
