@@ -440,13 +440,8 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, pref
     resultSet = blaz_move(parseMetadataPython(files, offset, cpp_schema, str.encode(file_format_hint), arg_keys,arg_values, preferred_compute))
 
     names = dereference(resultSet).names
-    decoded_names = []
-    for i in range(names.size()): # Increment the iterator to the net element
-        decoded_names.append(names[i].decode('utf-8'))
-
     resultTable = blaz_move(dereference(resultSet.get()).table)
-    df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(resultTable).cudf_table), decoded_names)._data)
-    df._rename_columns(decoded_names)
+    df = pyarrow_wrap_table(dereference(resultTable).arrow_table).to_pandas()
     return df
 
 cpdef inferFolderPartitionMetadataCaller(folder_path):
