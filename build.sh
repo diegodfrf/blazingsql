@@ -18,7 +18,7 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean update thirdparty io libengine engine pyblazing algebra disable-aws-s3 disable-google-gs disable-mysql disable-sqlite disable-postgresql disable-snowflake -t -v -g -n -h"
+VALIDARGS="clean update thirdparty io libengine engine pyblazing algebra disable-aws-s3 disable-google-gs disable-mysql disable-sqlite disable-postgresql disable-snowflake enable-cudf -t -v -g -n -h"
 HELP="$0 [-v] [-g] [-n] [-h] [-t]
    clean                - remove all existing build artifacts and configuration (start
                           over) Use 'clean thirdparty' to delete thirdparty folder
@@ -35,6 +35,7 @@ HELP="$0 [-v] [-g] [-n] [-h] [-t]
    disable-sqlite       - flag to disable SQLite support for libengine
    disable-postgresql   - flag to disable PostgreSQL support for libengine
    disable-snowflake    - flag to disable Snowflake support for libengine
+   enable-cudf          - flag to enable CUDF compute support for libengine/engine
    -t                   - skip tests
    -v                   - verbose build mode
    -g                   - build for debug
@@ -42,14 +43,6 @@ HELP="$0 [-v] [-g] [-n] [-h] [-t]
    -h                   - print this text
    default action (no args) is to build and install all code and packages
 "
-
-THIRDPARTY_BUILD_DIR=${REPODIR}/thirdparty/aws-cpp/build
-IO_BUILD_DIR=${REPODIR}/io/build
-LIBENGINE_BUILD_DIR=${REPODIR}/engine/build
-ENGINE_BUILD_DIR=${REPODIR}/engine
-PYBLAZING_BUILD_DIR=${REPODIR}/pyblazing
-ALGEBRA_BUILD_DIR=${REPODIR}/algebra
-BUILD_DIRS="${THIRDPARTY_BUILD_DIR} ${IO_BUILD_DIR} ${LIBENGINE_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script
 VERBOSE=""
@@ -77,6 +70,19 @@ function hasArg {
 function buildAll {
     ((${NUMARGS} == 0 )) || !(echo " ${ARGS} " | grep -q " [^-]\+ ")
 }
+
+THIRDPARTY_BUILD_DIR=${REPODIR}/thirdparty/aws-cpp/build
+IO_BUILD_DIR=${REPODIR}/io/build
+LIBENGINE_BUILD_DIR=${REPODIR}/engine/build-arrow
+ENGINE_BUILD_DIR=${REPODIR}/engine
+PYBLAZING_BUILD_DIR=${REPODIR}/pyblazing
+ALGEBRA_BUILD_DIR=${REPODIR}/algebra
+
+if hasArg enable-cudf; then
+    LIBENGINE_BUILD_DIR=${REPODIR}/engine/build-cudf
+fi
+
+BUILD_DIRS="${THIRDPARTY_BUILD_DIR} ${IO_BUILD_DIR} ${LIBENGINE_BUILD_DIR}"
 
 if hasArg -h; then
     echo "${HELP}"
@@ -170,8 +176,6 @@ fi
 
 ################################################################################
 
-
-
 if buildAll || hasArg io; then
     disabled_aws_s3_flag=""
     if hasArg disable-aws-s3; then
@@ -240,11 +244,18 @@ if buildAll || hasArg libengine; then
         echo "Snowflake support disabled for engine"
     fi
 
+    enable_cudf_flag=""
+    if hasArg enable-cudf; then
+        enable_cudf_flag="-DCUDF_SUPPORT=ON"
+        echo "CUDF compute support enabled for engine"
+    fi
+
     echo "Building libengine"
     mkdir -p ${LIBENGINE_BUILD_DIR}
     cd ${LIBENGINE_BUILD_DIR}
     echo "cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DBUILD_TESTING=${TESTS} -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_EXE_LINKER_FLAGS=$CXXFLAGS .."
-    cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
+    cmake -B${LIBENGINE_BUILD_DIR} \
+          -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           -DBUILD_TESTING=${TESTS} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
           -DCMAKE_EXE_LINKER_FLAGS="$CXXFLAGS" \
@@ -254,7 +265,8 @@ if buildAll || hasArg libengine; then
           $disable_mysql_flag \
           $disable_sqlite_flag \
           $disable_postgresql_flag \
-          $disable_snowflake_flag ..
+          $disable_snowflake_flag  \
+          $enable_cudf_flag ..
 
     echo "Building libengine: make step"
     if [[ ${TESTS} == "ON" ]]; then
@@ -278,6 +290,11 @@ if buildAll || hasArg engine; then
     cd ${ENGINE_BUILD_DIR}
     rm -f ./bsql_engine/io/io.h
     rm -f ./bsql_engine/io/io.cpp
+
+    export VOLTRON_ENGINE=arrow
+    if hasArg enable-cudf; then
+        export VOLTRON_ENGINE=cudf
+    fi
 
     if [[ ${INSTALL_TARGET} != "" ]]; then
         python setup.py build_ext --inplace

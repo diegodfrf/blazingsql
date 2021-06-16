@@ -41,7 +41,12 @@ conda_env_lib = os.path.join(conda_env_dir, "lib")
 print("Using CONDA_PREFIX : " + conda_env_dir)
 
 def use_gtest_lib():
-    bt_sock = os.popen('grep BUILD_TYPE build/CMakeCache.txt')
+    voltron_engine = os.environ.get("VOLTRON_ENGINE", "arrow")
+    print("====>> Voltron engine: " + voltron_engine)
+    build_path = 'build-'+voltron_engine+'/CMakeCache.txt'
+    print("====>> Voltron engine build path: " + build_path)
+
+    bt_sock = os.popen('grep BUILD_TYPE '+build_path)
     bt = bt_sock.read()
     bt_val = bt.split("=")[1].strip()
 

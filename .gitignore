@@ -5,6 +5,8 @@
 
 .idea/
 
+engine/cmake-build-*/
+engine/build-*/
 engine/cmake-build-debug/
 cmake-*
 
