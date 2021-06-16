@@ -362,7 +362,7 @@ std::unique_ptr<ResultSet> performPartition(int32_t masterIndex,
 */
 
 
-std::unique_ptr<ResultSet> runSkipData(std::shared_ptr<ral::frame::BlazingTableView> metadata,
+std::unique_ptr<ResultSet> runSkipData(std::shared_ptr<ral::frame::BlazingArrowTable> metadata,
 	std::vector<std::string> all_column_names, std::string query) {
 	throw std::runtime_error("ERROR: BlazingSQL doesn't support this feature yet.");
 // TODO percy arrow

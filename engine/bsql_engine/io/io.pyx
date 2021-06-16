@@ -166,7 +166,7 @@ cdef unique_ptr[cio.PartitionedResultSet] getExecuteGraphResultPython(shared_ptr
 #    with nogil:
 #        return blaz_move(cio.performPartition(masterIndex,  ctxToken, blazingTableView, column_names))
 
-cdef unique_ptr[cio.ResultSet] runSkipDataPython(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +:
+cdef unique_ptr[cio.ResultSet] runSkipDataPython(shared_ptr[BlazingArrowTable] metadata, vector[string] all_column_names, string query) nogil except +:
     with nogil:
         return blaz_move(cio.runSkipData( metadata, all_column_names, query))
 
@@ -656,11 +656,9 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
 
 cpdef runSkipDataCaller(table, queryPy):
     cdef string query
-    cdef shared_ptr[BlazingCudfTableView] metadata
+    cdef shared_ptr[CTable] metadata
     cdef vector[string] all_column_names
-    cdef vector[column_view] column_views
     cdef Column cython_col
-    cdef vector[string] the_column_names
 
     query = str.encode(queryPy)
     all_column_names.resize(0)
@@ -671,27 +669,19 @@ cpdef runSkipDataCaller(table, queryPy):
       else: # from file
         all_column_names.push_back(col_name)
 
-    column_views.resize(0)
-    metadata_col_names = [name.encode() for name in table.metadata._data.keys()]
-    for cython_col in table.metadata._data.values():
-      column_views.push_back(cython_col.view())
-    for cn in metadata_col_names:
-      the_column_names.push_back(cn)
-    metadata = make_shared[BlazingCudfTableView](table_view(column_views), the_column_names)
 
-    resultSet = blaz_move(runSkipDataPython( metadata, all_column_names, query))
+    metadata = pyarrow_unwrap_table(pa.Table.from_pandas(table.metadata))
+
+    resultSet = blaz_move(runSkipDataPython(make_shared[BlazingArrowTable](metadata), all_column_names, query))
 
     return_object = {}
     return_object['skipdata_analysis_fail'] = dereference(resultSet).skipdata_analysis_fail
     if return_object['skipdata_analysis_fail']:
-      return_object['metadata'] = cudf.DataFrame()
+      return_object['metadata'] = pd.DataFrame()
       return return_object
     else:
-      names = dereference(resultSet).names
-      decoded_names = []
-      for i in range(names.size()):
-          decoded_names.append(names[i].decode('utf-8'))
-      df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet).table).cudf_table), decoded_names)._data)
+      df = pyarrow_wrap_table(dereference(dereference(resultSet.get()).table.get()).arrow_table).to_pandas()
+
       return_object['metadata'] = df
       return return_object
 
