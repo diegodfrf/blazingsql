@@ -610,9 +610,14 @@ std::pair<std::pair<std::shared_ptr<CacheMachine>,std::shared_ptr<CacheMachine> 
 	}
 
 	bool map_ucx = protocol == comm::blazing_protocol::ucx;
+  
+#ifdef CUDF_SUPPORT
 	ral::memory::set_allocation_pools(buffers_size, num_buffers,
 										buffers_size, num_buffers, map_ucx, ucp_context);
-
+#else
+  ral::memory::set_allocation_pools(buffers_size, num_buffers,
+										buffers_size, num_buffers, map_ucx);
+#endif
 	double processing_memory_limit_threshold = 0.9;
 	config_it = config_options.find("BLAZING_PROCESSING_DEVICE_MEM_CONSUMPTION_THRESHOLD");
 	if (config_it != config_options.end()){

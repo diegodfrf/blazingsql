@@ -257,14 +257,11 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/compatibility/SQLTranspiler.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/AbstractSQLDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/UriDataProvider.cpp
-        ${PROJECT_SOURCE_DIR}/src/io/data_provider/GDFDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/ArrowDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/Schema.cpp
-        ${PROJECT_SOURCE_DIR}/src/io/data_parser/sql/AbstractSQLParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/ParquetParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/CSVParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/JSONParser.cpp
-        ${PROJECT_SOURCE_DIR}/src/io/data_parser/GDFParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/OrcParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/ArrowParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/ArgsUtil.cpp
@@ -297,7 +294,6 @@ set(SRC_FILES
 
         ${PROJECT_SOURCE_DIR}/src/communication/factory/MessageFactory.cpp
         ${PROJECT_SOURCE_DIR}/src/communication/CommunicationData.cpp
-        ${PROJECT_SOURCE_DIR}/src/communication/messages/MessageUtil.cu
         ${PROJECT_SOURCE_DIR}/src/communication/messages/GPUComponentMessage.cpp
         ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/serializer.cpp
         ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/node.cpp

@@ -32,9 +32,13 @@ set(COMPUTE_CUDF_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTableView.cpp
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingColumnOwner.cpp
-    
+
+    ${PROJECT_SOURCE_DIR}/src/communication/messages/MessageUtil.cu
     ${PROJECT_SOURCE_DIR}/src/cache_machine/GPUCacheData.cpp
     ${PROJECT_SOURCE_DIR}/src/config/GPUManager.cu
+    ${PROJECT_SOURCE_DIR}/src/io/data_provider/GDFDataProvider.cpp
+    ${PROJECT_SOURCE_DIR}/src/io/data_parser/GDFParser.cpp
+    ${PROJECT_SOURCE_DIR}/src/io/data_parser/sql/AbstractSQLParser.cpp # TODO percy arrow 4 make sql ds compute agnostic!
 )
 
 find_library(ARROW_CUDA_LIB "arrow_cuda" NAMES libarrow_cuda HINTS "$ENV{ARROW_ROOT}/lib" "$ENV{ARROW_ROOT}/build")

@@ -19,15 +19,20 @@
 namespace ral{
 namespace memory{
 
-pinned_allocator::pinned_allocator() :
-use_ucx{false} {
+pinned_allocator::pinned_allocator()
+#ifdef CUDF_SUPPORT
+  : use_ucx{false}
+#endif
+{
 }
 
+#ifdef CUDF_SUPPORT
 void pinned_allocator::setUcpContext(ucp_context_h _context)
     {
     context = _context;
     use_ucx = true;
     }
+#endif
 
 void base_allocator::allocate(void ** ptr, std::size_t size){
   do_allocate(ptr,size);
@@ -45,8 +50,8 @@ void host_allocator::do_allocate(void ** ptr, std::size_t size){
   }
 }
 
-void pinned_allocator::do_allocate(void ** ptr, std::size_t size){
 #ifdef CUDF_SUPPORT
+void pinned_allocator::do_allocate(void ** ptr, std::size_t size){
   // do we really want to do a host allocation instead of a device one? (have to try zero-copy later)
   cudaError_t err = cudaMallocHost(ptr, size);
   if (err != cudaSuccess) {
@@ -69,15 +74,15 @@ void pinned_allocator::do_allocate(void ** ptr, std::size_t size){
         throw std::runtime_error("Error on ucp_mem_map");
         }
   }
-#endif
 }
+#endif
 
 void host_allocator::do_deallocate(void * ptr){
   free(ptr);
 }
 
-void pinned_allocator::do_deallocate(void * ptr){
 #ifdef CUDF_SUPPORT
+void pinned_allocator::do_deallocate(void * ptr){
   if (use_ucx)
      {
      ucs_status_t status = ucp_mem_unmap(context, mem_handle);
@@ -90,9 +95,8 @@ void pinned_allocator::do_deallocate(void * ptr){
   if (err != cudaSuccess) {
     throw std::runtime_error("Couldn't free pinned allocation.");
   }
-#endif
 }
-
+#endif
 
 allocation_pool::allocation_pool(std::unique_ptr<base_allocator> allocator, std::size_t size_buffers, std::size_t num_buffers) :
 num_buffers (num_buffers), buffer_size(size_buffers), allocator(std::move(allocator)) {
@@ -218,10 +222,14 @@ void allocation_pool::free_all() {
 std::size_t allocation_pool::size_buffers() { return this->buffer_size; }
 
 
+#ifdef CUDF_SUPPORT
 void set_allocation_pools(std::size_t size_buffers_host, std::size_t num_buffers_host,
 std::size_t size_buffers_pinned, std::size_t num_buffers_pinned, bool map_ucx,
     ucp_context_h context) {
-
+#else
+void set_allocation_pools(std::size_t size_buffers_host, std::size_t num_buffers_host,
+std::size_t size_buffers_pinned, std::size_t num_buffers_pinned, bool map_ucx) {
+#endif
   if (buffer_providers::get_host_buffer_provider() == nullptr || buffer_providers::get_host_buffer_provider()->get_total_buffers() == 0) { // not initialized
 
     auto host_alloc = std::make_unique<host_allocator>(false);
@@ -230,16 +238,19 @@ std::size_t size_buffers_pinned, std::size_t num_buffers_pinned, bool map_ucx,
     std::move(host_alloc) ,size_buffers_host,num_buffers_host);
   }
 
+#ifdef CUDF_SUPPORT
   if (buffer_providers::get_pinned_buffer_provider() == nullptr || buffer_providers::get_pinned_buffer_provider()->get_total_buffers() == 0) { // not initialized
     auto pinned_alloc = std::make_unique<pinned_allocator>();
 
     if (map_ucx) {
+
       pinned_alloc->setUcpContext(context);
     }
 
     buffer_providers::get_pinned_buffer_provider() = std::make_shared<allocation_pool>(std::move(pinned_alloc),
       size_buffers_host,num_buffers_host);
   }
+#endif
 }
 
 void empty_pools(){

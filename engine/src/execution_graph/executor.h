@@ -116,7 +116,9 @@ public:
 private:
 	executor(int num_threads, double processing_memory_limit_threshold, ral::execution::execution_backend preferred_compute);
 	ctpl::thread_pool<BlazingThread> pool;
+#ifdef CUDF_SUPPORT
 	std::vector<cudaStream_t> streams; //one stream per thread
+#endif
 	ral::cache::WaitingQueue< std::unique_ptr<task> > task_queue;
 	int shutdown = 0;
 	static executor * _instance;
