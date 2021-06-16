@@ -24,21 +24,11 @@ set(CMAKE_C_COMPILER $ENV{CC})
 set(CMAKE_CXX_COMPILER $ENV{CXX})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
-# Option to enable line info in CUDA device compilation to allow introspection when profiling / memchecking
-option(CMAKE_CUDA_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
-# cudart can be statically linked or dynamically linked. The python ecosystem wants dynamic linking
-option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
-
 if(CMAKE_COMPILER_IS_GNUCXX)
     # NOTE felipe percy these flags are too strict for blazingsql
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 endif(CMAKE_COMPILER_IS_GNUCXX)
-
-if(DISABLE_DEPRECATION_WARNING)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
-endif(DISABLE_DEPRECATION_WARNING)
 
 # To apply RUNPATH to transitive dependencies (this is a temporary solution)
 set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--disable-new-dtags")
@@ -94,6 +84,10 @@ elseif (DEFINED ENV{CONDA_PREFIX})
 
 endif ()
 
+if(CUDF_SUPPORT)
+    include(InitCudaCompiler)
+endif()
+
 message(WARNING "BSQL_BLD_PREFIX set to: ${BSQL_BLD_PREFIX}")
 message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 
@@ -116,6 +110,11 @@ find_package(PythonLibs)
 
 find_package(GTest REQUIRED)
 
+# TODO percy arrow felipe see we we will use ucx on cudf workflows only
+if(CUDF_SUPPORT)
+    include(ConfigureUcx)
+endif()
+
 # BEGIN find arrow
 find_path(ARROW_INCLUDE_DIR "arrow" HINTS "$ENV{ARROW_ROOT}/include")
 find_library(ARROW_LIB "arrow" NAMES libarrow HINTS "$ENV{ARROW_ROOT}/lib" "$ENV{ARROW_ROOT}/build")
@@ -128,10 +127,9 @@ if(ARROW_INCLUDE_DIR AND ARROW_LIB)
 endif(ARROW_INCLUDE_DIR AND ARROW_LIB)
 # END find arrow
 
-message(STATUS "Arrow lib: ${ARROW_LIB}")
-
 # BEGIN MAIN #
 
+# TODO percy move this to tool-chain and add support for cuda def and more than 1 defs
 add_definitions(${CXX_DEFINES})
 get_directory_property(CXX_COMPILE_DEFINITIONS DIRECTORY ${PROJECT_SOURCE_DIR} COMPILE_DEFINITIONS)
 message(STATUS "C++ compiler definitions: ${CXX_COMPILE_DEFINITIONS}")
@@ -143,11 +141,16 @@ include_directories(
     ${BSQL_BLD_PREFIX}/include/blazingdb/io
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/thirdparty/jitify
     ${PYTHON_INCLUDE_DIRS}
     "${ARROW_INCLUDE_DIR}"
     )
 
-if(MYSQL_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow make sql for arrow
+if(CUDF_SUPPORT)
+    include(ConfigureCudfCompute)
+endif()
+
+if(MYSQL_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow 4 c.gonzales cudf & sql providers
     add_definitions(-DMYSQL_SUPPORT)
     set(MYSQL_DATABASE_SRC_FILES
         # TODO percy in case we need custom mysql transformer
@@ -160,7 +163,7 @@ else()
     message(STATUS "MySQL support is disabled!")
 endif()
 
-if(SQLITE_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow make sql for arrow
+if(SQLITE_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow 4 c.gonzales cudf & sql providers
     add_definitions(-DSQLITE_SUPPORT)
     set(SQLITE_DATABASE_SRC_FILES
         # TODO percy c.gonzales
@@ -173,7 +176,7 @@ else()
     message(STATUS "SQLite support is disabled!")
 endif()
 
-if(POSTGRESQL_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow make sql for arrow
+if(POSTGRESQL_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow 4 c.gonzales cudf & sql providers
     # TODO postgresql percy c.gonzales
     add_definitions(-DPOSTGRESQL_SUPPORT)
     set(POSTGRESQL_DATABASE_SRC_FILES
@@ -187,7 +190,7 @@ else()
     message(STATUS "MyPostgreSQL support is disabled!")
 endif()
 
-if(SNOWFLAKE_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow make sql for arrow
+if(SNOWFLAKE_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow 4 c.gonzales cudf & sql providers
   add_definitions(-DSNOWFLAKE_SUPPORT)
     set(SNOWFLAKE_DATABASE_SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/SnowFlakeDataProvider.cpp
@@ -254,11 +257,14 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/compatibility/SQLTranspiler.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/AbstractSQLDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/UriDataProvider.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_provider/GDFDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/ArrowDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/Schema.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/sql/AbstractSQLParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/ParquetParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/CSVParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/JSONParser.cpp
+        ${PROJECT_SOURCE_DIR}/src/io/data_parser/GDFParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/OrcParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/ArrowParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/ArgsUtil.cpp
@@ -291,6 +297,7 @@ set(SRC_FILES
 
         ${PROJECT_SOURCE_DIR}/src/communication/factory/MessageFactory.cpp
         ${PROJECT_SOURCE_DIR}/src/communication/CommunicationData.cpp
+        ${PROJECT_SOURCE_DIR}/src/communication/messages/MessageUtil.cu
         ${PROJECT_SOURCE_DIR}/src/communication/messages/GPUComponentMessage.cpp
         ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/serializer.cpp
         ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/node.cpp
@@ -375,11 +382,6 @@ target_link_libraries(blazingsql-engine
     ${SNOWFLAKE_LIBRARY}
 )
 
-# NOTE don't move these next lines
-if(CUDF_SUPPORT)
-  include(ConfigureCudfCompute)
-endif()
-
 if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo" OR "$ENV{CONDA_BUILD}" STREQUAL "1")
     message(STATUS "This is a release build so the final runtime binaries will not depend on gtest")
 else()
@@ -388,6 +390,12 @@ else()
     target_link_libraries(blazingsql-engine
         gtest
     )
+    
+    if(CUDF_SUPPORT)
+        target_link_libraries(blazingsql-engine
+            cudftestutil
+        )
+    endif()
 endif()
 
 #install(TARGETS testing-libgdf_lib DESTINATION lib RENAME libblazingsql-engine.a)
@@ -395,7 +403,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libblazingsql-engine.so DESTINATION li
 
 # Tests
 if(BUILD_TESTING)
-    if(GTEST_FOUND AND CUDF_SUPPORT) # TODO percy arrow 4 cudf unit tests
+    if(GTEST_FOUND AND CUDF_SUPPORT) # TODO percy arrow unit tests
         add_subdirectory(tests)
     else()
         message(AUTHOR_WARNING "Google C++ Testing Framework (Google Test) not found: automated tests are disabled.")
@@ -403,11 +411,12 @@ if(BUILD_TESTING)
 endif()
 
 #Benchmarks
-if(GBENCHMARK_FOUND)
+if(GBENCHMARK_FOUND AND CUDF_SUPPORT) # TODO percy arrow benchmarks
     add_subdirectory(benchmarks)
 else()
     message(AUTHOR_WARNING "Google C++ Benchmarking Framework (Google Benchmark) not found")
 endif()
+
 
 include(ConfigureProductVersion)
 
