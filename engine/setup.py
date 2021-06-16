@@ -40,11 +40,15 @@ conda_env_lib = os.path.join(conda_env_dir, "lib")
 
 print("Using CONDA_PREFIX : " + conda_env_dir)
 
-def use_gtest_lib():
+def get_build_path():
     voltron_engine = os.environ.get("VOLTRON_ENGINE", "arrow")
     print("====>> Voltron engine: " + voltron_engine)
-    build_path = 'build-'+voltron_engine+'/CMakeCache.txt'
-    print("====>> Voltron engine build path: " + build_path)
+    ret = 'build-'+voltron_engine
+    print("====>> Voltron engine build path: " + ret)
+    return ret
+
+def use_gtest_lib():
+    build_path = get_build_path()+'/CMakeCache.txt'
 
     bt_sock = os.popen('grep BUILD_TYPE '+build_path)
     bt = bt_sock.read()
@@ -65,6 +69,9 @@ def get_libs():
 
 class BuildExt(build_ext):
     def build_extensions(self):
+        self.build_base = get_build_path()
+        if self.build_base == "build-cudf":
+            self.compiler.compiler_so.append('-DCUDF_SUPPORT')
         if '-Wstrict-prototypes' in self.compiler.compiler_so:
             self.compiler.compiler_so.remove('-Wstrict-prototypes')
         super().build_extensions()
