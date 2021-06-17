@@ -28,23 +28,28 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 
-import cudf
-
-from cudf._lib cimport *
-from cudf._lib.types import np_to_cudf_types, cudf_to_np_types
-from cudf._lib.cpp.types cimport type_id
+# TODO percy arrow try to delete these lines!
 from cudf._lib.types cimport underlying_type_t_type_id
 from cudf._lib.cpp.io.types cimport compression_type
+from cudf._lib.types import np_to_cudf_types, cudf_to_np_types
+
+IF CUDF_SUPPORT == 1:
+    import cudf
+    from cudf._lib cimport *
+    from cudf._lib.types import np_to_cudf_types, cudf_to_np_types
+    from cudf._lib.cpp.types cimport type_id
+    from cudf._lib.types cimport underlying_type_t_type_id
+    from cudf._lib.cpp.io.types cimport compression_type
+    from cudf._lib.table cimport Table as CudfXxTable
 
 from bsql_engine.io cimport cio
 from bsql_engine.io.cio cimport *
 from cpython.ref cimport PyObject
 from cython.operator cimport dereference, postincrement
 
-from cudf._lib.table cimport Table as CudfXxTable
-
 from libcpp.utility cimport pair
 import logging
+
 
 ctypedef int32_t underlying_type_t_compression
 
@@ -168,9 +173,10 @@ cdef unique_ptr[cio.PartitionedResultSet] getExecuteGraphResultPython(shared_ptr
 #    with nogil:
 #        return blaz_move(cio.performPartition(masterIndex,  ctxToken, blazingTableView, column_names))
 
-cdef unique_ptr[cio.ResultSet] runSkipDataPython(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +:
-    with nogil:
-        return blaz_move(cio.runSkipData( metadata, all_column_names, query))
+IF CUDF_SUPPORT == 1:
+    cdef unique_ptr[cio.ResultSet] runSkipDataPython(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +:
+        with nogil:
+            return blaz_move(cio.runSkipData( metadata, all_column_names, query))
 
 cdef cio.TableScanInfo getTableScanInfoPython(string logicalPlan) nogil:
     with nogil:
@@ -549,14 +555,15 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
 
     cdef vector[vector[string]] filesAll
     cdef vector[string] currentFilesAll
-    cdef vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
+
+    IF CUDF_SUPPORT == 1:
+        cdef vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
+        cdef vector[column_view] column_views
+        cdef Column cython_col
 
     cdef vector[vector[map[string,string]]] uri_values_cpp_all
     cdef vector[map[string,string]] uri_values_cpp
     cdef map[string,string] cur_uri_values
-
-    cdef vector[column_view] column_views
-    cdef Column cython_col
 
     cdef PyBlazingGraph pyGraph = PyBlazingGraph()
 
@@ -697,47 +704,50 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
         return dfs
 
 cpdef runSkipDataCaller(table, queryPy):
-    cdef string query
-    cdef shared_ptr[BlazingCudfTableView] metadata
-    cdef vector[string] all_column_names
-    cdef vector[column_view] column_views
-    cdef Column cython_col
-    cdef vector[string] the_column_names
-
-    query = str.encode(queryPy)
-    all_column_names.resize(0)
-
-    for col_name in table.column_names:
-      if type(col_name) == np.str:
-        all_column_names.push_back(col_name.encode())
-      else: # from file
-        all_column_names.push_back(col_name)
-
-    column_views.resize(0)
-    metadata_col_names = [name.encode() for name in table.metadata._data.keys()]
-    for cython_col in table.metadata._data.values():
-      column_views.push_back(cython_col.view())
-    for cn in metadata_col_names:
-      the_column_names.push_back(cn)
-    metadata = make_shared[BlazingCudfTableView](table_view(column_views), the_column_names)
-
-    resultSet = blaz_move(runSkipDataPython( metadata, all_column_names, query))
-
-    return_object = {}
-    return_object['skipdata_analysis_fail'] = dereference(resultSet).skipdata_analysis_fail
-    if return_object['skipdata_analysis_fail']:
-      return_object['metadata'] = cudf.DataFrame()
-      return return_object
-    else:
-      names = dereference(resultSet).names
-      decoded_names = []
-      for i in range(names.size()):
-          decoded_names.append(names[i].decode('utf-8'))
-      # TODO percy arrow rommel skip data
-      #df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet).table).cudf_table), decoded_names)._data)
-      #return_object['metadata'] = df
-      #return return_object
-      return None
+    IF CUDF_SUPPORT == 1:
+        cdef string query
+        cdef shared_ptr[BlazingCudfTableView] metadata
+        cdef vector[string] all_column_names
+        cdef vector[column_view] column_views
+        cdef Column cython_col
+        cdef vector[string] the_column_names
+    
+        query = str.encode(queryPy)
+        all_column_names.resize(0)
+    
+        for col_name in table.column_names:
+          if type(col_name) == np.str:
+            all_column_names.push_back(col_name.encode())
+          else: # from file
+            all_column_names.push_back(col_name)
+    
+        column_views.resize(0)
+        metadata_col_names = [name.encode() for name in table.metadata._data.keys()]
+        for cython_col in table.metadata._data.values():
+          column_views.push_back(cython_col.view())
+        for cn in metadata_col_names:
+          the_column_names.push_back(cn)
+        metadata = make_shared[BlazingCudfTableView](table_view(column_views), the_column_names)
+    
+        resultSet = blaz_move(runSkipDataPython( metadata, all_column_names, query))
+    
+        return_object = {}
+        return_object['skipdata_analysis_fail'] = dereference(resultSet).skipdata_analysis_fail
+        if return_object['skipdata_analysis_fail']:
+          return_object['metadata'] = cudf.DataFrame()
+          return return_object
+        else:
+          names = dereference(resultSet).names
+          decoded_names = []
+          for i in range(names.size()):
+              decoded_names.append(names[i].decode('utf-8'))
+          # TODO percy arrow rommel skip data
+          #df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet).table).cudf_table), decoded_names)._data)
+          #return_object['metadata'] = df
+          #return return_object
+          return None
+    ELSE:
+        return None
 
 cpdef getTableScanInfoCaller(logicalPlan):
     temp = getTableScanInfoPython(str.encode(logicalPlan))
