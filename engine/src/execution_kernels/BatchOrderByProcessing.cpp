@@ -706,7 +706,7 @@ kstatus LimitKernel::run() {
         cache_vector.push_back(std::move(batch));
     }
 
-    cudf::size_type limitRows;
+    int limitRows;
     std::tie(std::ignore, std::ignore, std::ignore, limitRows) = get_sort_vars(this->expression);
     rows_limit = limitRows;
 

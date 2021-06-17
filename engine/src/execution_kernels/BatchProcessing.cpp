@@ -4,7 +4,6 @@
 #include "ExceptionHandling/BlazingThread.h"
 #include "parser/expression_utils.hpp"
 #include "execution_graph/executor.h"
-#include <cudf/types.hpp>
 #include <src/utilities/DebuggingUtils.h>
 #include "io/data_provider/sql/AbstractSQLDataProvider.h"
 #include "compute/backend_dispatcher.h"

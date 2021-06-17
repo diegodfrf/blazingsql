@@ -47,7 +47,7 @@ std::unique_ptr<ral::frame::BlazingTable> logicalSort(
     table_view, sortColumns, sortOrderTypes, sortOrderNulls);
 }
 
-std::unique_ptr<BlazingTable> getLimitedRows(std::shared_ptr<BlazingTableView> table, cudf::size_type num_rows, bool front){
+std::unique_ptr<BlazingTable> getLimitedRows(std::shared_ptr<BlazingTableView> table, int num_rows, bool front){
 	if (num_rows == 0) {
     return ral::execution::backend_dispatcher(
           table->get_execution_backend(),
@@ -56,11 +56,11 @@ std::unique_ptr<BlazingTable> getLimitedRows(std::shared_ptr<BlazingTableView> t
 	} else if (num_rows < table->num_rows()) {
 		std::unique_ptr<ral::frame::BlazingTable> cudf_table;
 		if (front){
-			std::vector<cudf::size_type> splits = {num_rows};
+			std::vector<int> splits = {num_rows};
 			auto split_table = ral::execution::backend_dispatcher(table->get_execution_backend(), split_functor(), table, splits);
 			cudf_table = ral::execution::backend_dispatcher(split_table[0]->get_execution_backend(), from_table_view_to_table_functor(), split_table[0]);
 		} else { // back
-			std::vector<cudf::size_type> splits;
+			std::vector<int> splits;
       splits.push_back(table->num_rows() - num_rows);
       auto split_table = ral::execution::backend_dispatcher(table->get_execution_backend(), split_functor(), table, splits);
       cudf_table = ral::execution::backend_dispatcher(split_table[1]->get_execution_backend(), from_table_view_to_table_functor(), split_table[1]);
@@ -74,7 +74,7 @@ std::unique_ptr<BlazingTable> getLimitedRows(std::shared_ptr<BlazingTableView> t
 std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t>
 limit_table(std::shared_ptr<ral::frame::BlazingTableView> table_view, int64_t num_rows_limit) {
 
-	cudf::size_type table_rows = table_view->num_rows();
+	int table_rows = table_view->num_rows();
 	if (num_rows_limit <= 0) {
     std::unique_ptr<ral::frame::BlazingTable> empty = ral::execution::backend_dispatcher(
                                                         table_view->get_execution_backend(),
@@ -168,7 +168,7 @@ std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(
 	std::vector<voltron::compute::SortOrder> sortOrderTypes;
 	std::vector<voltron::compute::NullOrder> sortOrderNulls;
 	std::vector<int> sortColIndices;
-	cudf::size_type limitRows;
+	int limitRows;
 	
 	if (is_window_function(query_part)){
 		if (window_expression_contains_partition_by(query_part)) {
@@ -196,7 +196,7 @@ std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(
 	}
 
 	int num_nodes = context->getTotalNodes();
-	cudf::size_type total_num_partitions = (double)table_num_rows*(double)avg_bytes_per_row/(double)num_bytes_per_order_by_partition;
+	int total_num_partitions = (double)table_num_rows*(double)avg_bytes_per_row/(double)num_bytes_per_order_by_partition;
 	total_num_partitions = total_num_partitions <= 0 ? 1 : total_num_partitions;
 	// want to make the total_num_partitions to be a multiple of the number of nodes to evenly distribute
 	total_num_partitions = ((total_num_partitions + num_nodes - 1) / num_nodes) * num_nodes;

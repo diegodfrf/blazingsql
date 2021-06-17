@@ -32,7 +32,7 @@ std::tuple<std::string, std::string, std::string, std::string> parseExpressionTo
 
 void parseJoinConditionToColumnIndices(const std::string & condition, std::vector<int> & columnIndices);
 
-cudf::null_equality parseJoinConditionToEqualityTypes(const std::string & condition);
+voltron::compute::NullEquality parseJoinConditionToEqualityTypes(const std::string & condition);
 
 void split_inequality_join_into_join_and_filter(const std::string & join_statement, std::string & new_join_statement, std::string & filter_statement);
 
@@ -92,7 +92,7 @@ private:
 	std::string join_type;
 	std::string condition;
 	std::string filter_statement;
-	std::vector<cudf::size_type> left_column_indices, right_column_indices;
+	std::vector<int> left_column_indices, right_column_indices;
 	std::vector<std::shared_ptr<arrow::DataType>> join_column_common_types;
 	bool normalize_left, normalize_right;
 	std::vector<std::string> result_names;
@@ -145,7 +145,7 @@ private:
 	std::string join_type;
 	std::string condition;
 	std::string filter_statement;
-	std::vector<cudf::size_type> left_column_indices, right_column_indices;
+	std::vector<int> left_column_indices, right_column_indices;
 	std::vector<std::shared_ptr<arrow::DataType>> join_column_common_types;
 	bool normalize_left, normalize_right;
 };

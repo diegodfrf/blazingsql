@@ -12,7 +12,6 @@
 #ifdef CUDF_SUPPORT
 #include <cudf/column/column_factories.hpp>
 #include "blazing_table/BlazingCudfTable.h"
-#endif
 
 void set_min_max(
 	std::vector<std::vector<int64_t>> &minmax_metadata_table,
@@ -303,7 +302,6 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 		}
 	}
 
-#ifdef CUDF_SUPPORT
 	std::vector<std::unique_ptr<cudf::column>> minmax_metadata_gdf_table(minmax_metadata_table.size());
 	for (size_t index = 0; index < 	minmax_metadata_table.size(); index++) {
 		auto vector = minmax_metadata_table[index];
@@ -314,7 +312,8 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 
   auto table = std::make_unique<cudf::table>(std::move(minmax_metadata_gdf_table));
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(table), metadata_names);
-#endif
 }
+
+#endif
 
 #endif	// BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_PARQUET_METADATA_CPP_H_

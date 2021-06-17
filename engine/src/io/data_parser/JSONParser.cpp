@@ -20,7 +20,7 @@ json_parser::~json_parser() {
 std::unique_ptr<ral::frame::BlazingTable> json_parser::parse_batch(ral::execution::execution_backend preferred_compute,ral::io::data_handle handle,
 	const Schema & schema,
 	std::vector<int> column_indices,
-	std::vector<cudf::size_type> row_groups) {
+	std::vector<int> row_groups) {
 	std::shared_ptr<arrow::io::RandomAccessFile> file = handle.file_handle;
 	if(file == nullptr) {
     return ral::execution::backend_dispatcher(preferred_compute,

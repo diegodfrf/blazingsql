@@ -1,5 +1,4 @@
 #include "BatchUnionProcessing.h"
-#include <cudf/types.hpp>
 #include "utilities/CodeTimer.h"
 #include "parser/expression_utils.hpp"
 #include "parser/types_parser_utils.h"

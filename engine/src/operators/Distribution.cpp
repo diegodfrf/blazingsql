@@ -26,7 +26,7 @@ typedef blazingdb::manager::Context Context;
 typedef blazingdb::transport::Node Node;
 
 std::unique_ptr<BlazingTable> generatePartitionPlans(
-	cudf::size_type number_partitions,
+	int number_partitions,
 	const std::vector<std::unique_ptr<ral::frame::BlazingTable>> & samples,
 	const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
 	const std::vector<voltron::compute::NullOrder> & sortOrderNulls) {
@@ -69,7 +69,7 @@ std::vector<NodeColumnView> partitionData(Context * context,
 
 	RAL_EXPECTS(static_cast<size_t>(pivots->num_columns()) == searchColIndices.size(), "Mismatched pivots num_columns and searchColIndices");
 
-	cudf::size_type num_rows = table->num_rows();
+	int num_rows = table->num_rows();
 	if(num_rows == 0) {
 		std::vector<NodeColumnView> array_node_columns;
 		auto nodes = context->getAllNodes();
@@ -99,10 +99,10 @@ std::vector<NodeColumnView> partitionData(Context * context,
 	return partitioned_node_column_views;
 }
 
-std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partitions, std::shared_ptr<BlazingTableView> sortedSamples){
+std::unique_ptr<BlazingTable> getPivotPointsTable(int number_partitions, std::shared_ptr<BlazingTableView> sortedSamples){
 
-	cudf::size_type outputRowSize = sortedSamples->num_rows();
-	cudf::size_type pivotsSize = outputRowSize > 0 ? number_partitions - 1 : 0;
+	int outputRowSize = sortedSamples->num_rows();
+	int pivotsSize = outputRowSize > 0 ? number_partitions - 1 : 0;
 
 	int32_t step = outputRowSize / number_partitions;
 

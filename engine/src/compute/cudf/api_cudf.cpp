@@ -136,9 +136,9 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> left,
     std::shared_ptr<ral::frame::BlazingTableView> right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices,
-    cudf::null_equality equalityType) const
+    std::vector<int> const& left_column_indices,
+    std::vector<int> const& right_column_indices,
+    voltron::compute::NullEquality equalityType) const
 {
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
@@ -155,7 +155,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> drop_nulls_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<cudf::size_type> const& keys) const
+    std::vector<int> const& keys) const
 {
   auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
   return std::make_unique<ral::frame::BlazingCudfTable>(cudf::drop_nulls(cudf_table_view->view(), keys), table_view->column_names());
@@ -523,7 +523,7 @@ decache_io_functor::operator()<ral::frame::BlazingCudfTable>(
       }
 
       int in_file_column_counter = 0;
-      for(std::size_t i = 0; i < projections.size(); i++) {
+      for(int i = 0; i < projections.size(); i++) {
         int col_ind = projections[i];
         if(!schema.get_in_file()[col_ind]) {
           std::string name = schema.get_name(col_ind);

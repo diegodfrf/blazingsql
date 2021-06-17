@@ -38,9 +38,9 @@ public:
 
     void set_column_names(std::vector<std::string> names);
 
-    cudf::size_type num_rows() const ;
+    std::size_t num_rows() const ;
 
-    cudf::size_type num_columns() const ;
+    std::size_t num_columns() const ;
 
     std::size_t size_in_bytes() const;
 

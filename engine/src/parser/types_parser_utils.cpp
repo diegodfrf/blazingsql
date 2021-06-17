@@ -18,24 +18,24 @@ std::vector<std::shared_ptr<arrow::DataType>> get_common_types(const std::vector
 std::shared_ptr<arrow::DataType> get_common_type(std::shared_ptr<arrow::DataType> type1, std::shared_ptr<arrow::DataType> type2, bool strict) {
 	if (type1 == type2) {
 		return type1;
-	} else if((is_type_float_arrow(type1->id()) && is_type_float_arrow(type2->id())) || (is_type_integer_arrow(type1->id()) && is_type_integer_arrow(type2->id()))) {
+	} else if((is_type_float(type1) && is_type_float(type2)) || (is_type_integer(type1) && is_type_integer(type2))) {
 		return (arrow::internal::GetByteWidth(*type1) >= arrow::internal::GetByteWidth(*type2))	? type1	: type2;
-	} else if(is_type_timestamp_arrow(type1->id()) && is_type_timestamp_arrow(type2->id())) {
+	} else if(is_type_timestamp(type1) && is_type_timestamp(type2)) {
 		// TODO: handle units better
 		return type1;
-	} else if ( is_type_string_arrow(type1->id()) && is_type_timestamp_arrow(type2->id()) ) {
+	} else if ( is_type_string(type1) && is_type_timestamp(type2) ) {
 		return type2;
 	}
 	if (strict) {
 		RAL_FAIL("No common type between " + std::to_string(static_cast<int32_t>(type1->id())) + " and " + std::to_string(static_cast<int32_t>(type2->id())));
 	} else {
-		if(is_type_float_arrow(type1->id()) && is_type_integer_arrow(type2->id())) {
+		if(is_type_float(type1) && is_type_integer(type2)) {
 			return type1;
-		} else if (is_type_float_arrow(type2->id()) && is_type_integer_arrow(type1->id())) {
+		} else if (is_type_float(type2) && is_type_integer(type1)) {
 			return type2;
-		} else if (is_type_bool_arrow(type1->id()) && (is_type_integer_arrow(type2->id()) || is_type_float_arrow(type2->id()) || is_type_string_arrow(type2->id()) )){
+		} else if (is_type_bool(type1) && (is_type_integer(type2) || is_type_float(type2) || is_type_string(type2) )){
 			return type2;
-		} else if (is_type_bool_arrow(type2->id()) && (is_type_integer_arrow(type1->id()) || is_type_float_arrow(type1->id()) || is_type_string_arrow(type1->id()) )){
+		} else if (is_type_bool(type2) && (is_type_integer(type1) || is_type_float(type1) || is_type_string(type1) )){
 			return type1;
 		}
 	}

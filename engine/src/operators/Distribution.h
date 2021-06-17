@@ -19,7 +19,7 @@ namespace distribution {
 	using namespace ral::frame;
 
 	std::unique_ptr<BlazingTable> generatePartitionPlans(
-		cudf::size_type number_partitions,
+		int number_partitions,
 		const std::vector<std::unique_ptr<ral::frame::BlazingTable>> & samples,
 		const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
 		const std::vector<voltron::compute::NullOrder> & sortOrderNulls);
@@ -36,7 +36,7 @@ namespace distribution {
 		std::vector<voltron::compute::SortOrder> sortOrderTypes,
 		const std::vector<voltron::compute::NullOrder> & sortOrderNulls);
 
-	std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_pivots, std::shared_ptr<BlazingTableView> sortedSamples);
+	std::unique_ptr<BlazingTable> getPivotPointsTable(int number_pivots, std::shared_ptr<BlazingTableView> sortedSamples);
 
 }  // namespace distribution
 }  // namespace ral

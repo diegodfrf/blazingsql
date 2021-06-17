@@ -10,7 +10,6 @@
 #include <cudf/io/orc_metadata.hpp>
 #include <cudf/column/column_factories.hpp>
 #include "blazing_table/BlazingCudfTable.h"
-#endif
 
 std::basic_string<char> get_typed_vector_str_content(cudf::type_id dtype, std::vector<std::string> & vector) {
 	std::basic_string<char> output = std::basic_string<char>((char *)vector.data(), vector.size() * sizeof(char));
@@ -275,7 +274,6 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 		}
 	}
 
-#ifdef CUDF_SUPPORT
 	std::vector<std::unique_ptr<cudf::column>> minmax_metadata_gdf_table(metadata_names.size());
 	// we are handling two separated minmax_metadas
 	std::size_t string_count = 0;
@@ -304,7 +302,8 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 
 	auto table = std::make_unique<cudf::table>(std::move(minmax_metadata_gdf_table));
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(table), metadata_names);
-#endif
 }
+
+#endif
 
 #endif	// BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_ORC_METADATA_CPP_H_

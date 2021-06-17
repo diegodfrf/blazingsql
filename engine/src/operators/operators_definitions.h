@@ -37,5 +37,10 @@ enum class NullOrder : bool {
   BEFORE  ///< NULL values are ordered before all other values
 };
 
+enum class NullEquality : bool {
+  EQUAL,   ///< nulls compare equal
+  UNEQUAL  ///< nulls compare unequal
+};
+
 } //namespace compute
 } //namespace voltron

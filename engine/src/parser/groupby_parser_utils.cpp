@@ -75,29 +75,29 @@ std::string aggregator_to_string(voltron::compute::AggregateKind aggregation) {
 	}
 }
 
-cudf::type_id get_aggregation_output_type(cudf::type_id input_type, voltron::compute::AggregateKind aggregation, bool have_groupby) {
+std::shared_ptr<arrow::DataType> get_aggregation_output_type(std::shared_ptr<arrow::DataType> input_type, voltron::compute::AggregateKind aggregation, bool have_groupby) {
 	if(aggregation == voltron::compute::AggregateKind::COUNT_VALID || aggregation == voltron::compute::AggregateKind::COUNT_ALL) {
-		return cudf::type_id::INT64;
+		return arrow::int64();
 	} else if(aggregation == voltron::compute::AggregateKind::SUM || aggregation == voltron::compute::AggregateKind::SUM0) {
 		if(have_groupby)
 			return input_type;  // current group by function can only handle this
 		else {
 			// we can assume it is numeric based on the oepration
 			// to be safe we should enlarge to the greatest integer or float representation
-			return is_type_float(input_type) ? cudf::type_id::FLOAT64 : cudf::type_id::INT64;
+			return is_type_float(input_type) ? arrow::float64() : arrow::int64();
 		}
 	} else if(aggregation == voltron::compute::AggregateKind::MIN) {
 		return input_type;
 	} else if(aggregation == voltron::compute::AggregateKind::MAX) {
 		return input_type;
 	} else if(aggregation == voltron::compute::AggregateKind::MEAN) {
-		return cudf::type_id::FLOAT64;
+		return arrow::float64();
 	} else if(aggregation == voltron::compute::AggregateKind::COUNT_DISTINCT) {
 		/* Currently this conditional is unreachable.
 		   Calcite transforms count distincts through the
 		   AggregateExpandDistinctAggregates rule, so in fact,
 		   each count distinct is replaced by some group by clauses. */
-		return cudf::type_id::INT64;
+		return arrow::int64();
 	} else {
 		throw std::runtime_error(
 			"In get_aggregation_output_type function: aggregation type not supported.");

@@ -12,7 +12,7 @@
 #include "blazing_table/BlazingTable.h"
 #include "operators/operators_definitions.h"
 
-std::tuple<std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder>, cudf::size_type> get_sort_vars(const std::string & query_part);
+std::tuple<std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder>, int> get_sort_vars(const std::string & query_part);
 
 std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder> > get_vars_to_partition(const std::string & query_part);
 

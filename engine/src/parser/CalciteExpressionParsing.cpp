@@ -6,7 +6,6 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-//#include <cudf.h>
 #include <iomanip>
 #include <map>
 #include <regex>
@@ -18,44 +17,35 @@
 #include "parser/expression_tree.hpp"
 
 
-bool is_type_float(cudf::type_id type) { return (cudf::type_id::FLOAT32 == type || cudf::type_id::FLOAT64 == type); }
-bool is_type_float_arrow(arrow::Type::type type) { return (arrow::Type::type::FLOAT == type || arrow::Type::type::DOUBLE == type); }
-
-bool is_type_integer(cudf::type_id type) {
-	return (cudf::type_id::INT8 == type || cudf::type_id::INT16 == type || cudf::type_id::INT32 == type ||
-			cudf::type_id::INT64 == type || cudf::type_id::UINT8 == type || cudf::type_id::UINT16 == type ||
-			cudf::type_id::UINT32 == type || cudf::type_id::UINT64 == type);
+bool is_type_float(std::shared_ptr<arrow::DataType> type) {
+  return (arrow::Type::FLOAT == type->id() || arrow::Type::DOUBLE == type->id());
 }
 
-bool is_type_integer_arrow(arrow::Type::type type) {
-	return (arrow::Type::type::INT8 == type || arrow::Type::type::INT16 == type || arrow::Type::type::INT32 == type ||
-			arrow::Type::type::INT64 == type || arrow::Type::type::UINT8 == type || arrow::Type::type::UINT16 == type ||
-			arrow::Type::type::UINT32 == type || arrow::Type::type::UINT64 == type);
+bool is_type_integer(std::shared_ptr<arrow::DataType> type) {
+	return (
+    arrow::Type::INT8 == type->id() || arrow::Type::INT16 == type->id() ||
+    arrow::Type::INT32 == type->id() || arrow::Type::INT64 == type->id() ||
+    arrow::Type::UINT8 == type->id() || arrow::Type::UINT16 == type->id() ||
+    arrow::Type::UINT32 == type->id() || arrow::Type::UINT64 == type->id());
 }
 
-bool is_type_bool(cudf::type_id type) { return cudf::type_id::BOOL8 == type; }
-
-bool is_type_bool_arrow(arrow::Type::type type) { return arrow::Type::type::BOOL == type; }
-
-bool is_type_timestamp(cudf::type_id type) {
-	return (cudf::type_id::TIMESTAMP_DAYS == type || cudf::type_id::TIMESTAMP_SECONDS == type ||
-			cudf::type_id::TIMESTAMP_MILLISECONDS == type || cudf::type_id::TIMESTAMP_MICROSECONDS == type ||
-			cudf::type_id::TIMESTAMP_NANOSECONDS == type);
+bool is_type_bool(std::shared_ptr<arrow::DataType> type) {
+  return arrow::Type::BOOL == type->id();
 }
 
-bool is_type_timestamp_arrow(arrow::Type::type type) { return arrow::Type::type::TIMESTAMP == type; }
-
-bool is_type_duration(cudf::type_id type) {
-	return (cudf::type_id::DURATION_DAYS == type || cudf::type_id::DURATION_SECONDS == type ||
-			cudf::type_id::DURATION_MILLISECONDS == type || cudf::type_id::DURATION_MICROSECONDS == type ||
-			cudf::type_id::DURATION_NANOSECONDS == type);
+bool is_type_timestamp(std::shared_ptr<arrow::DataType> type) {
+	return (arrow::Type::TIMESTAMP == type->id());
 }
 
-bool is_type_string(cudf::type_id type) { return cudf::type_id::STRING == type; }
+bool is_type_duration(std::shared_ptr<arrow::DataType> type) {
+	return (arrow::Type::DURATION == type->id());
+}
 
-bool is_type_string_arrow(arrow::Type::type type) { return arrow::Type::type::STRING == type; }
+bool is_type_string(std::shared_ptr<arrow::DataType> type) {
+  return arrow::Type::STRING == type->id();
+}
 
-cudf::size_type get_index(const std::string & operand_string) {
+int get_index(const std::string & operand_string) {
 	assert(is_var_column(operand_string) || is_literal(operand_string));
 
 	return std::stoi(is_literal(operand_string) ? operand_string : operand_string.substr(1, operand_string.size() - 1));

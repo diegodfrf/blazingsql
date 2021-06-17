@@ -1,7 +1,6 @@
 #pragma once
 
 #include "compute/backend.h"
-#include "cudf/types.hpp"
 #include <arrow/type.h>
 #include <vector>
 #include <string>

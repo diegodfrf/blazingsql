@@ -5,7 +5,7 @@
 #include "parser/expression_utils.hpp"
 #include <blazingdb/io/Util/StringUtil.h>
 
-std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder>, cudf::size_type>
+std::tuple< std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vector<voltron::compute::NullOrder>, int>
 get_sort_vars(const std::string & query_part) {
 	auto rangeStart = query_part.find("(");
 	auto rangeEnd = query_part.rfind(")") - rangeStart - 1;
@@ -35,7 +35,7 @@ get_sort_vars(const std::string & query_part) {
 	}
 
 	std::string limitRowsStr = get_named_expression(combined_expression, "fetch");
-	cudf::size_type limitRows = !limitRowsStr.empty() ? std::stoi(limitRowsStr) : -1;
+	int limitRows = !limitRowsStr.empty() ? std::stoi(limitRowsStr) : -1;
 
 	return std::make_tuple(sortColIndices, sortOrderTypes, sortOrderNulls, limitRows);
 }
@@ -159,7 +159,7 @@ std::tuple<std::vector<int>, std::vector<voltron::compute::SortOrder>, std::vect
 	std::vector<int> sortColIndices;
 	std::vector<voltron::compute::SortOrder> sortOrderTypes;
 	std::vector<voltron::compute::NullOrder> sortOrderNulls;
-	cudf::size_type limitRows;
+	int limitRows;
 
 	if (is_window_function(query_part)) {
 		// `order by` and `partition by`

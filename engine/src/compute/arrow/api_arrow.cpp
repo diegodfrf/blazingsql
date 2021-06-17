@@ -35,7 +35,7 @@ inline std::vector<std::shared_ptr<arrow::ChunkedArray>> evaluate_expressions(
   return table->columns();
 }
 
-inline std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<arrow::Table> table, cudf::size_type num_rows, bool front=true){
+inline std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<arrow::Table> table, int num_rows, bool front=true){
 	if (num_rows == 0) {
 		return std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns(), 0));
 	} else if (num_rows < table->num_rows()) {
@@ -53,7 +53,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<
 
 std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t>
 inline limit_table(std::shared_ptr<arrow::Table> table, int64_t num_rows_limit) {
-	cudf::size_type table_rows = table->num_rows();
+	int table_rows = table->num_rows();
 	if (num_rows_limit <= 0) {
 		return std::make_tuple(std::make_unique<ral::frame::BlazingArrowTable>(arrow::Table::Make(table->schema(), table->columns(), 0)), false, 0);
 	} else if (num_rows_limit >= table_rows) {
@@ -64,9 +64,9 @@ inline limit_table(std::shared_ptr<arrow::Table> table, int64_t num_rows_limit) 
 }
 
 // TODO percy arrow
-inline std::pair<std::shared_ptr<arrow::Table>, std::vector<cudf::size_type>>
+inline std::pair<std::shared_ptr<arrow::Table>, std::vector<int>>
 split_arrow(std::shared_ptr<arrow::Table> table_View,
-            std::vector<cudf::size_type> const& columns_to_hash,
+            std::vector<int> const& columns_to_hash,
             int num_partitions)
 {
   auto splits = columns_to_hash;
@@ -212,7 +212,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> cross_join_functor::operator()<
 
 template <>
 inline bool check_if_has_nulls_functor::operator()<ral::frame::BlazingArrowTable>(
-  std::shared_ptr<ral::frame::BlazingTableView> table_view, std::vector<cudf::size_type> const& keys) const
+  std::shared_ptr<ral::frame::BlazingTableView> table_view, std::vector<int> const& keys) const
 {
   auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
   //return ral::cpu::check_if_has_nulls(arrow_table_view->view(), keys);
@@ -223,9 +223,9 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<ral::frame::BlazingArrowTable>(    
     std::shared_ptr<ral::frame::BlazingTableView> left,
     std::shared_ptr<ral::frame::BlazingTableView> right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices,
-    cudf::null_equality equalityType) const
+    std::vector<int> const& left_column_indices,
+    std::vector<int> const& right_column_indices,
+    voltron::compute::NullEquality equalityType) const
 {
   // TODO percy arrow
   throw std::runtime_error("ERROR: inner_join_functor BlazingSQL doesn't support this Arrow operator yet.");
@@ -235,7 +235,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> drop_nulls_functor::operator()<ral::frame::BlazingArrowTable>(    
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<cudf::size_type> const& keys) const
+    std::vector<int> const& keys) const
 {
   // TODO percy arrow
   throw std::runtime_error("ERROR: drop_nulls_functor BlazingSQL doesn't support this Arrow operator yet.");
@@ -246,8 +246,8 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> left_join_functor::operator()<ral::frame::BlazingArrowTable>(    
     std::shared_ptr<ral::frame::BlazingTableView> left,
     std::shared_ptr<ral::frame::BlazingTableView> right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices) const
+    std::vector<int> const& left_column_indices,
+    std::vector<int> const& right_column_indices) const
 {
   // TODO percy arrow
   throw std::runtime_error("ERROR: left_join_functor BlazingSQL doesn't support this Arrow operator yet.");
@@ -260,8 +260,8 @@ inline std::unique_ptr<ral::frame::BlazingTable> full_join_functor::operator()<r
     std::shared_ptr<ral::frame::BlazingTableView> right,
     bool has_nulls_left,
     bool has_nulls_right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices) const
+    std::vector<int> const& left_column_indices,
+    std::vector<int> const& right_column_indices) const
 {
   // TODO percy arrow
   throw std::runtime_error("ERROR: full_join_functor BlazingSQL doesn't support this Arrow operator yet.");
@@ -367,7 +367,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> from_table_view_to_table_functo
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> sample_functor::operator()<ral::frame::BlazingArrowTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    cudf::size_type const num_samples,
+    int const num_samples,
     std::vector<std::string> sortColNames,
     std::vector<int> sortColIndices) const
 {
@@ -424,7 +424,7 @@ template <>
 inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
 split_functor::operator()<ral::frame::BlazingArrowTable>(    
     std::shared_ptr<ral::frame::BlazingTableView> table_View,
-    std::vector<cudf::size_type> const& splits) const
+    std::vector<int> const& splits) const
 {
   /*
   * input:   [{10, 12, 14, 16, 18, 20, 22, 24, 26, 28},
@@ -445,16 +445,16 @@ inline void
 normalize_types_functor::operator()<ral::frame::BlazingArrowTable>(
     std::unique_ptr<ral::frame::BlazingTable> & table,
     const std::vector<std::shared_ptr<arrow::DataType>>  & types,
-    std::vector<cudf::size_type> column_indices) const
+    std::vector<int> column_indices) const
 {
   throw std::runtime_error("ERROR: normalize_types_functor BlazingSQL doesn't support this Arrow operator yet.");
 }
 
 template <>
-inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>>
+inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<int>>
 hash_partition_functor::operator()<ral::frame::BlazingArrowTable>(    
     std::shared_ptr<ral::frame::BlazingTableView> table_View,
-    std::vector<cudf::size_type> const& columns_to_hash,
+    std::vector<int> const& columns_to_hash,
     int num_partitions) const
 {
   throw std::runtime_error("ERROR: hash_partition_functor BlazingSQL doesn't support this Arrow operator yet.");
@@ -540,7 +540,7 @@ io_read_file_data_functor<ral::io::DataType::PARQUET>::operator()<ral::frame::Bl
         std::shared_ptr<arrow::io::RandomAccessFile> file,
         std::vector<int> column_indices,
         std::vector<std::string> col_names,
-        std::vector<cudf::size_type> row_groups,
+        std::vector<int> row_groups,
         const std::map<std::string, std::string> &args_map) const
 {
     return voltron::compute::arrow_backend::io::read_parquet_file(file, column_indices, col_names, row_groups);
@@ -552,7 +552,7 @@ io_read_file_data_functor<ral::io::DataType::CSV>::operator()<ral::frame::Blazin
         std::shared_ptr<arrow::io::RandomAccessFile> file,
         std::vector<int> column_indices,
         std::vector<std::string> col_names,
-        std::vector<cudf::size_type> row_groups,
+        std::vector<int> row_groups,
         const std::map<std::string, std::string> &args_map) const
 {
     // TODO percy arrow error
@@ -566,7 +566,7 @@ io_read_file_data_functor<ral::io::DataType::ORC>::operator()<ral::frame::Blazin
         std::shared_ptr<arrow::io::RandomAccessFile> file,
         std::vector<int> column_indices,
         std::vector<std::string> col_names,
-        std::vector<cudf::size_type> row_groups,
+        std::vector<int> row_groups,
         const std::map<std::string, std::string> &args_map) const
 {
     // TODO percy arrow error
@@ -598,7 +598,7 @@ decache_io_functor::operator()<ral::frame::BlazingArrowTable>(
       std::shared_ptr<const arrow::KeyValueMetadata> arrow_metadata;
 
       std::vector<std::string> names;
-      cudf::size_type num_rows;
+      int num_rows;
       if (column_indices_in_file.size() > 0){
           names = table->column_names();
           ral::frame::BlazingArrowTable* table_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(table.get());
@@ -609,7 +609,7 @@ decache_io_functor::operator()<ral::frame::BlazingArrowTable>(
       }
 
       int in_file_column_counter = 0;
-      for(std::size_t i = 0; i < projections.size(); i++) {
+      for(int i = 0; i < projections.size(); i++) {
         int col_ind = projections[i];
         if(!schema.get_in_file()[col_ind]) {
           std::string name = schema.get_name(col_ind);

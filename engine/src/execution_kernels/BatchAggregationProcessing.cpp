@@ -149,12 +149,12 @@ std::vector<std::shared_ptr<ral::frame::BlazingTableView>> DistributeAggregateKe
 {
     std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitioned;
     if (table_view->num_rows() > 0) {
-        std::vector<cudf::size_type> hashed_data_offsets;
+        std::vector<int> hashed_data_offsets;
         std::tie(hashed_data, hashed_data_offsets) = ral::execution::backend_dispatcher(table_view->get_execution_backend(),
                                                                                        hash_partition_functor(), table_view, this->columns_to_hash, num_partitions);
         
         // the offsets returned by hash_partition will always start at 0, which is a value we want to ignore for cudf::split
-        std::vector<cudf::size_type> split_indexes(hashed_data_offsets.begin() + 1, hashed_data_offsets.end());
+        std::vector<int> split_indexes(hashed_data_offsets.begin() + 1, hashed_data_offsets.end());
         partitioned = ral::execution::backend_dispatcher(hashed_data->get_execution_backend(), split_functor(), hashed_data->to_table_view(), split_indexes);
     } else {
         //  copy empty view

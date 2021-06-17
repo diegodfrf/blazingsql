@@ -189,6 +189,10 @@ std::unique_ptr<ral::frame::BlazingHostTable>
 serialize_arrow_message_to_host_table(
 	std::shared_ptr<ral::frame::BlazingArrowTableView> table_view,
 	bool use_pinned) {
+  
+//TODO percy arrow c.gonzales
+
+#ifdef CUDF_SUPPORT
 	std::shared_ptr<arrow::Table> table = table_view->view();
 	std::shared_ptr<arrow::Schema> schema = table->schema();
 
@@ -354,6 +358,7 @@ serialize_arrow_message_to_host_table(
 			std::move(allocationChunks));
 
 	return blazingHostTable;
+#endif
 }
 
 #ifdef CUDF_SUPPORT

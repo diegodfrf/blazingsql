@@ -99,7 +99,7 @@ struct check_if_has_nulls_functor {
   template <typename T>
   bool operator()(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<cudf::size_type> const& keys) const
+    std::vector<int> const& keys) const
   {
     throw std::runtime_error("ERROR: check_if_has_nulls_functor This default dispatcher operator should not be called.");
     return false;
@@ -111,9 +111,9 @@ struct inner_join_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> left,
       std::shared_ptr<ral::frame::BlazingTableView> right,
-      std::vector<cudf::size_type> const& left_column_indices,
-      std::vector<cudf::size_type> const& right_column_indices,
-      cudf::null_equality equalityType) const
+      std::vector<int> const& left_column_indices,
+      std::vector<int> const& right_column_indices,
+      voltron::compute::NullEquality equalityType) const
   {
     throw std::runtime_error("ERROR: inner_join_functor This default dispatcher operator should not be called.");
     return nullptr;
@@ -124,7 +124,7 @@ struct drop_nulls_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
-      std::vector<cudf::size_type> const& keys) const
+      std::vector<int> const& keys) const
   {
     throw std::runtime_error("ERROR: drop_nulls_functor This default dispatcher operator should not be called.");
     return nullptr;
@@ -136,8 +136,8 @@ struct left_join_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> left,
       std::shared_ptr<ral::frame::BlazingTableView> right,
-      std::vector<cudf::size_type> const& left_column_indices,
-      std::vector<cudf::size_type> const& right_column_indices) const
+      std::vector<int> const& left_column_indices,
+      std::vector<int> const& right_column_indices) const
   {
 	throw std::runtime_error("ERROR: left_join_functor This default dispatcher operator should not be called.");
     return nullptr;
@@ -151,8 +151,8 @@ struct full_join_functor {
       std::shared_ptr<ral::frame::BlazingTableView> right,
       bool has_nulls_left,
       bool has_nulls_right,
-      std::vector<cudf::size_type> const& left_column_indices,
-      std::vector<cudf::size_type> const& right_column_indices) const
+      std::vector<int> const& left_column_indices,
+      std::vector<int> const& right_column_indices) const
   {
 	throw std::runtime_error("ERROR: full_join_functor This default dispatcher operator should not be called.");
     return nullptr;
@@ -258,7 +258,7 @@ struct sample_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_view,
-      cudf::size_type const num_samples,
+      int const num_samples,
       std::vector<std::string> sortColNames,
       std::vector<int> sortColIndices) const
   {
@@ -294,7 +294,7 @@ struct split_functor {
   template <typename T>
   std::vector<std::shared_ptr<ral::frame::BlazingTableView>> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_View,
-      std::vector<cudf::size_type> const& splits) const
+      std::vector<int> const& splits) const
   {
     throw std::runtime_error("ERROR: split_functor This default dispatcher operator should not be called.");
   }
@@ -305,7 +305,7 @@ struct normalize_types_functor {
   void operator()(
       std::unique_ptr<ral::frame::BlazingTable> & table,
       const std::vector<std::shared_ptr<arrow::DataType>> & types,
-      std::vector<cudf::size_type> column_indices) const
+      std::vector<int> column_indices) const
   {
     throw std::runtime_error("ERROR: normalize_types_functor This default dispatcher operator should not be called.");
   }
@@ -313,9 +313,9 @@ struct normalize_types_functor {
 
 struct hash_partition_functor {
   template <typename T>
-  inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<cudf::size_type>> operator()(
+  inline std::pair<std::unique_ptr<ral::frame::BlazingTable>, std::vector<int>> operator()(
       std::shared_ptr<ral::frame::BlazingTableView> table_View,
-      std::vector<cudf::size_type> const& columns_to_hash,
+      std::vector<int> const& columns_to_hash,
       int num_partitions) const
   {
     throw std::runtime_error("ERROR: hash_partition_functor This default dispatcher operator should not be called.");
@@ -355,7 +355,7 @@ struct io_read_file_data_functor {
       std::shared_ptr<arrow::io::RandomAccessFile> file,
       std::vector<int> column_indices,
       std::vector<std::string> col_names,
-      std::vector<cudf::size_type> row_groups,
+      std::vector<int> row_groups,
       const std::map<std::string, std::string> &args_map = {}) const
   {
     throw std::runtime_error("ERROR: io_read_parquet_functor This default dispatcher operator should not be called.");

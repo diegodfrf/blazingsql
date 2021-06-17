@@ -73,22 +73,22 @@ void parseJoinConditionToColumnIndices(const std::string & condition, std::vecto
 	}
 }
 
-cudf::null_equality parseJoinConditionToEqualityTypes(const std::string & condition) {
+voltron::compute::NullEquality parseJoinConditionToEqualityTypes(const std::string & condition) {
 	// TODO: right now this only works for equijoins
 	// since this is all that is implemented at the time
 
 	std::string clean_expression = clean_calcite_expression(condition);
 	std::vector<std::string> tokens = get_tokens_in_reverse_order(clean_expression);
 
-	std::vector<cudf::null_equality> joinEqualityTypes;
+	std::vector<voltron::compute::NullEquality> joinEqualityTypes;
 
 	for(std::string token : tokens) {
 		if(is_operator_token(token)) {
 			// so far only equijoins are supported in libgdf
 			if(token == "="){
-				joinEqualityTypes.push_back(cudf::null_equality::UNEQUAL);
+				joinEqualityTypes.push_back(voltron::compute::NullEquality::UNEQUAL);
 			} else if(token == "IS_NOT_DISTINCT_FROM") {
-				joinEqualityTypes.push_back(cudf::null_equality::EQUAL);
+				joinEqualityTypes.push_back(voltron::compute::NullEquality::EQUAL);
 			} else if(token != "AND") {
 				throw std::runtime_error("In evaluate_join function: unsupported non-equijoins operator");
 			}
@@ -104,7 +104,7 @@ cudf::null_equality parseJoinConditionToEqualityTypes(const std::string & condit
 	// since that is not supported in cudf.
 	// We only rely on the first equality type found.
 
-	bool all_types_are_equal = std::all_of(joinEqualityTypes.begin(), joinEqualityTypes.end(), [&](const cudf::null_equality & elem) {return elem == joinEqualityTypes.front();});
+	bool all_types_are_equal = std::all_of(joinEqualityTypes.begin(), joinEqualityTypes.end(), [&](const voltron::compute::NullEquality & elem) {return elem == joinEqualityTypes.front();});
 	if(!all_types_are_equal){
 		throw std::runtime_error("In evaluate_join function: unsupported different equijoins operators");
 	}
@@ -384,7 +384,7 @@ std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 		bool has_nulls_left = ral::execution::backend_dispatcher(table_left->get_execution_backend(), check_if_has_nulls_functor(), table_left, left_column_indices);
 		bool has_nulls_right = ral::execution::backend_dispatcher(table_right->get_execution_backend(), check_if_has_nulls_functor(), table_right, right_column_indices);
 		if(this->join_type == INNER_JOIN) {
-			cudf::null_equality equalityType = parseJoinConditionToEqualityTypes(this->condition);
+			voltron::compute::NullEquality equalityType = parseJoinConditionToEqualityTypes(this->condition);
 			result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), inner_join_functor(), 
 				table_left,
 				table_right,
@@ -1080,7 +1080,7 @@ ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::uni
 			bool normalize_types_flag;
 			int table_idx;
 			std::string cache_id;
-			std::vector<cudf::size_type> column_indices;
+			std::vector<int> column_indices;
 			if(args.at("side") == "left"){
 				normalize_types_flag = this->normalize_left;
 				table_idx = LEFT_TABLE_IDX;
@@ -1108,12 +1108,12 @@ ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::uni
 				}
 
 				int num_partitions = context->getTotalNodes();
-				std::vector<cudf::size_type> hased_data_offsets;
+				std::vector<int> hased_data_offsets;
 				std::tie(hashed_data, hased_data_offsets) = ral::execution::backend_dispatcher(batch_view->get_execution_backend(), hash_partition_functor(), batch_view, column_indices, num_partitions);
 				assert(hased_data_offsets.begin() != hased_data_offsets.end());
 
 				// the offsets returned by hash_partition will always start at 0, which is a value we want to ignore for cudf::split
-				std::vector<cudf::size_type> split_indexes(hased_data_offsets.begin() + 1, hased_data_offsets.end());
+				std::vector<int> split_indexes(hased_data_offsets.begin() + 1, hased_data_offsets.end());
 				partitioned = ral::execution::backend_dispatcher(hashed_data->get_execution_backend(), split_functor(), hashed_data->to_table_view(), split_indexes);
 			} else {
 				for(int i = 0; i < context->getTotalNodes(); i++){

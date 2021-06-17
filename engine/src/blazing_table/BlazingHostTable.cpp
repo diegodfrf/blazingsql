@@ -36,52 +36,52 @@ MakeArrayBuilderField(
 	const blazingdb::transport::ColumnTransport::MetaData & metadata =
 		columnTransport.metadata;
 
-	const cudf::type_id type_id = static_cast<cudf::type_id>(metadata.dtype);
+	const arrow::Type::type type_id = static_cast<arrow::Type::type>(metadata.dtype);
 	const std::string columnName{metadata.col_name};
 
 	// TODO: get column name
 	switch (type_id) {
-	case cudf::type_id::INT8:
+	case arrow::Type::INT8:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::Int8Builder>()),
 			arrow::field(columnName, arrow::int8()));
-	case cudf::type_id::INT16:
+	case arrow::Type::INT16:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::Int16Builder>()),
 			arrow::field(columnName, arrow::int16()));
-	case cudf::type_id::INT32:
+	case arrow::Type::INT32:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::Int32Builder>()),
 			arrow::field(columnName, arrow::int32()));
-	case cudf::type_id::INT64:
+	case arrow::Type::INT64:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::Int64Builder>()),
 			arrow::field(columnName, arrow::int64()));
-	case cudf::type_id::FLOAT32:
+	case arrow::Type::FLOAT:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::FloatBuilder>()),
 			arrow::field(columnName, arrow::float32()));
-	case cudf::type_id::FLOAT64:
+	case arrow::Type::DOUBLE:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::DoubleBuilder>()),
 			arrow::field(columnName, arrow::float64()));
-	case cudf::type_id::UINT8:
+	case arrow::Type::UINT8:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::UInt8Builder>()),
 			arrow::field(columnName, arrow::uint8()));
-	case cudf::type_id::UINT16:
+	case arrow::Type::UINT16:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::UInt16Builder>()),
 			arrow::field(columnName, arrow::uint16()));
-	case cudf::type_id::UINT32:
+	case arrow::Type::UINT32:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::UInt32Builder>()),
 			arrow::field(columnName, arrow::uint32()));
-	case cudf::type_id::UINT64:
+	case arrow::Type::UINT64:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::UInt64Builder>()),
 			arrow::field(columnName, arrow::uint64()));
-	case cudf::type_id::STRING:
+	case arrow::Type::STRING:
 		return std::make_tuple(unique_base<arrow::ArrayBuilder>(
 								   std::make_unique<arrow::StringBuilder>()),
 			arrow::field(columnName, arrow::utf8()));
@@ -120,37 +120,37 @@ static inline void AppendValues(const std::size_t columnIndex,
 	const blazingdb::transport::ColumnTransport & columnTransport,
 	const std::unique_ptr<ral::memory::blazing_allocation_chunk> & allocation,
 	const std::size_t offset) {
-	const cudf::type_id type_id =
-		static_cast<cudf::type_id>(columnTransport.metadata.dtype);
+	const arrow::Type::type type_id =
+		static_cast<arrow::Type::type>(columnTransport.metadata.dtype);
 	switch (type_id) {
-	case cudf::type_id::INT8:
+	case arrow::Type::INT8:
 		return AppendNumericTypedValue<arrow::Int8Builder>(
 			columnIndex, arrayBuilder, allocation, offset);
-	case cudf::type_id::INT16:
+	case arrow::Type::INT16:
 		return AppendNumericTypedValue<arrow::Int16Builder>(
 			columnIndex, arrayBuilder, allocation, offset);
-	case cudf::type_id::INT32:
+	case arrow::Type::INT32:
 		return AppendNumericTypedValue<arrow::Int32Builder>(
 			columnIndex, arrayBuilder, allocation, offset);
-	case cudf::type_id::INT64:
+	case arrow::Type::INT64:
 		return AppendNumericTypedValue<arrow::Int64Builder>(
 			columnIndex, arrayBuilder, allocation, offset);
-	case cudf::type_id::FLOAT32:
+	case arrow::Type::FLOAT:
 		return AppendNumericTypedValue<arrow::FloatBuilder>(
 			columnIndex, arrayBuilder, allocation, offset);
-	case cudf::type_id::FLOAT64:
+	case arrow::Type::DOUBLE:
 		return AppendNumericTypedValue<arrow::DoubleBuilder>(
 			columnIndex, arrayBuilder, allocation, offset);
-	case cudf::type_id::UINT8:
+	case arrow::Type::UINT8:
 		return AppendNumericTypedValue<arrow::UInt8Builder>(
 			columnIndex, arrayBuilder, allocation, offset);
-	case cudf::type_id::UINT16:
+	case arrow::Type::UINT16:
 		return AppendNumericTypedValue<arrow::UInt16Builder>(
 			columnIndex, arrayBuilder, allocation, offset);
-	case cudf::type_id::UINT32:
+	case arrow::Type::UINT32:
 		return AppendNumericTypedValue<arrow::UInt32Builder>(
 			columnIndex, arrayBuilder, allocation, offset);
-	case cudf::type_id::UINT64:
+	case arrow::Type::UINT64:
 		return AppendNumericTypedValue<arrow::UInt64Builder>(
 			columnIndex, arrayBuilder, allocation, offset);
 	default:
@@ -226,11 +226,11 @@ void BlazingHostTable::set_column_names(std::vector<std::string> names) {
     }
 }
 
-cudf::size_type BlazingHostTable::num_rows() const {
+std::size_t BlazingHostTable::num_rows() const {
   return columns_offsets.empty() ? 0 : columns_offsets.front().metadata.size;
 }
 
-cudf::size_type BlazingHostTable::num_columns() const {
+std::size_t BlazingHostTable::num_columns() const {
     return columns_offsets.size();
 }
 

@@ -13,7 +13,7 @@ std::unique_ptr<ral::frame::BlazingTable> arrow_parser::parse_batch(ral::executi
 		ral::io::data_handle data_handle,
 		const Schema & schema,
 		std::vector<int> column_indices,
-		std::vector<cudf::size_type> /*row_groups*/)
+		std::vector<int> /*row_groups*/)
 {
   if(schema.get_num_columns() == 0) {
 		return nullptr;
@@ -52,7 +52,7 @@ std::unique_ptr<ral::frame::BlazingTable> arrow_parser::parse_batch(ral::executi
 void arrow_parser::parse_schema(ral::execution::execution_backend preferred_compute,ral::io::data_handle /*handle*/,
 		ral::io::Schema &  /*schema*/){
 	std::vector<std::string> names;
-	std::vector<cudf::type_id> types;
+	// TODO percy arrow
 }
 
 }
