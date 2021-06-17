@@ -664,7 +664,6 @@ cpdef runSkipDataCaller(table, queryPy):
       else: # from file
         all_column_names.push_back(col_name)
 
-
     metadata = pyarrow_unwrap_table(pa.Table.from_pandas(table.metadata))
 
     resultSet = blaz_move(runSkipDataPython(make_shared[BlazingArrowTable](metadata), all_column_names, query))
