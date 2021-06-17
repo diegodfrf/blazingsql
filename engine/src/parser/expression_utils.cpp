@@ -199,6 +199,7 @@ std::shared_ptr<arrow::DataType> get_output_type(operator_type op, std::shared_p
 	}
 }
 
+
 std::shared_ptr<arrow::DataType> get_output_type(operator_type op, std::shared_ptr<arrow::DataType> input_left_type, std::shared_ptr<arrow::DataType> input_right_type) {
 	RAL_EXPECTS(
         input_left_type->id() != arrow::Type::NA || input_right_type->id() != arrow::Type::NA,

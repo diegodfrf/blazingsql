@@ -87,3 +87,4 @@ std::shared_ptr<arrow::DataType> get_arrow_datatype_from_int_value(int32_t value
     default: return arrow::null();
     }
 }
+

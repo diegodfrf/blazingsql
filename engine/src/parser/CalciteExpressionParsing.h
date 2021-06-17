@@ -5,6 +5,7 @@
 #include <arrow/type.h>
 #include "operators/operators_definitions.h"
 
+
 bool is_type_float(std::shared_ptr<arrow::DataType> type);
 bool is_type_integer(std::shared_ptr<arrow::DataType> type);
 bool is_type_bool(std::shared_ptr<arrow::DataType> type);

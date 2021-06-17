@@ -16,6 +16,7 @@
 #include "io/data_parser/ArgsUtil.h"
 #include "compute/cudf/detail/types.h"
 #include "parser/types_parser_utils.h"
+#include "parser/cudf/types_parser_utils.h"
 
 namespace voltron {
 namespace compute {
@@ -329,7 +330,7 @@ void parse_parquet_schema(
 		bool is_in_file = true;
 		schema_out.add_column(
           name,
-          cudf_type_id_to_arrow_data_type(type),
+          cudf_type_id_to_arrow_type(type),
           file_index, is_in_file);
   }
 }
@@ -362,7 +363,7 @@ void parse_csv_schema(
 		size_t file_index = i;
 		bool is_in_file = true;
 		std::string name = table_out.metadata.column_names.at(i);
-		schema_out.add_column(name, cudf_type_id_to_arrow_data_type(type), file_index, is_in_file);
+		schema_out.add_column(name, cudf_type_id_to_arrow_type(type), file_index, is_in_file);
 	}
 }
 
@@ -383,7 +384,7 @@ void parse_orc_schema(
     cudf::type_id type = table_out.tbl->get_column(i).type().id();
     size_t file_index = i;
     bool is_in_file = true;
-    schema_out.add_column(name, cudf_type_id_to_arrow_data_type(type), file_index, is_in_file);
+    schema_out.add_column(name, cudf_type_id_to_arrow_type(type), file_index, is_in_file);
   }
 }
 
@@ -412,7 +413,7 @@ void parse_json_schema(
     cudf::type_id type = table_and_metadata.tbl->get_column(i).type().id();
     size_t file_index = i;
     bool is_in_file = true;
-    schema_out.add_column(name, cudf_type_id_to_arrow_data_type(type), file_index, is_in_file);
+    schema_out.add_column(name, cudf_type_id_to_arrow_type(type), file_index, is_in_file);
   }
 }
 

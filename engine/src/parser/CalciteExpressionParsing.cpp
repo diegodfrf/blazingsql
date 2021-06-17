@@ -16,7 +16,6 @@
 #include "parser/expression_utils.hpp"
 #include "parser/expression_tree.hpp"
 
-
 bool is_type_float(std::shared_ptr<arrow::DataType> type) {
   return (arrow::Type::FLOAT == type->id() || arrow::Type::DOUBLE == type->id());
 }

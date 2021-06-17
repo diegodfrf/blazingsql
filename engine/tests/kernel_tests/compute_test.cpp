@@ -101,7 +101,7 @@ struct ComputeTestParam {
         ral::frame::BlazingCudfTable blazingCudfTable =
             ral::frame::BlazingCudfTable(std::move(arrow_table));  //
         auto result_view = blazingCudfTable.to_table_view();
-        ral::utilities::print_blazing_cudf_table_view(result_view, "result");
+//        ral::utilities::print_blazing_cudf_table_view(result_view, "result");
         auto* result_view_ptr =
             dynamic_cast<ral::frame::BlazingCudfTableView*>(result_view.get());
 
@@ -110,8 +110,8 @@ struct ComputeTestParam {
             ral::execution::execution_backend{ral::execution::backend_id::CUDF});
         auto expected_result = runQuery(this->logical_plan, "cudf", "cudf", data_loader);
         auto expected_result_view = expected_result->to_table_view();
-        ral::utilities::print_blazing_cudf_table_view(expected_result_view,
-                                                      "expected_result");
+//        ral::utilities::print_blazing_cudf_table_view(expected_result_view,
+//                                                      "expected_result");
         auto* expect_cudf_table =
             dynamic_cast<ral::frame::BlazingCudfTableView*>(expected_result_view.get());
 
@@ -120,9 +120,9 @@ struct ComputeTestParam {
                                              result_view_ptr->view());
       } else if (this->preferred_compute.id() == ral::execution::backend_id::CUDF) {
         auto result_view = result->to_table_view();
-        ral::utilities::print_blazing_cudf_table_view(result_view, "result");
-        auto* result_view_ptr =
-            dynamic_cast<ral::frame::BlazingCudfTableView*>(result_view.get());
+//        ral::utilities::print_blazing_cudf_table_view(result_view, "result");
+//        auto* result_view_ptr =
+//            dynamic_cast<ral::frame::BlazingCudfTableView*>(result_view.get());
 
         // TODO: compare cudf results with some expected result
         /*auto data_loader = blazingdb::test::load_table(DATASET_PATH, "nation",
@@ -150,7 +150,7 @@ struct ComputeTest : public ::testing::TestWithParam<ComputeTestParam> {
     BlazingRMMInitialize("pool_memory_resource", 32 * 1024 * 1024, 256 * 1024 * 1024);
     float host_memory_quota = 0.75;  // default value
     blazing_host_memory_resource::getInstance().initialize(host_memory_quota);
-    ral::memory::set_allocation_pools(4000000, 10, 4000000, 10, false, nullptr);
+    ral::memory::set_allocation_pools(4000000, 10, 4000000, 10, false);
     int executor_threads = 10;
     ral::execution::executor::init_executor(executor_threads, 0.8,
                                             this->parameter.preferred_compute);

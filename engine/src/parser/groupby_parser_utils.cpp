@@ -12,6 +12,8 @@
 
 #include <numeric>
 
+#include "parser/cudf/types_parser_utils.h"
+
 voltron::compute::AggregateKind get_aggregation_operation(std::string expression_in, bool is_window_operation) {
 
 	std::string operator_string = get_aggregation_operation_string(expression_in);

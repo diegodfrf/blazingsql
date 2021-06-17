@@ -33,6 +33,8 @@
 #include <cudf/detail/interop.hpp>
 #include "compute/api.h"
 #include "parser/types_parser_utils.h"
+#include "parser/cudf/types_parser_utils.h"
+#include "blazing_table/BlazingCudfTable.h"
 
 namespace ral {
 namespace io {
@@ -96,7 +98,7 @@ std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_batch(ral::e
 void abstractsql_parser::parse_schema(ral::execution::execution_backend preferred_compute,ral::io::data_handle handle, ral::io::Schema & schema) {
 	for(int i = 0; i < handle.sql_handle.column_names.size(); i++) {
 		cudf::type_id type_cudf = get_cudf_type_id(handle.sql_handle.column_types.at(i));
-    auto type = cudf_type_id_to_arrow_data_type(type_cudf);
+    auto type = cudf_type_id_to_arrow_type(type_cudf);
 		size_t file_index = i;
 		bool is_in_file = true;
 		std::string name = handle.sql_handle.column_names.at(i);
