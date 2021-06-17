@@ -2574,6 +2574,8 @@ class BlazingContext(object):
                 or parsedSchema["file_type"] == DataType.ORC
                 or has_csv_metadata
             ):
+                """
+                TODO percy arrow rommel skip data
                 parsedMetadata = self._parseMetadata(
                     file_format_hint, table.slices, parsedSchema, kwargs
                 )
@@ -2616,6 +2618,8 @@ class BlazingContext(object):
                     row_groups_ids.append(row_group_ids)
 
                 table.row_groups_ids = row_groups_ids
+                """
+
 
         elif isinstance(input, dask_cudf.core.DataFrame):
             table = BlazingTable(
@@ -2830,6 +2834,7 @@ class BlazingContext(object):
             )
             return parsed_schema, {"localhost": parsed_schema["files"]}
 
+    """ TODO percy arrow rommel skip data
     def _parseMetadata(self, file_format_hint, currentTableNodes, schema, kwargs):
 
         # To have compatibility in cython side
@@ -2863,6 +2868,7 @@ class BlazingContext(object):
             return cio.parseMetadataCaller(
                 files, currentTableNodes[0].offset, schema, file_format_hint, kwargs, self.preferred_compute
             )
+    """
 
     def _sliceRowGroups(self, numSlices, files, uri_values, row_groups_ids):
         total_num_rowgroups = sum([len(x) for x in row_groups_ids])

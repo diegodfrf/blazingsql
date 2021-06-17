@@ -65,7 +65,8 @@ std::unique_ptr<ral::frame::BlazingTable> parquet_parser::get_metadata(ral::exec
 	std::vector<ral::io::data_handle> handles, int offset,
 	std::map<std::string, std::string> args_map)
 {
-  // TODO percy arrow
+// TODO percy rommel arrow skip data
+#ifdef CUDF_SUPPORT
 	std::vector<size_t> num_row_groups(handles.size());
 	BlazingThread threads[handles.size()];
 	std::vector<std::unique_ptr<parquet::ParquetFileReader>> parquet_readers(handles.size());
@@ -90,6 +91,7 @@ std::unique_ptr<ral::frame::BlazingTable> parquet_parser::get_metadata(ral::exec
 		reader->Close();
 	}
 	return minmax_metadata_table;
+#endif
 }
 
 } /* namespace io */

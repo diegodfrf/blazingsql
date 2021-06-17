@@ -9,17 +9,28 @@ from libcpp.pair cimport pair
 from libcpp.map cimport map
 from libcpp.set cimport set
 from libcpp.memory cimport shared_ptr
-from cudf._lib.column cimport Column
 from libcpp.utility cimport pair
 from libcpp cimport bool
 from pyarrow.lib cimport *
-
-from cudf import DataFrame
-from cudf._lib.cpp.types cimport type_id
-from cudf._lib.table cimport table
-
 from pyarrow.includes.libarrow cimport Type
 from pyarrow.includes.libarrow cimport CDataType as ArrowDataType
+
+IF CUDF_SUPPORT == 1:
+    from cudf._lib.column cimport Column
+    from cudf import DataFrame
+    from cudf._lib.cpp.types cimport type_id
+    from cudf._lib.table cimport table
+    from cudf._lib.cpp.column cimport *
+    from cudf._lib.cpp.column.column_view cimport *
+    from cudf._lib.cpp.types cimport *
+    from cudf._lib.cpp.table cimport *
+    from cudf._lib.cpp.table.table_view cimport *
+    
+    
+    ctypedef column_view CudfColumnView
+    ctypedef table_view CudfTableView
+    ctypedef table CudfTable
+
 
 from libc.stdint cimport (  # noqa: E211
     uint8_t,
@@ -49,17 +60,6 @@ cdef extern from "../include/engine/errors.h":
     cdef void raiseRegisterFileSystemS3Error()
     cdef void raiseRegisterFileSystemLocalError()
     cdef void raiseInferFolderPartitionMetadataError()
-
-
-from cudf._lib.cpp.column cimport *
-from cudf._lib.cpp.column.column_view cimport *
-from cudf._lib.cpp.types cimport *
-from cudf._lib.cpp.table cimport *
-from cudf._lib.cpp.table.table_view cimport *
-
-ctypedef column_view CudfColumnView
-ctypedef table_view CudfTableView
-ctypedef table CudfTable
 
 
 cdef extern from "../include/io/io.h" nogil:
@@ -165,26 +165,30 @@ cdef extern from "../include/io/io.h" nogil:
     pair[bool, string] registerFileSystemS3( S3 s3, string root, string authority) except +raiseRegisterFileSystemS3Error
     pair[bool, string] registerFileSystemLocal(  string root, string authority) except +raiseRegisterFileSystemLocalError
     TableSchema parseSchema(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, vector[pair[string, shared_ptr[ArrowDataType]]] types, bool ignore_missing_paths, string preferred_compute) except +raiseParseSchemaError
-    unique_ptr[ResultSet] parseMetadata(vector[string] files, pair[int,int] offsets, TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, string preferred_compute) except +raiseParseSchemaError
+
+    IF CUDF_SUPPORT == 1:
+        unique_ptr[ResultSet] parseMetadata(vector[string] files, pair[int,int] offsets, TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, string preferred_compute) except +raiseParseSchemaError
+
     vector[FolderPartitionMetadata] inferFolderPartitionMetadata(string folder_path) except +raiseInferFolderPartitionMetadataError
 
-cdef extern from "../src/blazing_table/BlazingCudfTable.h" namespace "ral::frame":
-        cdef cppclass BlazingCudfTable:
-            BlazingTable(unique_ptr[CudfTable] table, const vector[string] & columnNames)
-            BlazingTable(const CudfTableView & table, const vector[string] & columnNames)
-            size_type num_columns
-            size_type num_rows
-            CudfTableView view()
-            vector[string] column_names()
-            void ensureOwnership()
-            unique_ptr[CudfTable] releaseCudfTable()
-
-cdef extern from "../src/blazing_table/BlazingCudfTableView.h" namespace "ral::frame":
-        cdef cppclass BlazingCudfTableView:
-            BlazingTableView()
-            BlazingTableView(CudfTableView, vector[string]) except +
-            CudfTableView view()
-            vector[string] column_names()
+IF CUDF_SUPPORT == 1:
+    cdef extern from "../src/blazing_table/BlazingCudfTable.h" namespace "ral::frame":
+            cdef cppclass BlazingCudfTable:
+                BlazingTable(unique_ptr[CudfTable] table, const vector[string] & columnNames)
+                BlazingTable(const CudfTableView & table, const vector[string] & columnNames)
+                size_type num_columns
+                size_type num_rows
+                CudfTableView view()
+                vector[string] column_names()
+                void ensureOwnership()
+                unique_ptr[CudfTable] releaseCudfTable()
+    
+    cdef extern from "../src/blazing_table/BlazingCudfTableView.h" namespace "ral::frame":
+            cdef cppclass BlazingCudfTableView:
+                BlazingTableView()
+                BlazingTableView(CudfTableView, vector[string]) except +
+                CudfTableView view()
+                vector[string] column_names()
 
 cdef extern from "../src/execution_graph/graph.h" namespace "ral::cache":
         cdef struct graph_progress:
@@ -211,9 +215,10 @@ cdef extern from "../src/cache_machine/CacheData.h" namespace "ral::cache":
         cdef cppclass CacheData:
             MetadataDictionary getMetadata()
 
-cdef extern from "../src/cache_machine/GPUCacheData.h" namespace "ral::cache":
-        cdef cppclass GPUCacheData:
-            MetadataDictionary getMetadata()
+IF CUDF_SUPPORT == 1:
+    cdef extern from "../src/cache_machine/GPUCacheData.h" namespace "ral::cache":
+            cdef cppclass GPUCacheData:
+                MetadataDictionary getMetadata()
 
 # REMARK: We have some compilation errors from cython assigning temp = unique_ptr[ResultSet]
 # We force the move using this function
@@ -228,11 +233,10 @@ cdef extern from * namespace "blazing":
         """
         cdef T blaz_move[T](T) nogil
 
-        cdef unique_ptr[CacheData] blaz_move2(unique_ptr[GPUCacheData]) nogil
+        IF CUDF_SUPPORT == 1:
+            cdef unique_ptr[CacheData] blaz_move2(unique_ptr[GPUCacheData]) nogil
 
 cdef extern from "../include/engine/common.h" nogil:
-
-
     cdef struct NodeMetaDataUCP:
         string worker_id
         string ip
@@ -254,7 +258,9 @@ cdef extern from "../include/engine/engine.h" nogil:
         unique_ptr[PartitionedResultSet] getExecuteGraphResult(shared_ptr[graph], int ctx_token) nogil except +raiseRunExecuteGraphError
 
         #unique_ptr[ResultSet] performPartition(int masterIndex, int ctxToken, BlazingTableView blazingTableView, vector[string] columnNames) except +raisePerformPartitionError
-        unique_ptr[ResultSet] runSkipData(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +raiseRunSkipDataError
+        
+        IF CUDF_SUPPORT == 1:
+            unique_ptr[ResultSet] runSkipData(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +raiseRunSkipDataError
 
         TableScanInfo getTableScanInfo(string logicalPlan)
 

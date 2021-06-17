@@ -12,6 +12,8 @@
 #include <parquet/api/reader.h>
 #include "blazing_table/BlazingTable.h"
 
+// TODO percy rommel arrow skip data
+#ifdef CUDF_SUPPORT
 std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 	std::vector<std::unique_ptr<parquet::ParquetFileReader>> &parquet_readers,
 	size_t total_num_row_groups, int metadata_offset);
@@ -21,5 +23,6 @@ void set_min_max(
 	int col_index, parquet::Type::type physical,
 	parquet::ConvertedType::type logical,
 	std::shared_ptr<parquet::Statistics> &statistics);
+#endif
 
 #endif	// BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_PARQUET_METADATA_H_
