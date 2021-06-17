@@ -7,6 +7,8 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
+include "config.pxi"
+
 from collections import OrderedDict
 
 from libcpp.vector cimport vector
@@ -466,9 +468,11 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, pref
         decoded_names.append(names[i].decode('utf-8'))
 
     resultTable = blaz_move(dereference(resultSet.get()).table)
-    df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(resultTable).cudf_table), decoded_names)._data)
-    df._rename_columns(decoded_names)
-    return df
+    # TODO percy arrow rommel skip data
+    #df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(resultTable).cudf_table), decoded_names)._data)
+    #df._rename_columns(decoded_names)
+    #return df
+    return None
 
 cpdef inferFolderPartitionMetadataCaller(folder_path):
     folderMetadataArr = inferFolderPartitionMetadataPython(folder_path.encode())
@@ -608,14 +612,15 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
         print(pyarrow_type_obj)
         types.push_back(pyarrow_unwrap_data_type(pyarrow_type_obj))
 
-      if table.fileType in (4, 5): # if cudf DataFrame or dask.cudf DataFrame
-        blazingTableViews.resize(0)
-        for cython_table in table.input:
-          column_views.resize(0)
-          for cython_col in cython_table._data.columns:
-            column_views.push_back(cython_col.view())
-          blazingTableViews.push_back(make_shared[BlazingCudfTableView](table_view(column_views), names))
-        currentTableSchemaCpp.blazingTableViews = blazingTableViews
+      IF CUDF_SUPPORT == 1:
+          if table.fileType in (4, 5): # if cudf DataFrame or dask.cudf DataFrame
+            blazingTableViews.resize(0)
+            for cython_table in table.input:
+              column_views.resize(0)
+              for cython_col in cython_table._data.columns:
+                column_views.push_back(cython_col.view())
+              blazingTableViews.push_back(make_shared[BlazingCudfTableView](table_view(column_views), names))
+            currentTableSchemaCpp.blazingTableViews = blazingTableViews
 
       if table.fileType == 6: # if arrow Table
         currentTableSchemaCpp.arrow_table =  pyarrow_unwrap_table(table.arrow_table)
@@ -671,7 +676,10 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
         if is_arrow:
             df = pyarrow_wrap_table(dereference(dereference(resultSet.get()).tables[0].get()).arrow_table).to_pandas()
         else:
-            df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[0].get()).cudf_table), decoded_names)._data)
+            IF CUDF_SUPPORT == 1:
+                df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[0].get()).cudf_table), decoded_names)._data)
+            ELSE:
+                pass
         return df
     else: # the engine returns a vector of dataframes
         dfs = []
@@ -681,7 +689,10 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
             if is_arrow:
                 df = pyarrow_wrap_table(dereference(dereference(resultSet.get()).tables[i].get()).arrow_table).to_pandas()
             else:
-                df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[i].get()).cudf_table), decoded_names)._data)
+                IF CUDF_SUPPORT == 1:
+                    df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[i].get()).cudf_table), decoded_names)._data)
+                ELSE:
+                    pass
             dfs.append(df)
         return dfs
 
@@ -722,9 +733,11 @@ cpdef runSkipDataCaller(table, queryPy):
       decoded_names = []
       for i in range(names.size()):
           decoded_names.append(names[i].decode('utf-8'))
-      df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet).table).cudf_table), decoded_names)._data)
-      return_object['metadata'] = df
-      return return_object
+      # TODO percy arrow rommel skip data
+      #df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet).table).cudf_table), decoded_names)._data)
+      #return_object['metadata'] = df
+      #return return_object
+      return None
 
 cpdef getTableScanInfoCaller(logicalPlan):
     temp = getTableScanInfoPython(str.encode(logicalPlan))

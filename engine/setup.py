@@ -8,7 +8,8 @@ from setuptools.command.build_ext import build_ext
 import numpy as np
 from Cython.Build import cythonize
 from setuptools import find_packages, setup
-from setuptools.extension import Extension
+#from setuptools.extension import Extension
+from Cython.Distutils.extension import Extension
 
 def is_conda_env():
   return "CONDA_PREFIX" in os.environ or "CONDA_BUILD" in os.environ
@@ -42,9 +43,7 @@ print("Using CONDA_PREFIX : " + conda_env_dir)
 
 def get_build_path():
     voltron_engine = os.environ.get("VOLTRON_ENGINE", "arrow")
-    print("====>> Voltron engine: " + voltron_engine)
     ret = 'build-'+voltron_engine
-    print("====>> Voltron engine build path: " + ret)
     return ret
 
 def use_gtest_lib():
@@ -69,8 +68,7 @@ def get_libs():
 
 class BuildExt(build_ext):
     def build_extensions(self):
-        self.build_base = get_build_path()
-        if self.build_base == "build-cudf":
+        if get_build_path() == "build-cudf":
             self.compiler.compiler_so.append('-DCUDF_SUPPORT')
         if '-Wstrict-prototypes' in self.compiler.compiler_so:
             self.compiler.compiler_so.remove('-Wstrict-prototypes')
@@ -78,6 +76,15 @@ class BuildExt(build_ext):
 
 
 cython_files = ["bsql_engine/io/io.pyx"]
+
+c_options = {
+  "CUDF_SUPPORT": get_build_path() == "build-cudf"
+}
+
+print('Generate config.pxi')
+with open(os.path.join(os.path.dirname(__file__), 'bsql_engine', 'io', 'config.pxi'), 'w') as fd:
+    for k, v in c_options.items():
+        fd.write('DEF %s = %d\n' % (k.upper(), int(v)))
 
 extensions = [
     Extension(
@@ -111,6 +118,9 @@ extensions = [
     )
 ]
 
+build_path_base = get_build_path()
+print("====>> Voltron engine build path: " + build_path_base)
+
 setup(
     name="bsql_engine",
     version="0.6",
@@ -130,7 +140,7 @@ setup(
     ],
     # Include the separately-compiled shared library
     setup_requires=["cython"],
-    ext_modules=cythonize(extensions),
+    ext_modules=cythonize(extensions, build_dir=get_build_path()),
     packages=find_packages(include=["bsql_engine", "bsql_engine.*"]),
     # TODO: force comment to pass style issue
     package_data={

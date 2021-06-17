@@ -1,6 +1,8 @@
 # distutils: language = c++
 # cio.pxd
 
+include "config.pxi"
+
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.pair cimport pair
@@ -61,10 +63,16 @@ ctypedef table CudfTable
 
 
 cdef extern from "../include/io/io.h" nogil:
-    cdef struct ResultTable:
-        bool is_arrow
-        unique_ptr[table] cudf_table
-        shared_ptr[CTable] arrow_table
+
+    IF CUDF_SUPPORT == 1:
+        cdef struct ResultTable:
+            bool is_arrow
+            unique_ptr[table] cudf_table
+            shared_ptr[CTable] arrow_table
+    ELSE:
+        cdef struct ResultTable:
+            bool is_arrow
+            shared_ptr[CTable] arrow_table
 
 
     cdef struct ResultSet:
@@ -94,19 +102,32 @@ cdef extern from "../include/io/io.h" nogil:
         SNOWFLAKE = 10,
         PANDAS_DF = 11,
 
-    cdef struct TableSchema:
-        vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
-        vector[shared_ptr[ArrowDataType]] types
-        vector[string]  names
-        vector[string]  files
-        vector[string] datasource
-        vector[unsigned long] calcite_to_file_indices
-        vector[bool] in_file
-        int data_type
-        bool has_header_csv
-        shared_ptr[BlazingCudfTableView] metadata
-        vector[vector[int]] row_groups_ids
-        shared_ptr[CTable] arrow_table
+    IF CUDF_SUPPORT == 1:
+        cdef struct TableSchema:
+            vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
+            vector[shared_ptr[ArrowDataType]] types
+            vector[string]  names
+            vector[string]  files
+            vector[string] datasource
+            vector[unsigned long] calcite_to_file_indices
+            vector[bool] in_file
+            int data_type
+            bool has_header_csv
+            shared_ptr[BlazingCudfTableView] metadata
+            vector[vector[int]] row_groups_ids
+            shared_ptr[CTable] arrow_table
+    ELSE:
+        cdef struct TableSchema:
+            vector[shared_ptr[ArrowDataType]] types
+            vector[string]  names
+            vector[string]  files
+            vector[string] datasource
+            vector[unsigned long] calcite_to_file_indices
+            vector[bool] in_file
+            int data_type
+            bool has_header_csv
+            vector[vector[int]] row_groups_ids
+            shared_ptr[CTable] arrow_table
 
 
     cdef struct HDFS:
