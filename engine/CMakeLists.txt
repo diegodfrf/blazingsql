@@ -138,6 +138,7 @@ include_directories(
     ${PROJECT_BINARY_DIR}
     ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR}
     ${BSQL_BLD_PREFIX}/include
+    ${BSQL_BLD_PREFIX}/include/libcudf/libcudacxx
     ${BSQL_BLD_PREFIX}/include/blazingdb/io
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/include
