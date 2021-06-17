@@ -2571,7 +2571,7 @@ class BlazingContext(object):
             # using get_metadata argument equals to False
             if get_metadata and (
                 parsedSchema["file_type"] == DataType.PARQUET
-                or parsedSchema["file_type"] == DataType.ORC
+            #     or parsedSchema["file_type"] == DataType.ORC TODO reenable ORC parse metadata
                 or has_csv_metadata
             ):
                 parsedMetadata = self._parseMetadata(
