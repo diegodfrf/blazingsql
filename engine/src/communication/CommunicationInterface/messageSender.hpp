@@ -36,6 +36,7 @@ public:
 	 * @param ral_id The ral_id
 	 * @param protocol The comm::blazing_protocol 
 	 */
+#ifdef CUDF_SUPPORT
 	message_sender(std::shared_ptr<ral::cache::CacheMachine> output_cache,
 		const std::map<std::string, node> & node_address_map,
 		int num_threads,
@@ -44,7 +45,16 @@ public:
 		int ral_id,
 		comm::blazing_protocol protocol,
 		bool require_acknowledge);
+#else
+  message_sender(std::shared_ptr<ral::cache::CacheMachine> output_cache,
+		const std::map<std::string, node> & node_address_map,
+		int num_threads,
+		int ral_id,
+		comm::blazing_protocol protocol,
+		bool require_acknowledge);
+#endif
 
+#ifdef CUDF_SUPPORT
 	static void initialize_instance(std::shared_ptr<ral::cache::CacheMachine> output_cache,
 		std::map<std::string, node> node_address_map,
 		int num_threads,
@@ -53,6 +63,14 @@ public:
 		int ral_id,
 		comm::blazing_protocol protocol,
     	bool require_acknowledge);
+#else
+  static void initialize_instance(std::shared_ptr<ral::cache::CacheMachine> output_cache,
+		std::map<std::string, node> node_address_map,
+		int num_threads,
+		int ral_id,
+		comm::blazing_protocol protocol,
+    	bool require_acknowledge);
+#endif
 
 	std::shared_ptr<ral::cache::CacheMachine> get_output_cache(){
 		return output_cache;
@@ -69,7 +87,9 @@ private:
 	std::shared_ptr<ral::cache::CacheMachine> output_cache;
 	std::map<std::string, node> node_address_map;
 	blazing_protocol protocol;
+#ifdef CUDF_SUPPORT
 	ucp_worker_h origin;
+#endif
 	size_t request_size;
 	int ral_id;
 	bool polling_started{false};

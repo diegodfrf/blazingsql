@@ -1,6 +1,9 @@
 #pragma once
 
+#ifdef CUDF_SUPPORT
 #include <ucp/api/ucp.h>
+#endif
+
 #include <transport/Node.h>
 #include <memory>
 #include <string>

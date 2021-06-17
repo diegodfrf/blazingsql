@@ -10,7 +10,6 @@
 #include <map>
 
 #include <spdlog/spdlog.h>
-#include "cudf/types.hpp"
 #include "utilities/error.hpp"
 #include "utilities/CodeTimer.h"
 #include "blazing_table/BlazingTable.h"

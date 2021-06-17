@@ -15,6 +15,7 @@ message_sender * message_sender::get_instance() {
 	return instance;
 }
 
+#ifdef CUDF_SUPPORT
 void message_sender::initialize_instance(std::shared_ptr<ral::cache::CacheMachine> output_cache,
 		std::map<std::string, node> node_address_map,
 		int num_threads,
@@ -23,13 +24,22 @@ void message_sender::initialize_instance(std::shared_ptr<ral::cache::CacheMachin
 		int ral_id,
 		comm::blazing_protocol protocol,
 		bool require_acknowledge){
-	
+#else
+void message_sender::initialize_instance(std::shared_ptr<ral::cache::CacheMachine> output_cache,
+    std::map<std::string, node> node_address_map,
+    int num_threads,
+    int ral_id,
+    comm::blazing_protocol protocol,
+    bool require_acknowledge){
+#endif
+
 	if(instance == NULL) {
 		message_sender::instance = new message_sender(
-				output_cache,node_address_map,num_threads,context,origin_node,ral_id,protocol,require_acknowledge);
+				output_cache,node_address_map,num_threads,ral_id,protocol,require_acknowledge);
 	}
 }
 
+#ifdef CUDF_SUPPORT
 message_sender::message_sender(std::shared_ptr<ral::cache::CacheMachine> output_cache,
 		const std::map<std::string, node> & node_address_map,
 		int num_threads,
@@ -40,9 +50,19 @@ message_sender::message_sender(std::shared_ptr<ral::cache::CacheMachine> output_
 		bool require_acknowledge)
 		: require_acknowledge{require_acknowledge}, pool{num_threads}, output_cache{output_cache}, node_address_map{node_address_map}, protocol{protocol}, origin{origin}, ral_id{ral_id}
 {
-
+#else
+message_sender::message_sender(std::shared_ptr<ral::cache::CacheMachine> output_cache,
+		const std::map<std::string, node> & node_address_map,
+		int num_threads,
+		int ral_id,
+		comm::blazing_protocol protocol,
+		bool require_acknowledge)
+		: require_acknowledge{require_acknowledge}, pool{num_threads}, output_cache{output_cache}, node_address_map{node_address_map}, protocol{protocol}, ral_id{ral_id}
+{
+#endif
 	request_size = 0;
 	if (protocol == blazing_protocol::ucx)	{
+#ifdef CUDF_SUPPORT
 		ucp_context_attr_t attr;
 		attr.field_mask = UCP_ATTR_FIELD_REQUEST_SIZE;
 		ucs_status_t status = ucp_context_query(context, &attr);
@@ -51,6 +71,7 @@ message_sender::message_sender(std::shared_ptr<ral::cache::CacheMachine> output_
 		}
 
 		request_size = attr.request_size;
+#endif
 	}else if (protocol == blazing_protocol::tcp){
 
 	}else{
@@ -132,7 +153,7 @@ void message_sender::run_polling() {
 
 						std::shared_ptr<buffer_transport> transport;
 						if(blazing_protocol::ucx == protocol){
-
+#ifdef CUDF_SUPPORT
 							transport = std::make_shared<ucx_buffer_transport>(
 								request_size, 
 								origin, 
@@ -143,6 +164,7 @@ void message_sender::run_polling() {
 								chunked_column_infos, 
 								ral_id,
 								require_acknowledge);
+#endif
 						}else if (blazing_protocol::tcp == protocol){
 
 							transport = std::make_shared<tcp_buffer_transport>(

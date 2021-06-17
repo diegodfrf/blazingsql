@@ -2,7 +2,11 @@
 #include "execution_graph/manager.h"
 #include "io/data_parser/ArgsUtil.h"
 #include "io/data_parser/CSVParser.h"
+
+#ifdef CUDF_SUPPORT
 #include "io/data_parser/GDFParser.h"
+#endif
+
 #include "io/data_parser/JSONParser.h"
 #include "io/data_parser/OrcParser.h"
 #include "io/data_parser/ArrowParser.h"
@@ -103,7 +107,9 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 		if(fileType == ral::io::DataType::PARQUET) {
 			parser = std::make_shared<ral::io::parquet_parser>();
 		} else if(fileType == gdfFileType || fileType == daskFileType) {
+#ifdef CUDF_SUPPORT
 			parser = std::make_shared<ral::io::gdf_parser>();
+#endif
 		} else if(fileType == ral::io::DataType::ORC) {
 			parser = std::make_shared<ral::io::orc_parser>(args_map);
 		} else if(fileType == ral::io::DataType::JSON) {
