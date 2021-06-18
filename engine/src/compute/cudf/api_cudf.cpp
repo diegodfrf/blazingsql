@@ -583,5 +583,25 @@ std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::ope
     return ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
 }
 
+template <>
+inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::string file_path) const
+{
+#ifdef CUDF_SUPPORT
+	auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
+
+	cudf::io::table_metadata metadata;
+	for(auto name : cudf_table_view->column_names()) {
+		metadata.column_names.emplace_back(name);
+	}
+
+	cudf::io::orc_writer_options out_opts = cudf::io::orc_writer_options::builder(cudf::io::sink_info{file_path}, cudf_table_view->view())
+		.metadata(&metadata);
+
+	cudf::io::write_orc(out_opts);
+#endif
+}
+
 //} // compute
 //} // voltron

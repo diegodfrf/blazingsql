@@ -393,6 +393,16 @@ struct make_blazinghosttable_functor {
 	}
 };
 
+struct write_orc_functor {
+  template <typename T>
+  void operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_view,
+      std::string file_path) const
+  {
+    throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
+  }
+};
+
 //} // compute
 //} // voltron
 

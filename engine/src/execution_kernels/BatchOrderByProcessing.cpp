@@ -3,7 +3,11 @@
 #include "execution_graph/executor.h"
 #include "parser/expression_utils.hpp"
 #include "cache_machine/CPUCacheData.h"
+
+#ifdef CUDF_SUPPORT
 #include "cache_machine/GPUCacheData.h"
+#endif
+
 #include "cache_machine/CacheMachine.h"
 #include "compute/backend_dispatcher.h"
 #include "compute/api.h"

@@ -1,5 +1,9 @@
 #include "executor.h"
+
+#ifdef CUDF_SUPPORT
 #include "cache_machine/GPUCacheData.h"
+#endif
+
 #include "cache_machine/CacheDataIO.h"
 
 using namespace fmt::literals;

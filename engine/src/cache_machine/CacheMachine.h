@@ -20,7 +20,10 @@
 #include "io/data_provider/DataProvider.h"
 #include "io/data_parser/DataParser.h"
 
+#ifdef CUDF_SUPPORT
 #include "GPUCacheData.h"
+#endif
+
 #include "ArrowCacheData.h"
 #include "communication/messages/GPUComponentMessage.h"
 #include "CacheData.h"

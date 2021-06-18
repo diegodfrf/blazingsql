@@ -641,5 +641,13 @@ inline std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_funct
   return ral::communication::messages::serialize_arrow_message_to_host_table(arrow_table_ptr->to_table_view(), use_pinned);
 }
 
+template <>
+inline void write_orc_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::string file_path) const
+{
+  throw std::runtime_error("ERROR: write_orc_functor BlazingSQL doesn't support this Arrow operator yet.");
+}
+
 //} // compute
 //} // voltron
