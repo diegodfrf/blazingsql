@@ -171,6 +171,32 @@ cudf::data_type arrow_type_to_cudf_data_type(arrow::Type::type arrow_type) {
     }
 }
 
+std::shared_ptr<arrow::DataType> string_to_arrow_datatype(const std::string &str_type) {
+    if(str_type == "bool") return arrow::boolean();
+    if(str_type == "boolean") return arrow::boolean();
+    if(str_type == "uint8") return arrow::uint8();
+    if(str_type == "int8") return arrow::int8();
+    if(str_type == "tinyint") return arrow::int8();
+    if(str_type == "uint16") return arrow::uint16();
+    if(str_type == "int16") return arrow::int16();
+    if(str_type == "smallint") return arrow::int16();
+    if(str_type == "uint32") return arrow::uint32();
+    if(str_type == "int") return arrow::int32();
+    if(str_type == "integer") return arrow::int32();
+    if(str_type == "int32") return arrow::int32();
+    if(str_type == "uint64") return arrow::uint64();
+    if(str_type == "int64") return arrow::int64();
+    if(str_type == "bigint") return arrow::int64();
+    if(str_type == "float") return arrow::float32();
+    if(str_type == "double") return arrow::float64();
+    if(str_type == "str") return arrow::utf8();
+    if(str_type == "string") return arrow::utf8();
+    // TODO: for now we are handling just MILLI
+    if(str_type == "timestamp") return arrow::timestamp(arrow::TimeUnit::type::MILLI);
+    // TODO: enables more types
+    return arrow::null();
+}
+
 std::shared_ptr<arrow::DataType> get_right_arrow_datatype(arrow::Type::type arrow_type) {
 
     switch (arrow_type)
