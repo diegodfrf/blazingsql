@@ -5,6 +5,10 @@
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/schema.h>
 
+#include "io/data_parser/ArgsUtil.h"
+
+#include <arrow/adapters/orc/adapter.h>
+
 // TODO percy arrow c.cordova remove this header
 #include <cudf/detail/interop.hpp>
 
@@ -52,6 +56,31 @@ std::unique_ptr<ral::frame::BlazingTable> read_parquet_file(
   return std::make_unique<ral::frame::BlazingArrowTable>(table);
 }
 
+std::unique_ptr<ral::frame::BlazingTable> read_orc_file(
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        std::vector<int> /*column_indices*/,
+        std::vector<std::string> /*col_names*/,
+        std::vector<cudf::size_type> /*row_groups*/)
+{
+    arrow::MemoryPool* pool = arrow::default_memory_pool();
+
+    std::unique_ptr<arrow::adapters::orc::ORCFileReader> reader;
+    arrow::Status st = arrow::adapters::orc::ORCFileReader::Open(file, pool, &reader);
+    if(!st.ok()){
+        // TODO percy arrow
+        // Handle ORC read error
+    }
+
+    std::shared_ptr<arrow::Table> table;
+    st = reader->Read(&table);
+    if (!st.ok()) {
+        // TODO percy arrow
+        // Handle ORC read error
+    }
+
+    return std::make_unique<ral::frame::BlazingArrowTable>(table);
+}
+
 void parse_parquet_schema(
     ral::io::Schema & schema_out,
     std::shared_ptr<arrow::io::RandomAccessFile> file)
@@ -74,6 +103,39 @@ void parse_parquet_schema(
   }
 }
 
+void parse_orc_schema(
+        ral::io::Schema &schema_out,
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        const std::map<std::string, std::string> &/*args_map*/)
+{
+    arrow::MemoryPool* pool = arrow::default_memory_pool();
+
+    std::unique_ptr<arrow::adapters::orc::ORCFileReader> reader;
+    arrow::Status st = arrow::adapters::orc::ORCFileReader::Open(file, pool, &reader);
+    if(!st.ok()){
+        // TODO percy arrow
+        // Handle ORC read error
+    }
+
+    std::shared_ptr<arrow::Schema> schema;
+    st = reader->ReadSchema(&schema);
+    if (!st.ok()) {
+        // TODO percy arrow
+        // Handle ORC read error
+    }
+
+    std::vector<std::shared_ptr<arrow::Field>> fields = schema->fields();
+
+    for(std::size_t i = 0; i < fields.size(); ++i)
+    {
+        std::string name       = fields[i]->name();
+        arrow::Type::type type = fields[i]->type()->id();
+        size_t file_index      = i;
+        bool is_in_file        = true;
+
+        schema_out.add_column(name, type, file_index, is_in_file);
+    }
+}
 } // namespace io
 } // namespace arrow_backend
 } // namespace compute
