@@ -24,6 +24,7 @@
 #include <cudf/scalar/scalar_factories.hpp>
 #include <cudf/reduction.hpp>
 #include <cudf/detail/interop.hpp>
+#include <cudf/io/orc.hpp> // TODO percy arrow move this or writer to io
 
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
@@ -597,7 +598,6 @@ inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
     std::string file_path) const
 {
-#ifdef CUDF_SUPPORT
 	auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
 
 	cudf::io::table_metadata metadata;
@@ -609,7 +609,6 @@ inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
 		.metadata(&metadata);
 
 	cudf::io::write_orc(out_opts);
-#endif
 }
 
 //} // compute

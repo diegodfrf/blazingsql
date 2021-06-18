@@ -192,6 +192,10 @@ cudf::data_type arrow_type_to_cudf_data_type_cudf(arrow::Type::type arrow_type);
 
 cudf::data_type arrow_type_to_cudf_data_type_cudf(std::shared_ptr<arrow::DataType> arrow_type);
 
+std::basic_string<char> get_typed_vector_content(cudf::type_id dtype, std::vector<int64_t> &vector);
+
+std::unique_ptr<cudf::column> make_cudf_column_from_vector(cudf::data_type dtype, std::basic_string<char> &vector, unsigned long column_size);
+
 } // namespace io
 } // namespace cudf_backend
 } // namespace compute

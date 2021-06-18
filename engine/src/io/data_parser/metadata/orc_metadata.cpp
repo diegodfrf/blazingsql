@@ -10,6 +10,7 @@
 #include <cudf/io/orc_metadata.hpp>
 #include <cudf/column/column_factories.hpp>
 #include "blazing_table/BlazingCudfTable.h"
+#include "compute/cudf/detail/types.h"
 
 std::basic_string<char> get_typed_vector_str_content(cudf::type_id dtype, std::vector<std::string> & vector) {
 	std::basic_string<char> output = std::basic_string<char>((char *)vector.data(), vector.size() * sizeof(char));
@@ -295,8 +296,8 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 		} else {
 			std::vector<int64_t> vector = get_all_values_in_the_same_col(minmax_metadata, not_string_count);
 			not_string_count++;
-			std::basic_string<char> content = get_typed_vector_content(dtype.id(), vector);
-			minmax_metadata_gdf_table[index] = make_cudf_column_from_vector(dtype, content, total_stripes);
+			std::basic_string<char> content = voltron::compute::cudf_backend::types::get_typed_vector_content(dtype.id(), vector);
+			minmax_metadata_gdf_table[index] = voltron::compute::cudf_backend::types::make_cudf_column_from_vector(dtype, content, total_stripes);
 		}
 	}
 
