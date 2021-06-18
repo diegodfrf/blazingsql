@@ -211,16 +211,20 @@ void parse_parquet_schema(
   std::shared_ptr<parquet::FileMetaData> parquet_metadata = parquet_reader->metadata();
   std::shared_ptr<::arrow::Schema> arrow_schema;
   parquet::ArrowReaderProperties props;
-  // TODO percy arrow handle error
-  parquet::arrow::FromParquetSchema(parquet_metadata->schema(), props, &arrow_schema);
-  for(int i = 0; i < arrow_schema->fields().size(); i++) {
-		std::string name = arrow_schema->field(i)->name();
-    size_t file_index = i;
-		bool is_in_file = true;
-    schema_out.add_column(
-          name,
-          arrow_schema->field(i)->type()->id(),
-          file_index, is_in_file);
+
+  arrow::Status st = parquet::arrow::FromParquetSchema(parquet_metadata->schema(), props, &arrow_schema);
+  if(!st.ok()){
+      // TODO percy arrow
+  }
+
+  for(std::size_t i = 0; i < arrow_schema->fields().size(); ++i) {
+      std::string name = arrow_schema->field(i)->name();
+      size_t file_index = i;
+      bool is_in_file = true;
+      schema_out.add_column(
+              name,
+              arrow_schema->field(i)->type()->id(),
+              file_index, is_in_file);
   }
 }
 
