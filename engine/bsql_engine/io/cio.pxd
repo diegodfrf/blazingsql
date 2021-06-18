@@ -155,6 +155,10 @@ cdef extern from "../src/blazing_table/BlazingCudfTable.h" namespace "ral::frame
             void ensureOwnership()
             unique_ptr[CudfTable] releaseCudfTable()
 
+cdef extern from "../src/blazing_table/BlazingArrowTable.h" namespace "ral::frame":
+        cdef cppclass BlazingArrowTable:
+            BlazingTable(shared_ptr[CTable])
+
 cdef extern from "../src/blazing_table/BlazingCudfTableView.h" namespace "ral::frame":
         cdef cppclass BlazingCudfTableView:
             BlazingTableView()
@@ -230,7 +234,7 @@ cdef extern from "../include/engine/engine.h" nogil:
         unique_ptr[PartitionedResultSet] getExecuteGraphResult(shared_ptr[graph], int ctx_token) nogil except +raiseRunExecuteGraphError
 
         #unique_ptr[ResultSet] performPartition(int masterIndex, int ctxToken, BlazingTableView blazingTableView, vector[string] columnNames) except +raisePerformPartitionError
-        unique_ptr[ResultSet] runSkipData(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +raiseRunSkipDataError
+        unique_ptr[ResultSet] runSkipData(shared_ptr[BlazingArrowTable] metadata, vector[string] all_column_names, string query) nogil except +raiseRunSkipDataError
 
         TableScanInfo getTableScanInfo(string logicalPlan)
 

@@ -388,8 +388,8 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/parser/types_parser_utils.cpp
 
         # TODO percy arrow
-        #${PROJECT_SOURCE_DIR}/src/skip_data/SkipDataProcessor.cpp
-        #${PROJECT_SOURCE_DIR}/src/skip_data/utils.cpp
+        ${PROJECT_SOURCE_DIR}/src/skip_data/SkipDataProcessor.cpp
+        ${PROJECT_SOURCE_DIR}/src/skip_data/utils.cpp
         
         ${PROJECT_SOURCE_DIR}/src/cython/static.cpp
         ${PROJECT_SOURCE_DIR}/src/cython/initialize.cpp

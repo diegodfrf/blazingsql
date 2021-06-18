@@ -6,6 +6,8 @@
 
 // TODO percy arrow delete this include cudf details should never he here
 #include "compute/cudf/detail/types.h"
+#include "compute/arrow/detail/types.h"
+#include <arrow/array/builder_primitive.h>
 
 std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_names(std::vector<std::string> col_names) {
 	const int ncols = col_names.size();
@@ -26,18 +28,26 @@ std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_nam
 	metadata_col_names[++metadata_col_index] = "file_handle_index";
 	metadata_col_names[++metadata_col_index] = "row_group_index";  // as `stripe_index` when ORC
 
-	std::vector<std::unique_ptr<cudf::column>> minmax_metadata_gdf_table;
-	minmax_metadata_gdf_table.resize(metadata_col_names.size());
+	std::vector<std::shared_ptr<arrow::Array>> arrays;
+	arrays.reserve(metadata_col_names.size());
+
+	std::vector<std::shared_ptr<arrow::Field>> fields;
+	fields.reserve(metadata_col_names.size());
+
 	for (std::size_t i = 0; i < metadata_col_names.size(); ++i) {
-		std::vector<int32_t> temp{(int32_t)-1};
-		std::unique_ptr<cudf::column> expected_col = vector_to_column(temp, cudf::data_type(cudf::type_id::INT32));
-		minmax_metadata_gdf_table[i] = std::move(expected_col);
+		arrow::Int32Builder int32Builder;
+		int32Builder.Append(-1);
+		std::shared_ptr<arrow::Array> int32Array;
+		int32Builder.Finish(&int32Array);
+		arrays.emplace_back(int32Array);
+
+		fields.emplace_back(arrow::field(metadata_col_names[i], arrow::int32()));
 	}
 
-	auto cudf_metadata_table = std::make_unique<cudf::table>(std::move(minmax_metadata_gdf_table));
-	auto metadata_table = std::make_unique<ral::frame::BlazingCudfTable>(std::move(cudf_metadata_table), metadata_col_names);
+	std::shared_ptr<arrow::Schema> schema = arrow::schema(fields);
+	std::shared_ptr<arrow::Table> metadata_table = arrow::Table::Make(schema, arrays);
 
-	return metadata_table;
+	return std::make_unique<ral::frame::BlazingArrowTable>(metadata_table);
 }
 
 std::unique_ptr<cudf::column> make_cudf_column_from_vector(cudf::data_type dtype, std::basic_string<char> &vector, unsigned long column_size) {
@@ -51,6 +61,15 @@ std::unique_ptr<cudf::column> make_cudf_column_from_vector(cudf::data_type dtype
 		rmm::device_buffer gpu_buffer(buffer_size);
 		return std::make_unique<cudf::column>(dtype, column_size, buffer_size);
 	}
+}
+
+std::shared_ptr<arrow::Array> make_arrow_array_from_vector(std::shared_ptr<arrow::DataType> dtype, std::vector<int64_t> &vector){
+	std::shared_ptr<arrow::Array> array;
+	std::unique_ptr<arrow::ArrayBuilder> builder = MakeArrayBuilder(dtype);
+
+	AppendValues<int64_t>(vector, builder, dtype);
+	builder->Finish(&array);
+	return array;
 }
 
 std::basic_string<char> get_typed_vector_content(cudf::type_id dtype, std::vector<int64_t> &vector) {

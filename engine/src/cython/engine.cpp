@@ -10,7 +10,7 @@
 #include "io/data_provider/GDFDataProvider.h"
 #include "io/data_provider/ArrowDataProvider.h"
 #include "io/data_provider/UriDataProvider.h"
-//#include "../skip_data/SkipDataProcessor.h" //Todo arrow rommel arrow
+#include "skip_data/SkipDataProcessor.h"
 #include "operators/LogicalFilter.h"
 
 #include <numeric>
@@ -20,6 +20,8 @@
 #include "utilities/CodeTimer.h"
 #include "communication/CommunicationInterface/protocols.hpp"
 #include "utilities/error.hpp"
+
+#include <arrow/api.h>
 
 #ifdef MYSQL_SUPPORT
 #include "../io/data_parser/sql/MySQLParser.h"
@@ -362,35 +364,33 @@ std::unique_ptr<ResultSet> performPartition(int32_t masterIndex,
 */
 
 
-std::unique_ptr<ResultSet> runSkipData(std::shared_ptr<ral::frame::BlazingTableView> metadata,
+std::unique_ptr<ResultSet> runSkipData(std::shared_ptr<ral::frame::BlazingArrowTable> metadata,
 	std::vector<std::string> all_column_names, std::string query) {
-	throw std::runtime_error("ERROR: BlazingSQL doesn't support this feature yet.");
-// TODO percy arrow
-// 	try {
 
-// 		std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> result_pair = ral::skip_data::process_skipdata_for_table(
-// 				metadata, all_column_names, query);
+	try {
+		std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> result_pair = ral::skip_data::process_skipdata_for_table(
+				metadata, all_column_names, query);
 
-// 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
-// 		result->skipdata_analysis_fail = result_pair.second;
-// 		if (!result_pair.second){ // if could process skip-data
-// 			result->names = result_pair.first->column_names();
-// 			ral::frame::BlazingCudfTable* current_result = dynamic_cast<ral::frame::BlazingCudfTable*>(result_pair.first.get());
-// 			result->table = std::make_unique<ResultTable>(current_result->releaseCudfTable());
-// 		}
-// 		return result;
+		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
+		result->skipdata_analysis_fail = result_pair.second;
+		if (!result_pair.second){ // if could process skip-data
+			result->names = result_pair.first->column_names();
+			ral::frame::BlazingArrowTable* current_result = dynamic_cast<ral::frame::BlazingArrowTable*>(result_pair.first.get());
+			result->table = std::make_unique<ResultTable>(current_result->to_table_view()->view());
+		}
+		return result;
 
-// 	} catch(const std::exception & e) {
-// 		std::cerr << "**[runSkipData]** error parsing metadata.\n";
-// 		std::cerr << e.what() << std::endl;
-// 		std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
-// 		if(logger){
-// 			logger->error("|||{info}|||||",
-// 							"info"_a="In runSkipData. What: {}"_format(e.what()));
-// 			logger->flush();
-// 		}
-// 		throw;
-// 	}
+	} catch(const std::exception & e) {
+		std::cerr << "**[runSkipData]** error parsing metadata.\n";
+		std::cerr << e.what() << std::endl;
+		std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
+		if(logger){
+			logger->error("|||{info}|||||",
+							"info"_a="In runSkipData. What: {}"_format(e.what()));
+			logger->flush();
+		}
+		throw;
+	}
 }
 
 

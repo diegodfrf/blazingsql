@@ -13,6 +13,9 @@
 #include "utilities/error.hpp"
 
 #include <numeric>
+#include <cudf/interop.hpp>
+#include "compute/backend_dispatcher.h"
+#include "compute/api.h"
 
 using namespace fmt::literals;
 
@@ -243,7 +246,10 @@ bool apply_skip_data_rules(ral::parser::parse_tree& tree) {
 // minmax_metadata_table => use these indices [[0, 3, 5]]
 // minmax_metadata_table => minmax_metadata_table[[0, 1,  6, 7,  10, 11, size - 2, size - 1]]
 std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_table(
-    std::shared_ptr<ral::frame::BlazingTableView> metadata_view, const std::vector<std::string> & names, std::string table_scan) {
+    std::shared_ptr<ral::frame::BlazingArrowTable> metadata, const std::vector<std::string> & names, std::string table_scan) {
+
+    std::unique_ptr<cudf::table> cudf_table = cudf::from_arrow(*(metadata->to_table_view()->view().get()));
+    std::shared_ptr<ral::frame::BlazingCudfTableView> metadata_view = std::make_shared<ral::frame::BlazingCudfTableView>(cudf_table->view(), metadata->column_names());
 
     std::string filter_string;
     try {
@@ -285,7 +291,7 @@ std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_
         cudf::mask_state::UNINITIALIZED);
 
     std::vector<std::string> metadata_names = metadata_view->column_names();
-    std::vector<std::unique_ptr<ral::frame::BlazingColumn>> metadata_columns = metadata_view.toBlazingColumns();
+    std::vector<std::unique_ptr<ral::frame::BlazingColumn>> metadata_columns = metadata_view->toBlazingColumns();
     std::vector<std::unique_ptr<ral::frame::BlazingColumn>> projected_metadata_cols;
     std::vector<bool> valid_metadata_columns;
     for (int col_index : column_indeces){
@@ -335,17 +341,32 @@ std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_
     for (auto &&c : projected_metadata_cols) {
         projected_metadata_col_views.push_back(c->view());
     }
-    std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluated_table = ral::processor::evaluate_expressions(cudf::table_view{projected_metadata_col_views}, {filter_string});
 
-    RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression in skip_data processing did not evaluate to a boolean mask");
+    std::shared_ptr<ral::frame::BlazingTableView> table_view = std::make_shared<ral::frame::BlazingCudfTableView>(cudf::table_view{projected_metadata_col_views}, metadata_names);
+    std::vector<std::string> conditional_expressions;
+    conditional_expressions.push_back(filter_string);
 
-    cudf::table_view metadata_ids = metadata_view.view().select({metadata_view.num_columns()-2,metadata_view.num_columns()-1});
-    std::vector<std::string> metadata_id_names{metadata_view.column_names()[metadata_view.num_columns()-2], metadata_view.column_names()[metadata_view.num_columns()-1]};
-    ral::frame::BlazingTableView metadata_ids_view(metadata_ids, metadata_id_names);
+    std::unique_ptr<ral::frame::BlazingTable> evaluated_table = ral::execution::backend_dispatcher(
+          ral::execution::execution_backend(ral::execution::backend_id::CUDF),
+          evaluate_expressions_wo_filter_functor(),
+          std::make_shared<ral::frame::BlazingCudfTableView>(cudf::table_view{projected_metadata_col_views}, metadata_names), conditional_expressions, metadata_names);
 
-    std::unique_ptr<ral::frame::BlazingTable> filtered_metadata_ids = ral::processor::applyBooleanFilter(metadata_ids_view, evaluated_table[0]->view());
+    RAL_EXPECTS(evaluated_table->num_columns() == 1 && dynamic_cast<ral::frame::BlazingCudfTableView*>(evaluated_table->to_table_view().get())->view().column(0).type().id() == cudf::type_id::BOOL8, "Expression in skip_data processing did not evaluate to a boolean mask");
 
-    return std::make_pair(std::move(filtered_metadata_ids), false);
+    cudf::table_view metadata_ids = metadata_view->view().select({metadata_view->num_columns()-2,metadata_view->num_columns()-1});
+    std::vector<std::string> metadata_id_names{metadata_view->column_names()[metadata_view->num_columns()-2], metadata_view->column_names()[metadata_view->num_columns()-1]};
+
+    std::shared_ptr<ral::frame::BlazingTableView> metadata_ids_view = std::make_shared<ral::frame::BlazingCudfTableView>(metadata_ids, metadata_id_names);
+
+    std::unique_ptr<ral::frame::BlazingTable> filtered_metadata_ids = ral::execution::backend_dispatcher(
+        metadata_ids_view->get_execution_backend(),
+        apply_boolean_functor(),
+        metadata_ids_view, evaluated_table->to_table_view());
+
+    //Converting back to arrow
+    ral::frame::BlazingCudfTable* filtered_metadata_ids_cudf_table = dynamic_cast<ral::frame::BlazingCudfTable*>(filtered_metadata_ids.get());
+    std::unique_ptr<ral::frame::BlazingCudfTable> filtered_metadata_ids_table = std::make_unique<ral::frame::BlazingCudfTable>(filtered_metadata_ids_cudf_table->releaseCudfTable(), filtered_metadata_ids_cudf_table->column_names());
+    return std::make_pair(std::make_unique<ral::frame::BlazingArrowTable>(std::move(filtered_metadata_ids_table)), false);
 }
 
 

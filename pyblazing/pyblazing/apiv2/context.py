@@ -2571,7 +2571,7 @@ class BlazingContext(object):
             # using get_metadata argument equals to False
             if get_metadata and (
                 parsedSchema["file_type"] == DataType.PARQUET
-                or parsedSchema["file_type"] == DataType.ORC
+            #     or parsedSchema["file_type"] == DataType.ORC TODO reenable ORC parse metadata
                 or has_csv_metadata
             ):
                 parsedMetadata = self._parseMetadata(
@@ -2595,7 +2595,7 @@ class BlazingContext(object):
                 # that does not actually have data
                 # files that do not have data wont show up in the metadata
                 # and we will want to remove them from the table schema
-                file_groups = table.metadata.groupby("file_handle_index")._grouped()
+                file_groups = table.metadata.groupby("file_handle_index").groups
                 if len(file_groups) != len(table.files):
                     table.metadata, table.files = adjust_due_missing_rowgroups(
                         table.metadata, table.files
@@ -2604,7 +2604,7 @@ class BlazingContext(object):
                 # now lets get the row_groups_ids from the metadata
                 metadata_ids = table.metadata[
                     ["file_handle_index", "row_group_index"]
-                ].to_pandas()
+                ]
 
                 grouped = metadata_ids.groupby("file_handle_index")
                 row_groups_ids = []
@@ -2965,7 +2965,7 @@ class BlazingContext(object):
             print(">>>>>>>> ", e)
             file_indices_and_rowgroup_indices = {}
             file_indices_and_rowgroup_indices["skipdata_analysis_fail"] = True
-            file_indices_and_rowgroup_indices["metadata"] = cudf.DataFrame()
+            file_indices_and_rowgroup_indices["metadata"] = pandas.DataFrame()
         except Exception as e:
             raise e
 
@@ -2985,7 +2985,7 @@ class BlazingContext(object):
                 not file_indices_and_rowgroup_indices.empty
             ):  # skipdata did not filter everything
                 file_and_rowgroup_indices = (
-                    file_indices_and_rowgroup_indices.to_pandas()
+                    file_indices_and_rowgroup_indices
                 )
 
                 grouped = file_and_rowgroup_indices.groupby("file_handle_index")
@@ -3273,11 +3273,10 @@ class BlazingContext(object):
                 or ftype == DataType.JSON
                 or ftype == DataType.CSV
             ):
-                if query_table.has_metadata() and False: #Todo SkipData rommel arrow
-                    pass
-                    # currentTableNodes = self._optimize_skip_data_getSlices(
-                    #     query_table, table_scans[table_idx]
-                    # )
+                if query_table.has_metadata(): #Todo SkipData rommel arrow
+                    currentTableNodes = self._optimize_skip_data_getSlices(
+                        query_table, table_scans[table_idx]
+                    )
                 else:
                     # If all files are accessible by all nodes,
                     # it is better to distribute them in the old way
