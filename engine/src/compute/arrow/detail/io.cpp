@@ -80,9 +80,9 @@ std::unique_ptr<ral::frame::BlazingTable> read_parquet_file(
   // Open Parquet file reader
   arrow::MemoryPool* pool = arrow::default_memory_pool();
   std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
-  auto st = parquet::arrow::OpenFile(file, pool, &arrow_reader);
+  arrow::Status st = parquet::arrow::OpenFile(file, pool, &arrow_reader);
   if (!st.ok()) {
-    // TODO percy thrown error
+      throw std::runtime_error("Error read_parquet_file: " + st.message());
   }
 
   std::vector<int> myrow_groups;
@@ -93,8 +93,7 @@ std::unique_ptr<ral::frame::BlazingTable> read_parquet_file(
   std::shared_ptr<arrow::Table> table;
   st = arrow_reader->ReadRowGroups(myrow_groups, column_indices, &table);
   if (!st.ok()) {
-    // TODO percy thrown error
-    // Handle error reading Parquet data...
+      throw std::runtime_error("Error read_parquet_file: " + st.message());
   }
 
   // TODO percy arrow assert col names = table->fields
@@ -131,15 +130,13 @@ std::unique_ptr<ral::frame::BlazingTable> read_csv_file(
                                           parse_options,
                                           convert_options);
     if (!maybe_reader.ok()) {
-        // TODO percy arrow
-        // Handle TableReader instantiation error...
+        throw std::runtime_error("Error read_csv_file: " + maybe_reader.status().message());
     }
     std::shared_ptr<arrow::csv::TableReader> reader = *maybe_reader;
 
     auto maybe_table = reader->Read();
     if (!maybe_table.ok()) {
-        // TODO percy arrow
-        // Handle CSV read error
+        throw std::runtime_error("Error read_csv_file: " + maybe_table.status().message());
     }
     std::shared_ptr<arrow::Table> table = *maybe_table;
     return std::make_unique<ral::frame::BlazingArrowTable>(table);
@@ -156,15 +153,13 @@ std::unique_ptr<ral::frame::BlazingTable> read_orc_file(
     std::unique_ptr<arrow::adapters::orc::ORCFileReader> reader;
     arrow::Status st = arrow::adapters::orc::ORCFileReader::Open(file, pool, &reader);
     if(!st.ok()){
-        // TODO percy arrow
-        // Handle ORC read error
+        throw std::runtime_error("Error read_orc_file: " + st.message());
     }
 
     std::shared_ptr<arrow::Table> table;
     st = reader->Read(&table);
     if (!st.ok()) {
-        // TODO percy arrow
-        // Handle ORC read error
+        throw std::runtime_error("Error read_orc_file: " + st.message());
     }
 
     return std::make_unique<ral::frame::BlazingArrowTable>(table);
@@ -187,15 +182,13 @@ std::unique_ptr<ral::frame::BlazingTable> read_json_file(
                                            read_options,
                                            parse_options);
     if (!maybe_reader.ok()) {
-        // TODO percy arrow
-        // Handle TableReader instantiation error...
+        throw std::runtime_error("Error read_json_file: " + maybe_reader.status().message());
     }
     std::shared_ptr<arrow::json::TableReader> reader = *maybe_reader;
 
     auto maybe_table = reader->Read();
     if (!maybe_table.ok()) {
-        // TODO percy arrow
-        // Handle JSON read error
+        throw std::runtime_error("Error read_json_file: " + maybe_table.status().message());
     }
     std::shared_ptr<arrow::Table> table = *maybe_table;
     return std::make_unique<ral::frame::BlazingArrowTable>(table);
@@ -213,7 +206,7 @@ void parse_parquet_schema(
 
   arrow::Status st = parquet::arrow::FromParquetSchema(parquet_metadata->schema(), props, &arrow_schema);
   if(!st.ok()){
-      // TODO percy arrow
+      throw std::runtime_error("Error parse_parquet_schema: " + st.message());
   }
 
   for(std::size_t i = 0; i < arrow_schema->fields().size(); ++i) {
@@ -247,15 +240,13 @@ void parse_csv_schema(
                                           parse_options,
                                           convert_options);
     if (!maybe_reader.ok()) {
-        // TODO percy arrow
-        // Handle TableReader instantiation error...
+        throw std::runtime_error("Error parse_csv_schema: " + maybe_reader.status().message());
     }
     std::shared_ptr<arrow::csv::TableReader> reader = *maybe_reader;
 
     auto maybe_table = reader->Read();
     if (!maybe_table.ok()) {
-        // TODO percy arrow
-        // Handle CSV read error
+        throw std::runtime_error("Error parse_csv_schema: " + maybe_table.status().message());
     }
     std::shared_ptr<arrow::Table> table   = *maybe_table;
     std::shared_ptr<arrow::Schema> schema = table->schema();
@@ -283,15 +274,13 @@ void parse_orc_schema(
     std::unique_ptr<arrow::adapters::orc::ORCFileReader> reader;
     arrow::Status st = arrow::adapters::orc::ORCFileReader::Open(file, pool, &reader);
     if(!st.ok()){
-        // TODO percy arrow
-        // Handle ORC read error
+        throw std::runtime_error("Error parse_orc_schema: " + st.message());
     }
 
     std::shared_ptr<arrow::Schema> schema;
     st = reader->ReadSchema(&schema);
     if (!st.ok()) {
-        // TODO percy arrow
-        // Handle ORC read error
+        throw std::runtime_error("Error parse_orc_schema: " + st.message());
     }
 
     std::vector<std::shared_ptr<arrow::Field>> fields = schema->fields();
@@ -322,15 +311,13 @@ void parse_json_schema(
                                                        read_options,
                                                        parse_options);
     if (!maybe_reader.ok()) {
-        // TODO percy arrow
-        // Handle TableReader instantiation error...
+        throw std::runtime_error("Error parse_json_schema: " + maybe_reader.status().message());
     }
     std::shared_ptr<arrow::json::TableReader> reader = *maybe_reader;
 
     auto maybe_table = reader->Read();
     if (!maybe_table.ok()) {
-        // TODO percy arrow
-        // Handle JSON read error
+        throw std::runtime_error("Error parse_json_schema: " + maybe_table.status().message());
     }
     std::shared_ptr<arrow::Table> table   = *maybe_table;
     std::shared_ptr<arrow::Schema> schema = table->schema();
