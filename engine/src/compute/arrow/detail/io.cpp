@@ -31,7 +31,11 @@ std::unique_ptr<ral::frame::BlazingTable> read_parquet_file(
 
   // Read entire file as a single Arrow table
   std::shared_ptr<arrow::Table> table;
-  st = arrow_reader->ReadRowGroups(myrow_groups, column_indices, &table);
+
+  // TODO percy arrow rommel skip data use group info here  
+  //st = arrow_reader->ReadRowGroups(myrow_groups, column_indices, &table);
+  st = arrow_reader->ReadTable(column_indices, &table);
+
   if (!st.ok()) {
     // TODO percy thrown error
     // Handle error reading Parquet data...
