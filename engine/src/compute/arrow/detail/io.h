@@ -22,11 +22,22 @@ std::unique_ptr<ral::frame::BlazingTable> read_orc_file(
         std::vector<std::string> col_names,
         std::vector<cudf::size_type> row_groups);
 
+std::unique_ptr<ral::frame::BlazingTable> read_json_file(
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        std::vector<int> column_indices,
+        std::vector<std::string> col_names,
+        std::vector<cudf::size_type> row_groups);
+
 void parse_parquet_schema(
     ral::io::Schema & schema_out,
     std::shared_ptr<arrow::io::RandomAccessFile> file);
 
 void parse_orc_schema(
+        ral::io::Schema & schema_out,
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        const std::map<std::string, std::string> &args_map);
+
+void parse_json_schema(
         ral::io::Schema & schema_out,
         std::shared_ptr<arrow::io::RandomAccessFile> file,
         const std::map<std::string, std::string> &args_map);

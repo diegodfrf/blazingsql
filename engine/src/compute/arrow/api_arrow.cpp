@@ -584,6 +584,18 @@ io_read_file_data_functor<ral::io::DataType::ORC>::operator()<ral::frame::Blazin
 }
 
 template <> template <>
+inline std::unique_ptr<ral::frame::BlazingTable>
+io_read_file_data_functor<ral::io::DataType::JSON>::operator()<ral::frame::BlazingArrowTable>(
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        std::vector<int> column_indices,
+        std::vector<std::string> col_names,
+        std::vector<cudf::size_type> row_groups,
+        const std::map<std::string, std::string> &args_map) const
+{
+    return voltron::compute::arrow_backend::io::read_json_file(file, column_indices, col_names, row_groups);
+}
+
+template <> template <>
 inline void
 io_parse_file_schema_functor<ral::io::DataType::PARQUET>::operator()<ral::frame::BlazingArrowTable>(
         ral::io::Schema & schema_out,
@@ -603,5 +615,14 @@ io_parse_file_schema_functor<ral::io::DataType::ORC>::operator()<ral::frame::Bla
     voltron::compute::arrow_backend::io::parse_orc_schema(schema_out, file, args_map);
 }
 
+template <> template <>
+inline void
+io_parse_file_schema_functor<ral::io::DataType::JSON>::operator()<ral::frame::BlazingArrowTable>(
+        ral::io::Schema & schema_out,
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        const std::map<std::string, std::string> &args_map) const
+{
+    voltron::compute::arrow_backend::io::parse_json_schema(schema_out, file, args_map);
+}
 //} // compute
 //} // voltron
