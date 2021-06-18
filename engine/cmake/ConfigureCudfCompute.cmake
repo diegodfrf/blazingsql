@@ -3,6 +3,8 @@
 #     Copyright 2021 Percy Camilo Triveño Aucahuasi <percy.camilo.ta@gmail.com>
 #=============================================================================
 
+add_definitions(-DCUDF_SUPPORT)
+
 link_directories(${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
 
 include_directories(

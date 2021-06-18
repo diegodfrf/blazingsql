@@ -108,8 +108,8 @@ std::unique_ptr<ral::frame::BlazingTable> csv_parser::get_metadata(ral::executio
 
 #ifdef CUDF_SUPPORT
 	std::vector< std::unique_ptr<cudf::column> > columns;
-	columns.emplace_back( vector_to_column(file_index_values, cudf::data_type(cudf::type_id::INT32)) );
-	columns.emplace_back( vector_to_column(row_group_values, cudf::data_type(cudf::type_id::INT32)) );
+	columns.emplace_back( voltron::compute::cudf_backend::types::vector_to_column(file_index_values, cudf::data_type(cudf::type_id::INT32)) );
+	columns.emplace_back( voltron::compute::cudf_backend::types::vector_to_column(row_group_values, cudf::data_type(cudf::type_id::INT32)) );
 
 	std::vector<std::string> metadata_names = {"file_handle_index", "row_group_index"};
 	auto metadata_table = std::make_unique<cudf::table>(std::move(columns));

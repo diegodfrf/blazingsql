@@ -12,6 +12,10 @@
 
 #include "blazingdb/io/Config/BlazingContext.h"
 
+#ifdef CUDF_SUPPORT
+#include "blazing_table/BlazingCudfTable.h"
+#endif
+
 #ifdef MYSQL_SUPPORT
 #include "io/data_parser/sql/MySQLParser.h"
 #include "io/data_provider/sql/MySQLDataProvider.h"

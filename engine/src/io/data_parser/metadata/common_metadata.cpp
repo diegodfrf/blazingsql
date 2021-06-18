@@ -34,7 +34,7 @@ std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_nam
 	minmax_metadata_gdf_table.resize(metadata_col_names.size());
 	for (std::size_t i = 0; i < metadata_col_names.size(); ++i) {
 		std::vector<int32_t> temp{(int32_t)-1};
-		std::unique_ptr<cudf::column> expected_col = vector_to_column(temp, cudf::data_type(cudf::type_id::INT32));
+		std::unique_ptr<cudf::column> expected_col = voltron::compute::cudf_backend::types::vector_to_column(temp, cudf::data_type(cudf::type_id::INT32));
 		minmax_metadata_gdf_table[i] = std::move(expected_col);
 	}
 

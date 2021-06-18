@@ -150,7 +150,13 @@ struct ComputeTest : public ::testing::TestWithParam<ComputeTestParam> {
     BlazingRMMInitialize("pool_memory_resource", 32 * 1024 * 1024, 256 * 1024 * 1024);
     float host_memory_quota = 0.75;  // default value
     blazing_host_memory_resource::getInstance().initialize(host_memory_quota);
+
+#ifdef CUDF_SUPPORT
+    ral::memory::set_allocation_pools(4000000, 10, 4000000, 10, false, nullptr);
+#else
     ral::memory::set_allocation_pools(4000000, 10, 4000000, 10, false);
+#endif
+
     int executor_threads = 10;
     ral::execution::executor::init_executor(executor_threads, 0.8,
                                             this->parameter.preferred_compute);

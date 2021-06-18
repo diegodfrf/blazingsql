@@ -2,7 +2,6 @@
 
 #include "compute/api.h"
 
-
 #include <random>
 #include <cudf/aggregation.hpp>
 #include <cudf/filling.hpp>
@@ -44,6 +43,7 @@
 
 #include "utilities/error.hpp"
 #include "blazing_table/BlazingCudfTable.h"
+#include "communication/messages/GPUComponentMessage.h"
 
 //namespace voltron {
 //namespace compute {
@@ -63,12 +63,32 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingCudfTable>(
 		std::shared_ptr<ral::frame::BlazingTableView> table,
 		std::unique_ptr<cudf::column> column,
-		cudf::out_of_bounds_policy out_of_bounds_policy,
-		cudf::detail::negative_index_policy negative_index_policy) const
+		voltron::compute::OutOfBoundsPolicy out_of_bounds_policy,
+		voltron::compute::NegativeIndexPolicy negative_index_policy) const
 {
+	cudf::out_of_bounds_policy out_of_bounds_policy_cudf;
+	switch (out_of_bounds_policy) {
+		case voltron::compute::OutOfBoundsPolicy::NULLIFY: {
+			out_of_bounds_policy_cudf = cudf::out_of_bounds_policy::NULLIFY; break;
+		}
+		case voltron::compute::OutOfBoundsPolicy::DONT_CHECK: {
+			out_of_bounds_policy_cudf = cudf::out_of_bounds_policy::DONT_CHECK; break;
+		}
+	} ;
+
+	cudf::detail::negative_index_policy negative_index_policy_cudf;
+	switch (negative_index_policy) {
+		case voltron::compute::NegativeIndexPolicy::ALLOWED: {
+			negative_index_policy_cudf = cudf::detail::negative_index_policy::ALLOWED; break;
+		}
+		case voltron::compute::NegativeIndexPolicy::NOT_ALLOWED: {
+			negative_index_policy_cudf = cudf::detail::negative_index_policy::NOT_ALLOWED; break;
+		}
+	}
+
 	// TODO percy rommel arrow
 	ral::frame::BlazingCudfTableView *table_ptr = dynamic_cast<ral::frame::BlazingCudfTableView*>(table.get());
-	std::unique_ptr<cudf::table> pivots = cudf::detail::gather(table_ptr->view(), column->view(), out_of_bounds_policy, negative_index_policy);
+	std::unique_ptr<cudf::table> pivots = cudf::detail::gather(table_ptr->view(), column->view(), out_of_bounds_policy_cudf, negative_index_policy_cudf);
 
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(pivots), table->column_names());
 }
@@ -140,6 +160,17 @@ inline std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<
     std::vector<int> const& right_column_indices,
     voltron::compute::NullEquality equalityType) const
 {
+    
+    cudf::null_equality equalityType_cudf;
+    switch (equalityType) {
+        case voltron::compute::NullEquality::EQUAL: {
+            equalityType_cudf = cudf::null_equality::EQUAL; break;
+        }
+        case voltron::compute::NullEquality::UNEQUAL: {
+            equalityType_cudf = cudf::null_equality::UNEQUAL; break;
+        }
+    };
+
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
   std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
@@ -148,7 +179,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<
               table_right->view(),
               left_column_indices,
               right_column_indices,
-              equalityType);
+              equalityType_cudf);
   return std::make_unique<ral::frame::BlazingCudfTable>(std::move(tb), names);
 }
 
@@ -263,8 +294,8 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::op
 {
   auto table = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
   auto sortColumns = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(sortColumns_view);
-  std::vector<cudf::order> cudfOrderTypes = toCudfOrderTypes(sortOrderTypes);
-  std::vector<cudf::null_order> cudfNullOrderTypes = toCudfNullOrderTypes(null_orders);
+  std::vector<cudf::order> cudfOrderTypes = voltron::compute::cudf_backend::types::toCudfOrderTypes(sortOrderTypes);
+  std::vector<cudf::null_order> cudfNullOrderTypes = voltron::compute::cudf_backend::types::toCudfNullOrderTypes(null_orders);
   std::unique_ptr<cudf::column> output = cudf::sorted_order( sortColumns->view(), cudfOrderTypes, cudfNullOrderTypes );
 	std::unique_ptr<cudf::table> gathered = cudf::gather( table->view(), output->view() );
   return std::make_unique<ral::frame::BlazingCudfTable>(std::move(gathered), table->column_names());
@@ -285,7 +316,7 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::ope
 	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes,
     std::vector<int> column_indices) const
 {
-  return create_empty_cudf_table(column_names, dtypes, column_indices);
+  return voltron::compute::cudf_backend::types::create_empty_cudf_table(column_names, dtypes, column_indices);
 }
 
 template <>
@@ -361,7 +392,7 @@ normalize_types_functor::operator()<ral::frame::BlazingCudfTable>(
     const std::vector<std::shared_ptr<arrow::DataType>>  & types,
     std::vector<cudf::size_type> column_indices) const
 {
-  normalize_types_gpu(table, types, column_indices);
+  voltron::compute::cudf_backend::types::normalize_types_gpu(table, types, column_indices);
 }
 
 template <>
@@ -400,10 +431,10 @@ upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
   auto columns_to_search = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(t);  
   auto partitionPlan = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(values);  
 
-  std::vector<cudf::order> cudf_column_order = toCudfOrderTypes(column_order);
-  std::vector<cudf::null_order> cudfNullOrderTypes = toCudfNullOrderTypes(null_precedence);
+  std::vector<cudf::order> cudf_column_order = voltron::compute::cudf_backend::types::toCudfOrderTypes(column_order);
+  std::vector<cudf::null_order> cudfNullOrderTypes = voltron::compute::cudf_backend::types::toCudfNullOrderTypes(null_precedence);
   auto pivot_indexes = cudf::upper_bound(columns_to_search->view(), partitionPlan->view(), cudf_column_order, cudfNullOrderTypes);
-	std::vector<cudf::size_type> split_indexes = column_to_vector<cudf::size_type>(pivot_indexes->view());
+	std::vector<cudf::size_type> split_indexes = voltron::compute::cudf_backend::types::column_to_vector<cudf::size_type>(pivot_indexes->view());
   auto tbs = cudf::split(sortedTable->view(), split_indexes);
   std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
   for (auto tb : tbs) {

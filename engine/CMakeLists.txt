@@ -225,6 +225,7 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheMachine.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTableView.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTable.cpp
+        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTable.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTableView.cpp
         ${PROJECT_SOURCE_DIR}/src/execution_graph/port.cpp
         ${PROJECT_SOURCE_DIR}/src/execution_kernels/kernel.cpp

@@ -10,7 +10,6 @@ namespace ral {
 namespace frame {
 
 class BlazingTable;
-class BlazingCudfTable;
 
 class BlazingTableView : public execution::BlazingDispatchable {
 public:

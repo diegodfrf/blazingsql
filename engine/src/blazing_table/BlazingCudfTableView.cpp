@@ -2,7 +2,6 @@
 #include "BlazingCudfTable.h"
 #include "parser/types_parser_utils.h"
 #include "compute/cudf/detail/types.h"
-#include "parser/cudf/types_parser_utils.h"
 
 namespace ral {
 namespace frame {
@@ -67,7 +66,7 @@ std::vector<std::shared_ptr<arrow::DataType>> BlazingCudfTableView::column_types
 	std::vector<std::shared_ptr<arrow::DataType>> data_types;
 	auto view = this->view();
 	for (size_t i = 0; i < view.num_columns(); ++i) {
-		data_types.push_back(cudf_type_id_to_arrow_type(view.column(i).type().id()));
+		data_types.push_back(voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(view.column(i).type().id()));
 	}
 	return data_types;
 }

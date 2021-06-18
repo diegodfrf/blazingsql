@@ -3,6 +3,10 @@
 
 #include "blazing_table/BlazingTable.h"
 
+#ifdef CUDF_SUPPORT
+#include <cudf/column/column.hpp>
+#endif
+
 std::unique_ptr<ral::frame::BlazingTable> make_dummy_metadata_table_from_col_names(std::vector<std::string> col_names);
 
 #ifdef CUDF_SUPPORT

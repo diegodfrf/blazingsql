@@ -37,8 +37,8 @@ struct gather_functor {
   std::unique_ptr<ral::frame::BlazingTable> operator()(
 		std::shared_ptr<ral::frame::BlazingTableView> table,
 		std::unique_ptr<cudf::column> column,
-		cudf::out_of_bounds_policy out_of_bounds_policy,
-		cudf::detail::negative_index_policy negative_index_policy) const
+		voltron::compute::OutOfBoundsPolicy out_of_bounds_policy,
+		voltron::compute::NegativeIndexPolicy negative_index_policy) const
   {
     throw std::runtime_error("ERROR: gather_functor This default dispatcher operator should not be called.");
     return nullptr;
@@ -333,7 +333,6 @@ struct select_functor {
 };
 
 // TODO percy arrow rommel enable this when we have arrow 4
-#ifdef CUDF_SUPPORT
 struct upper_bound_split_functor {
   template <typename T>
   std::vector<std::shared_ptr<ral::frame::BlazingTableView>> operator()(
@@ -346,7 +345,6 @@ struct upper_bound_split_functor {
     throw std::runtime_error("ERROR: upper_bound_split_functor This default dispatcher operator should not be called.");
   }
 };
-#endif
 
 template <ral::io::DataType DataSourceType>
 struct io_read_file_data_functor {

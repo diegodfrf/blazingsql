@@ -9,6 +9,12 @@
 #include <numeric>
 #include "compute/api.h"
 
+#ifdef CUDF_SUPPORT
+#include <cudf/io/detail/orc.hpp>
+#include <cudf/io/orc.hpp>
+#include <cudf/io/datasource.hpp>
+#endif
+
 namespace ral {
 namespace io {
 

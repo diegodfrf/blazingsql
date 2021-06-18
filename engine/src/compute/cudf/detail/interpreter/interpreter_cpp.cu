@@ -13,7 +13,7 @@
 #include "parser/CalciteExpressionParsing.h"
 #include "utilities/error.hpp"
 #include <curand_kernel.h>
-#include "parser/cudf/types_parser_utils.h"
+#include "compute/cudf/detail/types.h"
 
 namespace interops {
 namespace detail {
@@ -334,7 +334,7 @@ public:
 				auto literal_node = static_cast<const ral::parser::literal_node*>(left_operand);
 				std::unique_ptr<cudf::scalar> scalar_ptr;
 				if (!is_null(literal_node->value)) {
-				 	scalar_ptr = get_scalar_from_string(literal_node->value, arrow_type_to_cudf_data_type(literal_node->type()->id()) );
+				 	scalar_ptr = get_scalar_from_string(literal_node->value, voltron::compute::cudf_backend::types::arrow_type_to_cudf_data_type_cudf(literal_node->type()->id()) );
 				}
 
 				left_inputs.push_back(scalar_ptr ? SCALAR_INDEX : SCALAR_NULL_INDEX);
@@ -345,7 +345,7 @@ public:
 				auto literal_node = static_cast<const ral::parser::literal_node*>(right_operand);
 				std::unique_ptr<cudf::scalar> scalar_ptr;
 				if (!is_null(literal_node->value)) {
-					scalar_ptr = get_scalar_from_string(literal_node->value, arrow_type_to_cudf_data_type(literal_node->type_id()));
+					scalar_ptr = get_scalar_from_string(literal_node->value, voltron::compute::cudf_backend::types::arrow_type_to_cudf_data_type_cudf(literal_node->type_id()));
 				}
 
 				left_inputs.push_back(left_position);
@@ -540,12 +540,12 @@ void perform_interpreter_operation(cudf::mutable_table_view & out_table,
 		}
 
 		if(right_index == UNARY_INDEX){
-                        std::shared_ptr<arrow::DataType> output_dtype = get_output_type(operators[i], cudf_type_id_to_arrow_type(left_input_types_vec[i]));
-			output_types_vec[i] =  arrow_type_to_cudf_data_type(output_dtype).id();
+                        std::shared_ptr<arrow::DataType> output_dtype = get_output_type(operators[i], voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(left_input_types_vec[i]));
+			output_types_vec[i] =  voltron::compute::cudf_backend::types::arrow_type_to_cudf_data_type_cudf(output_dtype).id();
 		}else if(right_index == NULLARY_INDEX){
-			output_types_vec[i] = arrow_type_to_cudf_data_type(get_output_type(operators[i])).id();
+			output_types_vec[i] = voltron::compute::cudf_backend::types::arrow_type_to_cudf_data_type_cudf(get_output_type(operators[i])).id();
 		}else{
-			output_types_vec[i] = arrow_type_to_cudf_data_type(get_output_type(operators[i], cudf_type_id_to_arrow_type(left_input_types_vec[i]), cudf_type_id_to_arrow_type(right_input_types_vec[i]))).id();
+			output_types_vec[i] = voltron::compute::cudf_backend::types::arrow_type_to_cudf_data_type_cudf(get_output_type(operators[i], voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(left_input_types_vec[i]), voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(right_input_types_vec[i]))).id();
 		}
 
 

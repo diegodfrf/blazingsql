@@ -34,8 +34,14 @@ void message_sender::initialize_instance(std::shared_ptr<ral::cache::CacheMachin
 #endif
 
 	if(instance == NULL) {
-		message_sender::instance = new message_sender(
+#ifdef CUDF_SUPPORT
+    message_sender::instance = new message_sender(
+        output_cache,node_address_map,num_threads,context,origin_node,ral_id,protocol,require_acknowledge);
+#else
+    message_sender::instance = new message_sender(
 				output_cache,node_address_map,num_threads,ral_id,protocol,require_acknowledge);
+#endif
+  
 	}
 }
 

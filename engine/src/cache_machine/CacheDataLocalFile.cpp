@@ -2,6 +2,13 @@
 #include <random>
 #include "compute/backend_dispatcher.h"
 
+
+// TODO percy arrow
+#ifdef CUDF_SUPPORT
+#include <cudf/io/orc.hpp>
+#include <cudf/io/orc_metadata.hpp>
+#endif
+
 namespace ral {
 namespace cache {
 

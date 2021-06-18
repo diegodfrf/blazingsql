@@ -319,8 +319,8 @@ std::unique_ptr<BlazingCudfTable> BlazingHostTable::get_cudf_table() const {
    }catch(std::exception & e){
        auto logger = spdlog::get("batch_logger");
        if (logger){
-           logger->error("|||{info}|||||",
-                   "info"_a="ERROR in BlazingHostTable::get_gpu_table(). What: {}"_format(e.what()));
+          // TODO percy arrow
+          //logger->error("|||{info}|||||", "info"_a="ERROR in BlazingHostTable::get_gpu_table(). What: {}"_format(e.what()));
        }
        throw;
    }

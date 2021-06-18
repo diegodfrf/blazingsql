@@ -6,6 +6,7 @@
 
 #include "operators/OrderBy.h"
 #include "operators/Concatenate.h"
+#include "operators/operators_definitions.h"
 #include "compute/backend_dispatcher.h"
 
 #include "utilities/error.hpp"
@@ -111,11 +112,11 @@ std::unique_ptr<BlazingTable> getPivotPointsTable(int number_partitions, std::sh
 	std::transform(sequence.begin(), sequence.end(), sequence.begin(), [step](int32_t i){ return i*step;});
 
 #ifdef CUDF_SUPPORT
-	auto gather_map = vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
+	auto gather_map = voltron::compute::cudf_backend::types::vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
 
 	// TODO percy rommel arrow
 	std::unique_ptr<ral::frame::BlazingTable> pivots = ral::execution::backend_dispatcher(sortedSamples->get_execution_backend(), gather_functor(),
-													sortedSamples, std::move(gather_map), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED);
+													sortedSamples, std::move(gather_map), voltron::compute::OutOfBoundsPolicy::DONT_CHECK, voltron::compute::NegativeIndexPolicy::NOT_ALLOWED);
 	return std::move(pivots);
 #else
   return nullptr; // TODO percy arrow 4

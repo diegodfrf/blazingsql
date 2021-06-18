@@ -17,6 +17,10 @@
 // TODO percy arrow 4 move these functions into hosttbale ctor
 #include "communication/messages/GPUComponentMessage.h"
 
+#ifdef CUDF_SUPPORT
+#include <thrust/binary_search.h>
+#endif
+
 inline std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
   std::shared_ptr<arrow::Table> table,
   std::shared_ptr<arrow::ChunkedArray> boolValues){
@@ -149,23 +153,24 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingArrowTable>(
 		std::shared_ptr<ral::frame::BlazingTableView> table,
 		std::unique_ptr<cudf::column> column,
-		cudf::out_of_bounds_policy out_of_bounds_policy,
-		cudf::detail::negative_index_policy negative_index_policy) const
+		voltron::compute::OutOfBoundsPolicy out_of_bounds_policy,
+		voltron::compute::NegativeIndexPolicy negative_index_policy) const
 {
   // TODO percy arrow
-  //throw std::runtime_error("ERROR: gather_functor BlazingSQL doesn't support this Arrow operator yet.");
+  throw std::runtime_error("ERROR: gather_functor BlazingSQL doesn't support this Arrow operator yet.");
 
-  std::vector<std::unique_ptr<cudf::column>> cs;
-  cs.push_back(std::make_unique<cudf::column>(column->view()));
-  auto ct = std::make_unique<cudf::table>(std::move(cs));
-  std::vector<cudf::column_metadata> mt;
-  mt.push_back(cudf::column_metadata("any"));
-  auto indexes = cudf::detail::to_arrow(ct->view(), mt);
-  auto idx = indexes->column(0);
-  auto at = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table);
-  auto arrow_table = at->view();
-  std::shared_ptr<arrow::Table> ret = arrow::compute::Take(*arrow_table, *idx).ValueOrDie();
-  return std::make_unique<ral::frame::BlazingArrowTable>(ret);
+//  std::vector<std::unique_ptr<cudf::column>> cs;
+//  cs.push_back(std::make_unique<cudf::column>(column->view()));
+//  auto ct = std::make_unique<cudf::table>(std::move(cs));
+//  std::vector<cudf::column_metadata> mt;
+//  mt.push_back(cudf::column_metadata("any"));
+//  auto indexes = cudf::detail::to_arrow(ct->view(), mt);
+//  auto idx = indexes->column(0);
+//  auto at = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table);
+//  auto arrow_table = at->view();
+//  std::shared_ptr<arrow::Table> ret = arrow::compute::Take(*arrow_table, *idx).ValueOrDie();
+//  return std::make_unique<ral::frame::BlazingArrowTable>(ret);
+
 }
 #endif
 
