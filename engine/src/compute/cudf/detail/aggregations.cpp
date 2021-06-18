@@ -19,6 +19,7 @@
 #include <cudf/reduction.hpp>
 #include <cudf/groupby.hpp>
 #include <cudf/detail/aggregation/aggregation.hpp>
+#include "parser/cudf/groupby_parser_utils.h"
 
 std::unique_ptr<ral::frame::BlazingTable> compute_groupby_without_aggregations(
 	std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::vector<int> & group_column_indices) {

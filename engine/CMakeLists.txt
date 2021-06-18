@@ -138,6 +138,7 @@ include_directories(
     ${PROJECT_BINARY_DIR}
     ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR}
     ${BSQL_BLD_PREFIX}/include
+    ${BSQL_BLD_PREFIX}/include/libcudf/libcudacxx
     ${BSQL_BLD_PREFIX}/include/blazingdb/io
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/include
@@ -222,7 +223,6 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CPUCacheData.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/ArrowCacheData.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheMachine.cpp
-        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTable.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTableView.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTable.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTableView.cpp

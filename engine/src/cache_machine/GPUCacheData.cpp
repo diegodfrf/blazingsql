@@ -1,5 +1,8 @@
 #include "GPUCacheData.h"
 
+#include "blazing_table/BlazingCudfTable.h"
+#include "blazing_table/BlazingArrowTable.h"
+
 namespace ral {
 namespace cache {
 
@@ -16,7 +19,10 @@ std::unique_ptr<ral::frame::BlazingTable> GPUCacheData::decache(execution::execu
     if (backend.id() == ral::execution::backend_id::CUDF) {
         return std::move(data_);
     } else {
+
+#ifdef CUDF_SUPPORT
         return std::make_unique<ral::frame::BlazingArrowTable>(std::move(data_));
+#endif
     }
 }
 

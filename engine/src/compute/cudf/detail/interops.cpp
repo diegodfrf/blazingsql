@@ -1,32 +1,36 @@
-#include "blazing_table/BlazingColumn.h"
-#include "blazing_table/BlazingColumnView.h"
-#include "blazing_table/BlazingColumnOwner.h"
-#include "parser/expression_tree.hpp"
-#include "parser/expression_utils.hpp"
-#include "parser/types_parser_utils.h"
-#include "interpreter/interpreter_cpp.h"
+#include <cudf/column/column_factories.hpp>
 #include <cudf/copying.hpp>
 #include <cudf/replace.hpp>
 #include <cudf/search.hpp>
 #include <cudf/strings/capitalize.hpp>
+#include <cudf/strings/case.hpp>
 #include <cudf/strings/combine.hpp>
 #include <cudf/strings/contains.hpp>
-#include <cudf/column/column_factories.hpp>
-#include <cudf/strings/replace_re.hpp>
-#include <cudf/strings/replace.hpp>
-#include <cudf/strings/substring.hpp>
-#include <cudf/strings/case.hpp>
-#include <cudf/strings/strip.hpp>
 #include <cudf/strings/convert/convert_booleans.hpp>
 #include <cudf/strings/convert/convert_datetime.hpp>
 #include <cudf/strings/convert/convert_floats.hpp>
 #include <cudf/strings/convert/convert_integers.hpp>
+#include <cudf/strings/replace.hpp>
+#include <cudf/strings/replace_re.hpp>
+#include <cudf/strings/strip.hpp>
+#include <cudf/strings/substring.hpp>
 #include <cudf/unary.hpp>
 
+#include "blazing_table/BlazingColumn.h"
+#include "blazing_table/BlazingColumnOwner.h"
+#include "blazing_table/BlazingColumnView.h"
 #include "compute/cudf/detail/scalars.h"
-#include "compute/cudf/detail/types.h"
 #include "compute/cudf/detail/transform.hpp"
+#include "compute/cudf/detail/types.h"
+#include "interpreter/interpreter_cpp.h"
+#include "parser/expression_tree.hpp"
+#include "parser/expression_utils.hpp"
 #include "parser/project_parser_utils.h"
+#include "parser/types_parser_utils.h"
+
+#include "parser/cudf/check_types.h"
+#include "parser/cudf/project_parser_utils.h"
+#include "parser/cudf/types_parser_utils.h"
 
 using namespace ral;
 
@@ -725,7 +729,7 @@ std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
         tree.transform(evaluator);
 
         if (tree.root().type == parser::node_type::LITERAL) {
-            cudf::data_type literal_type = static_cast<const ral::parser::literal_node&>(tree.root()).type();
+            cudf::data_type literal_type = arrow_type_to_cudf_data_type(static_cast<const ral::parser::literal_node&>(tree.root()).type_id());
             std::unique_ptr<cudf::scalar> literal_scalar = get_scalar_from_string(tree.root().value, literal_type);
             out_columns[i] = std::make_unique<ral::frame::BlazingColumnOwner>(cudf::make_column_from_scalar(*literal_scalar, table.num_rows()));
         } else if (tree.root().type == parser::node_type::VARIABLE) {
@@ -739,7 +743,7 @@ std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
         	expr_output_type_visitor visitor{cudf::table_view{{table, evaluator.computed_columns_view()}}};
 	        tree.visit(visitor);
 
-            cudf::data_type expr_out_type = visitor.get_expr_output_type();
+            auto expr_out_type = arrow_type_to_cudf_data_type(visitor.get_expr_output_type());
 
             auto new_column = cudf::make_fixed_width_column(expr_out_type, table.num_rows(), cudf::mask_state::UNINITIALIZED);
             interpreter_out_column_views.push_back(new_column->mutable_view());

@@ -59,10 +59,12 @@ struct literal_node : public operad_node {
 
     node * clone() const override { return new literal_node(this->value, this->_type); };
 
-    std::shared_ptr<arrow::DataType> type() const { return _type; }
+  std::shared_ptr<arrow::DataType> type() const { return _type; }
+
+  arrow::Type::type type_id() const { return _type->id(); }
 
 private:
-    std::shared_ptr<arrow::DataType> _type;
+  std::shared_ptr<arrow::DataType> _type;
 };
 
 struct variable_node : public operad_node {

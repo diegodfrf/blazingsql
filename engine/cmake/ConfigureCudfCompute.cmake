@@ -39,6 +39,11 @@ set(COMPUTE_CUDF_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/io/data_provider/GDFDataProvider.cpp
     ${PROJECT_SOURCE_DIR}/src/io/data_parser/GDFParser.cpp
     ${PROJECT_SOURCE_DIR}/src/io/data_parser/sql/AbstractSQLParser.cpp # TODO percy arrow 4 make sql ds compute agnostic!
+
+    ${PROJECT_SOURCE_DIR}/src/parser/cudf/check_types.cpp
+    ${PROJECT_SOURCE_DIR}/src/parser/cudf/project_parser_utils.cpp
+    ${PROJECT_SOURCE_DIR}/src/parser/cudf/types_parser_utils.cpp
+    
 )
 
 find_library(ARROW_CUDA_LIB "arrow_cuda" NAMES libarrow_cuda HINTS "$ENV{ARROW_ROOT}/lib" "$ENV{ARROW_ROOT}/build")
