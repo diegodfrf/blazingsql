@@ -274,7 +274,6 @@ inline std::unique_ptr<ral::frame::BlazingTable> build_only_schema::operator()<r
   return std::make_unique<ral::frame::BlazingCudfTable>(cudf::empty_like(table_view_ptr->view()), table_view_ptr->column_names());
 }
 
-
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::operator()<ral::frame::BlazingCudfTable>(
   std::shared_ptr<ral::frame::BlazingTableView> table_view, const std::vector<std::string> & expressions) const
@@ -283,6 +282,16 @@ inline std::unique_ptr<ral::frame::BlazingTable> evaluate_expressions_functor::o
     std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluated_table = evaluate_expressions(cudf_table_view->view(), expressions);
     RAL_EXPECTS(evaluated_table.size() == 1 && evaluated_table[0]->view().type().id() == cudf::type_id::BOOL8, "Expression does not evaluate to a boolean mask");
     return applyBooleanFilter(cudf_table_view, evaluated_table[0]->view());
+}
+
+template <>
+inline std::unique_ptr<ral::frame::BlazingTable> apply_boolean_functor::operator()<ral::frame::BlazingCudfTable>(
+std::shared_ptr<ral::frame::BlazingTableView> table_view, std::shared_ptr<ral::frame::BlazingTableView> bool_column_values) const
+{
+  auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
+  auto cudf_bool_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(bool_column_values);
+  RAL_EXPECTS(cudf_bool_view->num_columns() == 1 && cudf_bool_view->column(0).type().id() == cudf::type_id::BOOL8, "Expression does not evaluate to a boolean mask");
+  return applyBooleanFilter(cudf_table_view, cudf_bool_view->column(0));
 }
 
 template <>

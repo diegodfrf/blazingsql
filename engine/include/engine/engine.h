@@ -40,7 +40,7 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
 TableScanInfo getTableScanInfo(std::string logicalPlan);
 
 std::unique_ptr<ResultSet> runSkipData(
-	std::shared_ptr<ral::frame::BlazingTableView> metadata,
+	std::shared_ptr<ral::frame::BlazingArrowTable> metadata,
 	std::vector<std::string> all_column_names,
 	std::string query);
 

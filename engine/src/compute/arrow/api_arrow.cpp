@@ -560,9 +560,7 @@ io_read_file_data_functor<ral::io::DataType::CSV>::operator()<ral::frame::Blazin
         std::vector<int> row_groups,
         const std::map<std::string, std::string> &args_map) const
 {
-    // TODO percy arrow error
-    // TODO csv reader for arrow
-    return nullptr;
+    return voltron::compute::arrow_backend::io::read_csv_file(file, column_indices, col_names, row_groups, args_map);
 }
 
 template <> template <>
@@ -574,9 +572,19 @@ io_read_file_data_functor<ral::io::DataType::ORC>::operator()<ral::frame::Blazin
         std::vector<int> row_groups,
         const std::map<std::string, std::string> &args_map) const
 {
-    // TODO percy arrow error
-    // TODO orc reader for arrow
-    return nullptr;
+    return voltron::compute::arrow_backend::io::read_orc_file(file, column_indices, col_names, row_groups);
+}
+
+template <> template <>
+inline std::unique_ptr<ral::frame::BlazingTable>
+io_read_file_data_functor<ral::io::DataType::JSON>::operator()<ral::frame::BlazingArrowTable>(
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        std::vector<int> column_indices,
+        std::vector<std::string> col_names,
+        std::vector<int> row_groups,
+        const std::map<std::string, std::string> &args_map) const
+{
+    return voltron::compute::arrow_backend::io::read_json_file(file, column_indices, col_names, row_groups);
 }
 
 template <> template <>

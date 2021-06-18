@@ -2,16 +2,13 @@
 // Created by aocsa on 12/9/19.
 //
 
-#ifndef BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_PARQUET_METADATA_CPP_H_
-#define BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_PARQUET_METADATA_CPP_H_
-
 #include "parquet_metadata.h"
 #include "ExceptionHandling/BlazingThread.h"
 #include <mutex>
 
-#ifdef CUDF_SUPPORT
-#include <cudf/column/column_factories.hpp>
-#include "blazing_table/BlazingCudfTable.h"
+#include "common_metadata.h"
+#include "blazing_table/BlazingArrowTable.h"
+#include <arrow/table.h>
 
 void set_min_max(
 	std::vector<std::vector<int64_t>> &minmax_metadata_table,
@@ -128,26 +125,25 @@ void set_min_max(
 	}	
 }
 
-// This function is copied and adapted from cudf
-cudf::type_id to_dtype(parquet::Type::type physical, parquet::ConvertedType::type logical) {
+std::shared_ptr<arrow::DataType> to_arrow_dtype(parquet::Type::type physical, parquet::ConvertedType::type logical) {
 
 	// Logical type used for actual data interpretation; the legacy converted type
 	// is superceded by 'logical' type whenever available.
 	switch (logical) {
 	case parquet::ConvertedType::type::UINT_8:
-		return cudf::type_id::UINT8;
+		return arrow::uint8();
 	case parquet::ConvertedType::type::INT_8:
-		return cudf::type_id::INT8;
+		return arrow::int8();
 	case parquet::ConvertedType::type::UINT_16:
-		return cudf::type_id::UINT16;
+		return arrow::uint16();
 	case parquet::ConvertedType::type::INT_16:
-		return cudf::type_id::INT16;
+		return arrow::int16();
 	case parquet::ConvertedType::type::DATE:
-		return cudf::type_id::TIMESTAMP_DAYS;
+		return arrow::date32();
 	case parquet::ConvertedType::type::TIMESTAMP_MILLIS:
-		return cudf::type_id::TIMESTAMP_MILLISECONDS;
+		return arrow::timestamp(arrow::TimeUnit::MILLI);
 	case parquet::ConvertedType::type::TIMESTAMP_MICROS:
-		return cudf::type_id::TIMESTAMP_MICROSECONDS;
+		return arrow::timestamp(arrow::TimeUnit::MICRO);
 	default:
 		break;
 	}
@@ -156,25 +152,25 @@ cudf::type_id to_dtype(parquet::Type::type physical, parquet::ConvertedType::typ
 	// format in combination with the encoding type.
 	switch (physical) {
 	case parquet::Type::type::BOOLEAN:
-		return cudf::type_id::BOOL8;
+		return arrow::boolean();
 	case parquet::Type::type::INT32:
-		return cudf::type_id::INT32;
+		return arrow::int32();
 	case parquet::Type::type::INT64:
-		return cudf::type_id::INT64;
+		return arrow::int64();
 	case parquet::Type::type::FLOAT:
-		return cudf::type_id::FLOAT32;
+		return arrow::float32();
 	case parquet::Type::type::DOUBLE:
-		return cudf::type_id::FLOAT64;
+		return arrow::float64();
 	case parquet::Type::type::BYTE_ARRAY:
 	case parquet::Type::type::FIXED_LEN_BYTE_ARRAY:
 		// TODO: Check GDF_STRING_CATEGORY
-		return cudf::type_id::STRING;
+		return arrow::utf8();
 	case parquet::Type::type::INT96:
 	default:
 		break;
 	}
 
-	return cudf::type_id::EMPTY;
+	return arrow::null();
 }
 
 std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
@@ -186,7 +182,7 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 	}
 
 	std::vector<std::string> metadata_names;
-	std::vector<cudf::data_type> metadata_dtypes;
+	std::vector<std::shared_ptr<arrow::DataType>> metadata_dtypes;
 	std::vector<size_t> columns_with_metadata;
 
 	// NOTE: we must try to use and load always a parquet reader that row groups > 0
@@ -225,9 +221,9 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 			auto columnMetaData = rowGroupMetadata->ColumnChunk(colIndex);
 			auto physical_type = column->physical_type();
 			auto logical_type = column->converted_type();
-			cudf::data_type dtype = cudf::data_type (to_dtype(physical_type, logical_type)) ;
+			std::shared_ptr<arrow::DataType> dtype = to_arrow_dtype(physical_type, logical_type);
 
-			if (columnMetaData->is_stats_set() && dtype.id() != cudf::type_id::STRING) {
+			if (columnMetaData->is_stats_set() && dtype != arrow::utf8()) {
 				auto statistics = columnMetaData->statistics();
 					auto col_name_min = "min_" + std::to_string(colIndex) + "_" + column->name();
 					metadata_dtypes.push_back(dtype);
@@ -241,9 +237,9 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 			}
 		}
 
-		metadata_dtypes.push_back(cudf::data_type{cudf::type_id::INT32});
+		metadata_dtypes.push_back(arrow::int32());
 		metadata_names.push_back("file_handle_index");
-		metadata_dtypes.push_back(cudf::data_type{cudf::type_id::INT32});
+		metadata_dtypes.push_back(arrow::int32());
 		metadata_names.push_back("row_group_index");
 	}
 
@@ -302,18 +298,21 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 		}
 	}
 
-	std::vector<std::unique_ptr<cudf::column>> minmax_metadata_gdf_table(minmax_metadata_table.size());
+	std::vector<std::shared_ptr<arrow::Array>> arrays;
+	arrays.resize(minmax_metadata_table.size());
+
+	std::vector<std::shared_ptr<arrow::Field>> fields;
+	fields.resize(minmax_metadata_table.size());
+
 	for (size_t index = 0; index < 	minmax_metadata_table.size(); index++) {
 		auto vector = minmax_metadata_table[index];
 		auto dtype = metadata_dtypes[index];
-		auto content =  get_typed_vector_content(dtype.id(), vector);
-		minmax_metadata_gdf_table[index] = make_cudf_column_from_vector(dtype, content, total_num_row_groups);
+		fields[index]=arrow::field(metadata_names[index], dtype);
+		arrays[index]=make_arrow_array_from_vector(dtype, vector);
 	}
 
-  auto table = std::make_unique<cudf::table>(std::move(minmax_metadata_gdf_table));
-	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(table), metadata_names);
+	std::shared_ptr<arrow::Schema> table_schema = arrow::schema(fields);
+	std::shared_ptr<arrow::Table> table = arrow::Table::Make(table_schema, arrays);
+
+	return std::make_unique<ral::frame::BlazingArrowTable>(table);
 }
-
-#endif
-
-#endif	// BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_PARQUET_METADATA_CPP_H_

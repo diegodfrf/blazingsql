@@ -285,13 +285,13 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	auto provider = std::make_shared<ral::io::uri_data_provider>(uris);
 	auto loader = std::make_shared<ral::io::data_loader>(parser, provider);
 	try{
-		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(preferred_compute_backend,offset.first, args_map);
+		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(preferred_compute_backend, offset.first, args_map);
 		// ral::utilities::print_blazing_table_view(metadata->to_table_view());
 #ifdef CUDF_SUPPORT
 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
 		result->names = metadata->column_names();
-		ral::frame::BlazingCudfTable* current_metadata_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(metadata.get());
-		result->table = std::make_unique<ResultTable>(current_metadata_ptr->releaseCudfTable());
+		ral::frame::BlazingArrowTable* current_metadata_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(metadata.get());
+		result->table = std::make_unique<ResultTable>(current_metadata_ptr->to_table_view()->view());
 		result->skipdata_analysis_fail = false;
 		return result;
 #endif

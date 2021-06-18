@@ -176,10 +176,13 @@ cdef extern from "../include/io/io.h" nogil:
     pair[bool, string] registerFileSystemLocal(  string root, string authority) except +raiseRegisterFileSystemLocalError
     TableSchema parseSchema(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, vector[pair[string, shared_ptr[ArrowDataType]]] types, bool ignore_missing_paths, string preferred_compute) except +raiseParseSchemaError
 
-    IF CUDF_SUPPORT == 1:
-        unique_ptr[ResultSet] parseMetadata(vector[string] files, pair[int,int] offsets, TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, string preferred_compute) except +raiseParseSchemaError
+    unique_ptr[ResultSet] parseMetadata(vector[string] files, pair[int,int] offsets, TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, string preferred_compute) except +raiseParseSchemaError
 
     vector[FolderPartitionMetadata] inferFolderPartitionMetadata(string folder_path) except +raiseInferFolderPartitionMetadataError
+
+cdef extern from "../src/blazing_table/BlazingArrowTable.h" namespace "ral::frame":
+        cdef cppclass BlazingArrowTable:
+            BlazingTable(shared_ptr[CTable])
 
 IF CUDF_SUPPORT == 1:
     cdef extern from "../src/blazing_table/BlazingCudfTable.h" namespace "ral::frame":
@@ -268,9 +271,7 @@ cdef extern from "../include/engine/engine.h" nogil:
         unique_ptr[PartitionedResultSet] getExecuteGraphResult(shared_ptr[graph], int ctx_token) nogil except +raiseRunExecuteGraphError
 
         #unique_ptr[ResultSet] performPartition(int masterIndex, int ctxToken, BlazingTableView blazingTableView, vector[string] columnNames) except +raisePerformPartitionError
-        
-        IF CUDF_SUPPORT == 1:
-            unique_ptr[ResultSet] runSkipData(shared_ptr[BlazingCudfTableView] metadata, vector[string] all_column_names, string query) nogil except +raiseRunSkipDataError
+        unique_ptr[ResultSet] runSkipData(shared_ptr[BlazingArrowTable] metadata, vector[string] all_column_names, string query) nogil except +raiseRunSkipDataError
 
         TableScanInfo getTableScanInfo(string logicalPlan)
 
