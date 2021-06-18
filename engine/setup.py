@@ -66,6 +66,25 @@ def get_libs():
         ret.append("gtest")
     return ret
 
+def get_compile_args():
+    cpp_args = [
+        "-std=c++17",
+        "-Wno-unknown-pragmas",
+        "-Wno-unused-variable",
+        "-Wno-unused-function",
+        '-isystem' + conda_env_inc,
+        '-isystem' + conda_env_inc_io,
+        '-isystem' + conda_env_inc_communication,
+        '-isystem' + conda_env_inc_manager,
+        '-isystem' + np.get_include()]
+    if get_build_path() == "build-cudf":
+        cpp_args.append('-isystem' + conda_env_inc_cudf)
+        cpp_args.append('-isystem' + conda_env_inc_cub)
+        cpp_args.append('-isystem' + "/usr/local/cuda/include")
+        cpp_args.append('-isystem' + conda_env_inc_libcudacxx)
+    print("C++ compiler args: " + str(cpp_args))
+    return cpp_args
+
 class BuildExt(build_ext):
     def build_extensions(self):
         if get_build_path() == "build-cudf":
@@ -102,19 +121,7 @@ extensions = [
         ],
         libraries=get_libs(),
         language="c++",
-        extra_compile_args=["-std=c++17",
-                            "-Wno-unknown-pragmas",
-                            "-Wno-unused-variable",
-                            "-Wno-unused-function",
-                            '-isystem' + conda_env_inc,
-                            '-isystem' + conda_env_inc_cudf,
-                            '-isystem' + conda_env_inc_cub,
-                            '-isystem' + conda_env_inc_libcudacxx,
-                            '-isystem' + conda_env_inc_io,
-                            '-isystem' + conda_env_inc_communication,
-                            '-isystem' + conda_env_inc_manager,
-                            '-isystem' + "/usr/local/cuda/include",
-                            '-isystem' + np.get_include()],
+        extra_compile_args=get_compile_args(),
     )
 ]
 

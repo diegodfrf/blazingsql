@@ -28,10 +28,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 
-# TODO percy arrow try to delete these lines!
-from cudf._lib.types cimport underlying_type_t_type_id
-from cudf._lib.cpp.io.types cimport compression_type
-from cudf._lib.types import np_to_cudf_types, cudf_to_np_types
+ctypedef int32_t underlying_type_t_type_id
 
 IF CUDF_SUPPORT == 1:
     import cudf
@@ -52,29 +49,6 @@ import logging
 
 
 ctypedef int32_t underlying_type_t_compression
-
-class Compression(IntEnum):
-    INFER = (
-        <underlying_type_t_compression> compression_type.AUTO
-    )
-    SNAPPY = (
-        <underlying_type_t_compression> compression_type.SNAPPY
-    )
-    GZIP = (
-        <underlying_type_t_compression> compression_type.GZIP
-    )
-    BZ2 = (
-        <underlying_type_t_compression> compression_type.BZIP2
-    )
-    BROTLI = (
-        <underlying_type_t_compression> compression_type.BROTLI
-    )
-    ZIP = (
-        <underlying_type_t_compression> compression_type.ZIP
-    )
-    XZ = (
-        <underlying_type_t_compression> compression_type.XZ
-    )
 
 # TODO: module for errors and move pyerrors to cpyerrors
 class BlazingError(Exception):
@@ -380,12 +354,14 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
 
     preferred_compute = str.encode(preferred_compute_py)
 
+    """ TODO percy arrow
     if 'compression' in args:
         if args['compression'] is None:
-            c_compression = <underlying_type_t_compression> compression_type.NONE
+            c_compression = <underlying_type_t_compression> CompressionType.NONE
         else:
             c_compression = <underlying_type_t_compression> Compression[args['compression'].upper()]
         args.update(compression=c_compression)
+    """
 
     for file in fileList:
       files.push_back(str.encode(file))
@@ -399,18 +375,7 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
 
     for extra_column in extra_columns:
         extra_column_cpp.first = extra_column[0].encode()
-        #extra_column_cpp.second = <type_id>(<underlying_type_t_type_id>(extra_column[1]))
-        #extra_column_cpp.second = extra_column[1]
-        #extra_columns_cpp.push_back(extra_column_cpp)
-        cudf_typeid = <underlying_type_t_type_id>(extra_column[1])
-        pyarrow_type_obj = None
-        if cudf_typeid == 12: # NOTE percy arrow cudf internal doesnt want to use days here dont know why
-            pyarrow_type_obj = pa.date32()
-        else:
-            numpy_dtype = cudf_to_np_types[cudf_typeid]
-            pyarrow_type_obj = pa.from_numpy_dtype(numpy_dtype)
-        print(pyarrow_type_obj)
-        extra_column_cpp.second = pyarrow_unwrap_data_type(pyarrow_type_obj)
+        extra_column_cpp.second = pyarrow_unwrap_data_type(extra_column[1])
         extra_columns_cpp.push_back(extra_column_cpp)
 
     tableSchema = parseSchemaPython(files,str.encode(file_format_hint), arg_keys,arg_values, extra_columns_cpp, ignore_missing_paths, preferred_compute)
@@ -607,18 +572,7 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
               names.push_back(col_name)
 
       for col_type in table.column_types:
-        #types.push_back(<type_id>(<underlying_type_t_type_id>(col_type)))
-        #types.push_back(col_type)
-        print(col_type)
-        cudf_typeid = <underlying_type_t_type_id>(col_type)
-        pyarrow_type_obj = None
-        if cudf_typeid == 12: # NOTE percy arrow cudf internal doesnt want to use days here dont know why
-            pyarrow_type_obj = pa.date32()
-        else:
-            numpy_dtype = cudf_to_np_types[cudf_typeid]
-            pyarrow_type_obj = pa.from_numpy_dtype(numpy_dtype)
-        print(pyarrow_type_obj)
-        types.push_back(pyarrow_unwrap_data_type(pyarrow_type_obj))
+        types.push_back(pyarrow_unwrap_data_type(col_type))
 
       IF CUDF_SUPPORT == 1:
           if table.fileType in (4, 5): # if cudf DataFrame or dask.cudf DataFrame
@@ -756,10 +710,3 @@ cpdef getTableScanInfoCaller(logicalPlan):
     table_names = [name.decode('utf-8') for name in temp.table_names]
     table_scans = [step.decode('utf-8') for step in temp.relational_algebra_steps]
     return table_names, table_scans
-
-
-cpdef np_to_cudf_types_int(dtype):
-    return <underlying_type_t_type_id> ( np_to_cudf_types[dtype])
-
-cpdef cudf_type_int_to_np_types(type_int):
-    return cudf_to_np_types[<underlying_type_t_type_id> (type_int)]

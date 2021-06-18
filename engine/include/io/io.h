@@ -16,6 +16,7 @@
 #include "blazing_table/BlazingCudfTableView.h"
 #endif
 
+typedef ral::io::CompressionType CompressionType;
 typedef ral::io::DataType DataType;
 
 struct ResultTable {

@@ -101,6 +101,16 @@ cdef extern from "../include/io/io.h" nogil:
         SQLITE = 9,
         SNOWFLAKE = 10,
         PANDAS_DF = 11,
+    
+    ctypedef enum CompressionType:
+        NONE = 0,
+        AUTO = 1,
+        SNAPPY = 2,
+        GZIP = 3,
+        BZIP2 = 4,
+        BROTLI = 5,
+        ZIP = 6,
+        XZ = 7,
 
     IF CUDF_SUPPORT == 1:
         cdef struct TableSchema:

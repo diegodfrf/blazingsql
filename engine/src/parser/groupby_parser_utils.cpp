@@ -12,7 +12,7 @@
 
 #include <numeric>
 
-#include "parser/cudf/types_parser_utils.h"
+#include "parser/types_parser_utils.h"
 
 voltron::compute::AggregateKind get_aggregation_operation(std::string expression_in, bool is_window_operation) {
 
