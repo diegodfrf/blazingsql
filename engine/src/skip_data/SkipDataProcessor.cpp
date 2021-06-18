@@ -249,7 +249,7 @@ std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_
     std::shared_ptr<ral::frame::BlazingArrowTable> metadata, const std::vector<std::string> & names, std::string table_scan) {
 
     std::unique_ptr<cudf::table> cudf_table = cudf::from_arrow(*(metadata->to_table_view()->view().get()));
-    std::shared_ptr<ral::frame::BlazingCudfTableView> metadata_view = std::make_shared<ral::frame::BlazingCudfTableView>(cudf_table->view(), names);
+    std::shared_ptr<ral::frame::BlazingCudfTableView> metadata_view = std::make_shared<ral::frame::BlazingCudfTableView>(cudf_table->view(), metadata->column_names());
 
     std::string filter_string;
     try {
@@ -363,7 +363,10 @@ std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_
         apply_boolean_functor(),
         metadata_ids_view, evaluated_table->to_table_view());
 
-    return std::make_pair(std::move(filtered_metadata_ids), false);
+    //Converting back to arrow
+    ral::frame::BlazingCudfTable* filtered_metadata_ids_cudf_table = dynamic_cast<ral::frame::BlazingCudfTable*>(filtered_metadata_ids.get());
+    std::unique_ptr<ral::frame::BlazingCudfTable> filtered_metadata_ids_table = std::make_unique<ral::frame::BlazingCudfTable>(filtered_metadata_ids_cudf_table->releaseCudfTable(), filtered_metadata_ids_cudf_table->column_names());
+    return std::make_pair(std::make_unique<ral::frame::BlazingArrowTable>(std::move(filtered_metadata_ids_table)), false);
 }
 
 
