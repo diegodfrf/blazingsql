@@ -155,9 +155,8 @@ std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partition_table(std::
   std::shared_ptr<ral::frame::BlazingTableView> columns_to_search = ral::execution::backend_dispatcher(
     sortedTable->get_execution_backend(), select_functor(), sortedTable, sortColIndices);
 
-  // TODO percy arrow 4
-//  return ral::execution::backend_dispatcher(columns_to_search->get_execution_backend(), upper_bound_split_functor(),
-//    sortedTable, columns_to_search, partitionPlan, sortOrderTypes, sortOrderNulls);
+  return ral::execution::backend_dispatcher(columns_to_search->get_execution_backend(), upper_bound_split_functor(),
+    sortedTable, columns_to_search, partitionPlan, sortOrderTypes, sortOrderNulls);
 }
 
 std::unique_ptr<ral::frame::BlazingTable> generate_partition_plan(
