@@ -6,392 +6,48 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-//#include <cudf.h>
-#include <cudf/table/table_view.hpp>
 #include <iomanip>
 #include <map>
 #include <regex>
 
 #include <blazingdb/io/Util/StringUtil.h>
 #include "utilities/error.hpp"
-
 #include "CalciteExpressionParsing.h"
-#include "cudf/binaryop.hpp"
-#include <cudf/scalar/scalar_factories.hpp>
+#include "parser/expression_utils.hpp"
 #include "parser/expression_tree.hpp"
-#include "utilities/scalar_timestamp_parser.hpp"
 
-bool is_type_float(cudf::type_id type) { return (cudf::type_id::FLOAT32 == type || cudf::type_id::FLOAT64 == type); }
-bool is_type_float_arrow(arrow::Type::type type) { return (arrow::Type::type::FLOAT == type || arrow::Type::type::DOUBLE == type); }
-
-bool is_type_integer(cudf::type_id type) {
-	return (cudf::type_id::INT8 == type || cudf::type_id::INT16 == type || cudf::type_id::INT32 == type ||
-			cudf::type_id::INT64 == type || cudf::type_id::UINT8 == type || cudf::type_id::UINT16 == type ||
-			cudf::type_id::UINT32 == type || cudf::type_id::UINT64 == type);
+bool is_type_float(std::shared_ptr<arrow::DataType> type) {
+  return (arrow::Type::FLOAT == type->id() || arrow::Type::DOUBLE == type->id());
 }
 
-bool is_type_integer_arrow(arrow::Type::type type) {
-	return (arrow::Type::type::INT8 == type || arrow::Type::type::INT16 == type || arrow::Type::type::INT32 == type ||
-			arrow::Type::type::INT64 == type || arrow::Type::type::UINT8 == type || arrow::Type::type::UINT16 == type ||
-			arrow::Type::type::UINT32 == type || arrow::Type::type::UINT64 == type);
+bool is_type_integer(std::shared_ptr<arrow::DataType> type) {
+	return (
+    arrow::Type::INT8 == type->id() || arrow::Type::INT16 == type->id() ||
+    arrow::Type::INT32 == type->id() || arrow::Type::INT64 == type->id() ||
+    arrow::Type::UINT8 == type->id() || arrow::Type::UINT16 == type->id() ||
+    arrow::Type::UINT32 == type->id() || arrow::Type::UINT64 == type->id());
 }
 
-bool is_type_bool(cudf::type_id type) { return cudf::type_id::BOOL8 == type; }
-
-bool is_type_bool_arrow(arrow::Type::type type) { return arrow::Type::type::BOOL == type; }
-
-bool is_type_timestamp(cudf::type_id type) {
-	return (cudf::type_id::TIMESTAMP_DAYS == type || cudf::type_id::TIMESTAMP_SECONDS == type ||
-			cudf::type_id::TIMESTAMP_MILLISECONDS == type || cudf::type_id::TIMESTAMP_MICROSECONDS == type ||
-			cudf::type_id::TIMESTAMP_NANOSECONDS == type);
+bool is_type_bool(std::shared_ptr<arrow::DataType> type) {
+  return arrow::Type::BOOL == type->id();
 }
 
-bool is_type_timestamp_arrow(arrow::Type::type type) { return arrow::Type::type::TIMESTAMP == type; }
-
-bool is_type_duration(cudf::type_id type) {
-	return (cudf::type_id::DURATION_DAYS == type || cudf::type_id::DURATION_SECONDS == type ||
-			cudf::type_id::DURATION_MILLISECONDS == type || cudf::type_id::DURATION_MICROSECONDS == type ||
-			cudf::type_id::DURATION_NANOSECONDS == type);
+bool is_type_timestamp(std::shared_ptr<arrow::DataType> type) {
+	return (arrow::Type::TIMESTAMP == type->id());
 }
 
-bool is_type_string(cudf::type_id type) { return cudf::type_id::STRING == type; }
+bool is_type_duration(std::shared_ptr<arrow::DataType> type) {
+	return (arrow::Type::DURATION == type->id());
+}
 
-bool is_type_string_arrow(arrow::Type::type type) { return arrow::Type::type::STRING == type; }
+bool is_type_string(std::shared_ptr<arrow::DataType> type) {
+  return arrow::Type::STRING == type->id();
+}
 
-cudf::size_type get_index(const std::string & operand_string) {
+int get_index(const std::string & operand_string) {
 	assert(is_var_column(operand_string) || is_literal(operand_string));
 
 	return std::stoi(is_literal(operand_string) ? operand_string : operand_string.substr(1, operand_string.size() - 1));
-}
-
-std::unique_ptr<cudf::scalar> get_max_integer_scalar(cudf::data_type type) {
-	if(type.id() == cudf::type_id::INT8) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = int8_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(SCHAR_MAX));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT8) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = uint8_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(UCHAR_MAX));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::INT16) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = int16_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(SHRT_MAX));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT16) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = uint16_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(USHRT_MAX));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::INT32) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = int32_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(INT_MAX));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT32) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = uint32_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(UINT_MAX));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::INT64) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = int64_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(LLONG_MAX));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT64) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = uint64_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(ULLONG_MAX));
-		return ret;
-	}
-	assert(false);
-}
-
-std::unique_ptr<cudf::scalar> str_to_timestamp_scalar_with_day_format(const std::string & cleaned_scalar_string, cudf::data_type type) {
-	if (is_date_with_bar(cleaned_scalar_string)) {
-		return strings::str_to_timestamp_scalar(cleaned_scalar_string, type, "%Y/%m/%d");
-	} else {
-		return strings::str_to_timestamp_scalar(cleaned_scalar_string, type, "%Y-%m-%d");
-	}
-}
-
-std::unique_ptr<cudf::scalar> str_to_timestamp_scalar_with_second_format(const std::string & cleaned_scalar_string, cudf::data_type type) {
-	if (is_timestamp_with_bar(cleaned_scalar_string)) {
-		return strings::str_to_timestamp_scalar(cleaned_scalar_string, type, "%Y/%m/%d %H:%M:%S");
-	} else {
-		return strings::str_to_timestamp_scalar(cleaned_scalar_string, type, "%Y-%m-%d %H:%M:%S");
-	}
-}
-
-std::unique_ptr<cudf::scalar> str_to_timestamp_scalar_with_decimal_format(const std::string & cleaned_scalar_string, cudf::data_type type) {
-	if (is_timestamp_with_decimals_and_bar(cleaned_scalar_string)) {
-		return strings::str_to_timestamp_scalar(cleaned_scalar_string, type, "%Y/%m/%d %H:%M:%S.%f");
-	} else {
-		return strings::str_to_timestamp_scalar(cleaned_scalar_string, type, "%Y-%m-%d %H:%M:%S.%f");
-	}
-}
-
-std::unique_ptr<cudf::scalar> get_scalar_from_string(const std::string & scalar_string, cudf::data_type type, bool strings_have_quotes) {
-	if (is_null(scalar_string)) {
-		return cudf::make_default_constructed_scalar(type);
-	}
-	if(type.id() == cudf::type_id::BOOL8) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = bool;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(scalar_string == "true"));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::INT8) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = int8_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoi(scalar_string)));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT8) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = uint8_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoul(scalar_string)));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::INT16) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = int16_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoi(scalar_string)));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT16) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = uint16_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoul(scalar_string)));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::INT32) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = int32_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoi(scalar_string)));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT32) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = uint32_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoul(scalar_string)));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::INT64) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = int64_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoll(scalar_string)));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT64) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = uint64_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoull(scalar_string)));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::FLOAT32) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = float;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stof(scalar_string)));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::FLOAT64) {
-		auto ret = cudf::make_numeric_scalar(type);
-		using T = double;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stod(scalar_string)));
-		return ret;
-	}
-	if(type.id() == cudf::type_id::STRING) {
-		if (strings_have_quotes) {
-			return cudf::make_string_scalar(scalar_string.substr(1, scalar_string.length() - 2));
-		} else {
-			return cudf::make_string_scalar(scalar_string);
-		}
-	}
-	if(type.id() == cudf::type_id::DURATION_SECONDS || type.id() == cudf::type_id::DURATION_MILLISECONDS
-		|| type.id() == cudf::type_id::DURATION_MICROSECONDS || type.id() == cudf::type_id::DURATION_NANOSECONDS) {
-		auto ret = cudf::make_duration_scalar(type);
-		using T = int64_t;
-		using ScalarType = cudf::scalar_type_t<T>;
-		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoll(scalar_string)));
-		return ret;
-	}
-	// We want to ensure the scalar TIMESTAMP value does not contains `'`
-	const std::string cleaned_scalar_string = remove_quotes_from_timestamp_literal(scalar_string);
-	if(type.id() == cudf::type_id::TIMESTAMP_DAYS) {
-		if (is_date(cleaned_scalar_string)) {
-			return str_to_timestamp_scalar_with_day_format(cleaned_scalar_string, type);
-		} else {
-			throw std::runtime_error("In CalciteExpressionParcing, not recognized format TIMESTAMP_DAYS for: " + scalar_string);
-		}
-	}
-	if(type.id() == cudf::type_id::TIMESTAMP_SECONDS) {
-		if (is_timestamp(cleaned_scalar_string)) {
-			return str_to_timestamp_scalar_with_second_format(cleaned_scalar_string, type);
-		} else {
-			throw std::runtime_error("In CalciteExpressionParcing, not recognized format TIMESTAMP_SECONDS for: " + cleaned_scalar_string);
-		}
-	}
-	if(type.id() == cudf::type_id::TIMESTAMP_MILLISECONDS || type.id() == cudf::type_id::TIMESTAMP_MICROSECONDS
-		 || type.id() == cudf::type_id::TIMESTAMP_NANOSECONDS) {
-		if (is_timestamp_with_decimals(cleaned_scalar_string)) {
-			return str_to_timestamp_scalar_with_decimal_format(cleaned_scalar_string, type);
-		} else if (is_timestamp(cleaned_scalar_string)) {
-			return str_to_timestamp_scalar_with_second_format(cleaned_scalar_string, type);
-		} else {
-			throw std::runtime_error("In CalciteExpressionParcing, not recognized format TIMESTAMP for: " + cleaned_scalar_string);
-		}
-	}
-
-	assert(false);
-}
-
-
-std::shared_ptr<arrow::Scalar> get_scalar_from_string_arrow(const std::string & scalar_string, cudf::data_type type, bool strings_have_quotes) {
-  // TODO percy arrow
-	if (is_null(scalar_string)) {
-		//return cudf::make_default_constructed_scalar(type);
-	}
-	if(type.id() == cudf::type_id::BOOL8) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = bool;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(scalar_string == "true"));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::INT8) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = int8_t;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoi(scalar_string)));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT8) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = uint8_t;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoul(scalar_string)));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::INT16) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = int16_t;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoi(scalar_string)));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT16) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = uint16_t;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoul(scalar_string)));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::INT32) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = int32_t;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoi(scalar_string)));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT32) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = uint32_t;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoul(scalar_string)));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::INT64) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = int64_t;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoll(scalar_string)));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::UINT64) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = uint64_t;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stoull(scalar_string)));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::FLOAT32) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = float;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stof(scalar_string)));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::FLOAT64) {
-//		auto ret = cudf::make_numeric_scalar(type);
-//		using T = double;
-//		using ScalarType = cudf::scalar_type_t<T>;
-//		static_cast<ScalarType *>(ret.get())->set_value(static_cast<T>(std::stod(scalar_string)));
-//		return ret;
-	}
-	if(type.id() == cudf::type_id::STRING) {
-//		if (strings_have_quotes) {
-//			return cudf::make_string_scalar(scalar_string.substr(1, scalar_string.length() - 2));
-//		} else {
-//			return cudf::make_string_scalar(scalar_string);
-//		}
-	}
-	// We want to ensure the scalar TIMESTAMP value does not contains `'`
-	const std::string cleaned_scalar_string = remove_quotes_from_timestamp_literal(scalar_string);
-	if(type.id() == cudf::type_id::TIMESTAMP_DAYS) {
-//		if (is_date(cleaned_scalar_string)) {
-//			return str_to_timestamp_scalar_with_day_format(cleaned_scalar_string, type);
-//		} else {
-//			throw std::runtime_error("In CalciteExpressionParcing, not recognized format TIMESTAMP_DAYS for: " + scalar_string);
-//		}
-	}
-	if(type.id() == cudf::type_id::TIMESTAMP_SECONDS) {
-//		if (is_timestamp(cleaned_scalar_string)) {
-//			return str_to_timestamp_scalar_with_second_format(cleaned_scalar_string, type);
-//		} else {
-//			throw std::runtime_error("In CalciteExpressionParcing, not recognized format TIMESTAMP_SECONDS for: " + cleaned_scalar_string);
-//		}
-	}
-	if(type.id() == cudf::type_id::TIMESTAMP_MILLISECONDS || type.id() == cudf::type_id::TIMESTAMP_MICROSECONDS
-		 || type.id() == cudf::type_id::TIMESTAMP_NANOSECONDS) {
-//		if (is_timestamp_with_decimals(cleaned_scalar_string)) {
-//			return str_to_timestamp_scalar_with_decimal_format(cleaned_scalar_string, type);
-//		} else if (is_timestamp(cleaned_scalar_string)) {
-//			return str_to_timestamp_scalar_with_second_format(cleaned_scalar_string, type);
-//		} else {
-//			throw std::runtime_error("In CalciteExpressionParcing, not recognized format TIMESTAMP for: " + cleaned_scalar_string);
-//		}
-	}
-
-	assert(false);
 }
 
 std::string get_aggregation_operation_string(std::string operator_string) {

@@ -30,9 +30,9 @@ function(configure_test TEST_NAME Tests_SRCS)
         blazingdb-io
         Threads::Threads
 
-        cudf
+        ${CUDF_COMPUTE_LIBRARIES}
+
         zmq
-        cudart
 
         parquet
         arrow
@@ -58,6 +58,7 @@ function(configure_test TEST_NAME Tests_SRCS)
         #spdlog::spdlog
         libspdlog.so
 
+        # TODO percy arrow 4 unit tests!
         cudftestutil
 
         # TODO percy use cmake::find
@@ -82,7 +83,7 @@ enable_testing()
 # -------------------
 message(STATUS "******** Configuring tests ********")
 # add_subdirectory(allocation_pool)
-add_subdirectory(cache_machine)
+#add_subdirectory(cache_machine)
 # add_subdirectory(logical-groupby)
 # add_subdirectory(new-tests)
 # add_subdirectory(parser)
@@ -93,5 +94,5 @@ add_subdirectory(skipdata)
 add_subdirectory(kernel_tests)
 # add_subdirectory(provider)
 # add_subdirectory(logic_controllers)
-add_subdirectory(host-table)
+#add_subdirectory(host-table)
 message(STATUS "******** Tests are ready ********")

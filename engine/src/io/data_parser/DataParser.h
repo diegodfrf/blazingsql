@@ -27,7 +27,7 @@ public:
 		ral::io::data_handle /*handle*/,
 		const Schema & /*schema*/,
 		std::vector<int> /*column_indices*/,
-		std::vector<cudf::size_type> /*row_groups*/) {
+		std::vector<int> /*row_groups*/) {
 		return nullptr; // TODO cordova ask ALexander why is not a pure virtual function as before
 	}
 

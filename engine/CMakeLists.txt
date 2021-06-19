@@ -6,7 +6,15 @@
 
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(blazingdb-ral C CXX CUDA)
+option(CUDF_SUPPORT "Enables support for cudf compute backend" OFF)
+
+if(CUDF_SUPPORT)
+    project(blazingdb-ral C CXX CUDA)
+    message(STATUS "cudf compute backend support is enabled!")
+else()
+    project(blazingdb-ral C CXX)
+    message(STATUS "cudf compute backend support is disabled!")
+endif()
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
@@ -16,84 +24,11 @@ set(CMAKE_C_COMPILER $ENV{CC})
 set(CMAKE_CXX_COMPILER $ENV{CXX})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
 if(CMAKE_COMPILER_IS_GNUCXX)
     # NOTE felipe percy these flags are too strict for blazingsql
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-
-    # Suppress parentheses warning which causes gmock to fail
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-parentheses")
 endif(CMAKE_COMPILER_IS_GNUCXX)
-
-if(CMAKE_CUDA_COMPILER_VERSION)
-  # Compute the version. from  CMAKE_CUDA_COMPILER_VERSION
-  string(REGEX REPLACE "([0-9]+)\\.([0-9]+).*" "\\1" CUDA_VERSION_MAJOR ${CMAKE_CUDA_COMPILER_VERSION})
-  string(REGEX REPLACE "([0-9]+)\\.([0-9]+).*" "\\2" CUDA_VERSION_MINOR ${CMAKE_CUDA_COMPILER_VERSION})
-  set(CUDA_VERSION "${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}" CACHE STRING "Version of CUDA as computed from nvcc.")
-  mark_as_advanced(CUDA_VERSION)
-endif()
-
-message(STATUS "CUDA_VERSION_MAJOR: ${CUDA_VERSION_MAJOR}")
-message(STATUS "CUDA_VERSION_MINOR: ${CUDA_VERSION_MINOR}")
-message(STATUS "CUDA_VERSION: ${CUDA_VERSION}")
-
-# Always set this convenience variable
-set(CUDA_VERSION_STRING "${CUDA_VERSION}")
-
-# Auto-detect available GPU compute architectures
-set(GPU_ARCHS "ALL" CACHE STRING
-  "List of GPU architectures (semicolon-separated) to be compiled for. Pass 'ALL' if you want to compile for all supported GPU architectures. Empty string means to auto-detect the GPUs on the current system")
-
-if("${GPU_ARCHS}" STREQUAL "")
-  include(cmake/EvalGpuArchs.cmake)
-  evaluate_gpu_archs(GPU_ARCHS)
-endif()
-
-if("${GPU_ARCHS}" STREQUAL "ALL")
-  set(GPU_ARCHS "60")
-  if((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9))
-    set(GPU_ARCHS "${GPU_ARCHS};70")
-  endif()
-  if((CUDA_VERSION_MAJOR EQUAL 10) OR (CUDA_VERSION_MAJOR GREATER 10))
-    set(GPU_ARCHS "${GPU_ARCHS};75")
-  endif()
-endif()
-message("GPU_ARCHS = ${GPU_ARCHS}")
-
-foreach(arch ${GPU_ARCHS})
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_${arch},code=sm_${arch}")
-endforeach()
-
-list(GET GPU_ARCHS -1 ptx)
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_${ptx},code=compute_${ptx}")
-
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
-
-# set warnings as errors
-# TODO: remove `no-maybe-unitialized` used to suppress warnings in rmm::exec_policy
-# NOTE felipe percy these flags are too strict for blazingsql: -Werror,
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Werror=cross-execution-space-call -Xcompiler -Wall,-Wno-error=deprecated-declarations")
-
-option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
-if(DISABLE_DEPRECATION_WARNING)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-deprecated-declarations")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
-endif(DISABLE_DEPRECATION_WARNING)
-
-# Option to enable line info in CUDA device compilation to allow introspection when profiling / memchecking
-option(CMAKE_CUDA_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
-if(CMAKE_CUDA_LINEINFO)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lineinfo")
-endif(CMAKE_CUDA_LINEINFO)
-
-# Debug options
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-    message(STATUS "Building with debugging flags")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g -Xcompiler -rdynamic")
-endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
 # To apply RUNPATH to transitive dependencies (this is a temporary solution)
 set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--disable-new-dtags")
@@ -111,21 +46,6 @@ option(MYSQL_SUPPORT "Enables support for MySQL database" ON)
 option(SQLITE_SUPPORT "Enables support for SQLite database" ON)
 option(POSTGRESQL_SUPPORT "Enables support for PostgreSQL database" ON)
 option(SNOWFLAKE_SUPPORT "Enables support for SnowFlake database" ON)
-
-###################################################################################################
-# - cudart options --------------------------------------------------------------------------------
-# cudart can be statically linked or dynamically linked. The python ecosystem wants dynamic linking
-
-option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
-
-if(CUDA_STATIC_RUNTIME)
-    message(STATUS "Enabling static linking of cudart")
-    set(CUDART_LIBRARY "cudart_static")
-else()
-    set(CUDART_LIBRARY "cudart")
-endif(CUDA_STATIC_RUNTIME)
-
-###################################################################################################
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
 message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
@@ -164,7 +84,9 @@ elseif (DEFINED ENV{CONDA_PREFIX})
 
 endif ()
 
-link_directories(${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+if(CUDF_SUPPORT)
+    include(InitCudaCompiler)
+endif()
 
 message(WARNING "BSQL_BLD_PREFIX set to: ${BSQL_BLD_PREFIX}")
 message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
@@ -188,26 +110,21 @@ find_package(PythonLibs)
 
 find_package(GTest REQUIRED)
 
-# BEGIN UCX
-set(UCX_INSTALL_DIR $ENV{CONDA_PREFIX})
-set(UCX_INCLUDE_DIR $ENV{CONDA_PREFIX}/include)
-find_package(UCX REQUIRED)
-# END UCX
+# TODO percy arrow felipe see we we will use ucx on cudf workflows only
+if(CUDF_SUPPORT)
+    include(ConfigureUcx)
+endif()
 
 # BEGIN find arrow
 find_path(ARROW_INCLUDE_DIR "arrow" HINTS "$ENV{ARROW_ROOT}/include")
 find_library(ARROW_LIB "arrow" NAMES libarrow HINTS "$ENV{ARROW_ROOT}/lib" "$ENV{ARROW_ROOT}/build")
-find_library(ARROW_CUDA_LIB "arrow_cuda" NAMES libarrow_cuda HINTS "$ENV{ARROW_ROOT}/lib" "$ENV{ARROW_ROOT}/build")
 message(STATUS "ARROW: ARROW_INCLUDE_DIR set to ${ARROW_INCLUDE_DIR}")
 message(STATUS "ARROW: ARROW_LIB set to ${ARROW_LIB}")
-message(STATUS "ARROW: ARROW_CUDA_LIB set to ${ARROW_CUDA_LIB}")
 add_library(arrow SHARED IMPORTED ${ARROW_LIB})
-add_library(arrow_cuda SHARED IMPORTED ${ARROW_CUDA_LIB})
 
-if(ARROW_INCLUDE_DIR AND ARROW_LIB AND ARROW_CUDA_LIB)
+if(ARROW_INCLUDE_DIR AND ARROW_LIB)
   set_target_properties(arrow PROPERTIES IMPORTED_LOCATION ${ARROW_LIB})
-  set_target_properties(arrow_cuda PROPERTIES IMPORTED_LOCATION ${ARROW_CUDA_LIB})
-endif(ARROW_INCLUDE_DIR AND ARROW_LIB AND ARROW_CUDA_LIB)
+endif(ARROW_INCLUDE_DIR AND ARROW_LIB)
 # END find arrow
 
 # BEGIN MAIN #
@@ -217,22 +134,24 @@ add_definitions(${CXX_DEFINES})
 get_directory_property(CXX_COMPILE_DEFINITIONS DIRECTORY ${PROJECT_SOURCE_DIR} COMPILE_DEFINITIONS)
 message(STATUS "C++ compiler definitions: ${CXX_COMPILE_DEFINITIONS}")
 
-
 include_directories(
     ${PROJECT_BINARY_DIR}
     ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR}
-    ${BSQL_BLD_PREFIX}/include/libcudf/libcudacxx/
     ${BSQL_BLD_PREFIX}/include
+    ${BSQL_BLD_PREFIX}/include/libcudf/libcudacxx
     ${BSQL_BLD_PREFIX}/include/blazingdb/io
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/thirdparty/jitify
-    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     ${PYTHON_INCLUDE_DIRS}
     "${ARROW_INCLUDE_DIR}"
     )
 
-if(MYSQL_SUPPORT)
+if(CUDF_SUPPORT)
+    include(ConfigureCudfCompute)
+endif()
+
+if(MYSQL_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow 4 c.gonzales cudf & sql providers
     add_definitions(-DMYSQL_SUPPORT)
     set(MYSQL_DATABASE_SRC_FILES
         # TODO percy in case we need custom mysql transformer
@@ -245,7 +164,7 @@ else()
     message(STATUS "MySQL support is disabled!")
 endif()
 
-if(SQLITE_SUPPORT)
+if(SQLITE_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow 4 c.gonzales cudf & sql providers
     add_definitions(-DSQLITE_SUPPORT)
     set(SQLITE_DATABASE_SRC_FILES
         # TODO percy c.gonzales
@@ -258,7 +177,7 @@ else()
     message(STATUS "SQLite support is disabled!")
 endif()
 
-if(POSTGRESQL_SUPPORT)
+if(POSTGRESQL_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow 4 c.gonzales cudf & sql providers
     # TODO postgresql percy c.gonzales
     add_definitions(-DPOSTGRESQL_SUPPORT)
     set(POSTGRESQL_DATABASE_SRC_FILES
@@ -272,7 +191,7 @@ else()
     message(STATUS "MyPostgreSQL support is disabled!")
 endif()
 
-if(SNOWFLAKE_SUPPORT)
+if(SNOWFLAKE_SUPPORT AND CUDF_SUPPORT) # TODO percy arrow 4 c.gonzales cudf & sql providers
   add_definitions(-DSNOWFLAKE_SUPPORT)
     set(SNOWFLAKE_DATABASE_SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/SnowFlakeDataProvider.cpp
@@ -283,30 +202,10 @@ else()
   message(STATUS "SnowFlake support is disabled!")
 endif()
 
-set(COMPUTE_CUDF_SRC_FILES
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/interops.cpp
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/aggregations.cpp
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/interpreter/interpreter_cpp.cu
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/transform.cu
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/filter.cpp
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/join.cpp
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/nulls.cpp
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/search.cpp
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/concatenate.cpp
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/types.cpp
-    ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/io.cpp
-
-    ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
-    ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTableView.cpp
-    ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingColumnOwner.cpp
-    
-    ${PROJECT_SOURCE_DIR}/src/cache_machine/GPUCacheData.cpp
-    ${PROJECT_SOURCE_DIR}/src/config/GPUManager.cu
-)
-
 set(COMPUTE_ARROW_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/aggregations.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/types.cpp
+    ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/scalars.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/io.cpp
 )
 
@@ -324,9 +223,9 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CPUCacheData.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/ArrowCacheData.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheMachine.cpp
-        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTable.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTableView.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTable.cpp
+        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTable.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTableView.cpp
         ${PROJECT_SOURCE_DIR}/src/execution_graph/port.cpp
         ${PROJECT_SOURCE_DIR}/src/execution_kernels/kernel.cpp
@@ -359,21 +258,18 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/compatibility/SQLTranspiler.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/sql/AbstractSQLDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/UriDataProvider.cpp
-        ${PROJECT_SOURCE_DIR}/src/io/data_provider/GDFDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_provider/ArrowDataProvider.cpp
         ${PROJECT_SOURCE_DIR}/src/io/Schema.cpp
-        ${PROJECT_SOURCE_DIR}/src/io/data_parser/sql/AbstractSQLParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/ParquetParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/CSVParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/JSONParser.cpp
-        ${PROJECT_SOURCE_DIR}/src/io/data_parser/GDFParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/OrcParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/ArrowParser.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/ArgsUtil.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/parquet_metadata.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/orc_metadata.cpp
         ${PROJECT_SOURCE_DIR}/src/io/data_parser/metadata/common_metadata.cpp
-        ${PROJECT_SOURCE_DIR}/src/utilities/scalar_timestamp_parser.cpp
+
         ${PROJECT_SOURCE_DIR}/src/utilities/DebuggingUtils.cpp
         ${PROJECT_SOURCE_DIR}/src/parser/CalciteExpressionParsing.cpp
         ${PROJECT_SOURCE_DIR}/src/io/DataLoader.cpp
@@ -399,7 +295,6 @@ set(SRC_FILES
 
         ${PROJECT_SOURCE_DIR}/src/communication/factory/MessageFactory.cpp
         ${PROJECT_SOURCE_DIR}/src/communication/CommunicationData.cpp
-        ${PROJECT_SOURCE_DIR}/src/communication/messages/MessageUtil.cu
         ${PROJECT_SOURCE_DIR}/src/communication/messages/GPUComponentMessage.cpp
         ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/serializer.cpp
         ${PROJECT_SOURCE_DIR}/src/communication/CommunicationInterface/node.cpp
@@ -449,9 +344,9 @@ target_link_libraries(blazingsql-engine
     #Threads::Threads
     pthread
 
-    cudf
+    ${CUDF_COMPUTE_LIBRARIES}
+
     zmq
-    cudart
 
     ${UCX_LIBRARIES}
 
@@ -491,38 +386,21 @@ else()
     add_definitions(-DBSQLDBGUTILS) # see DebuggingUtils.cpp
     target_link_libraries(blazingsql-engine
         gtest
-        cudftestutil
     )
+    
+    if(CUDF_SUPPORT)
+        target_link_libraries(blazingsql-engine
+            cudftestutil
+        )
+    endif()
 endif()
-
-###################################################################################################
-# - build options ---------------------------------------------------------------------------------
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --default-stream=per-thread")
-
-option(USE_NVTX "Build with NVTX support" ON)
-if(USE_NVTX)
-    message(STATUS "Using Nvidia Tools Extension")
-    # The `USE_NVTX` macro is deprecated
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_NVTX")
-else()
-    # Makes NVTX APIs no-ops
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_NVTX")
-endif(USE_NVTX)
-
-option(HT_DEFAULT_ALLOCATOR "Use the default allocator for hash tables" ON)
-if(HT_DEFAULT_ALLOCATOR)
-    message(STATUS "Using default allocator for hash tables")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHT_DEFAULT_ALLOCATOR")
-endif(HT_DEFAULT_ALLOCATOR)
-
-###################################################################################################
 
 #install(TARGETS testing-libgdf_lib DESTINATION lib RENAME libblazingsql-engine.a)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libblazingsql-engine.so DESTINATION lib RENAME libblazingsql-engine.so)
 
 # Tests
 if(BUILD_TESTING)
-    if(GTEST_FOUND)
+    if(GTEST_FOUND AND CUDF_SUPPORT) # TODO percy arrow unit tests
         add_subdirectory(tests)
     else()
         message(AUTHOR_WARNING "Google C++ Testing Framework (Google Test) not found: automated tests are disabled.")
@@ -530,7 +408,7 @@ if(BUILD_TESTING)
 endif()
 
 #Benchmarks
-if(GBENCHMARK_FOUND)
+if(GBENCHMARK_FOUND AND CUDF_SUPPORT) # TODO percy arrow benchmarks
     add_subdirectory(benchmarks)
 else()
     message(AUTHOR_WARNING "Google C++ Benchmarking Framework (Google Benchmark) not found")
@@ -538,7 +416,6 @@ endif()
 
 
 include(ConfigureProductVersion)
-message(STATUS "cmake_cuda_flags = ${CMAKE_CUDA_FLAGS}")
 
 # Print the project summary
 feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)

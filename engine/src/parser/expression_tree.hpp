@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 #include <regex>
-#include <cudf/types.hpp>
 #include <arrow/type.h>
 
 #include "parser/CalciteExpressionParsing.h"
@@ -56,14 +55,16 @@ struct operad_node : public node {
 };
 
 struct literal_node : public operad_node {
-    literal_node(const std::string& value, cudf::data_type type) : operad_node{node_type::LITERAL, value}, _type{type} {};
+    literal_node(const std::string& value, std::shared_ptr<arrow::DataType> type) : operad_node{node_type::LITERAL, value}, _type(type) {};
 
     node * clone() const override { return new literal_node(this->value, this->_type); };
 
-    cudf::data_type type() const { return _type; }
+  std::shared_ptr<arrow::DataType> type() const { return _type; }
+
+  arrow::Type::type type_id() const { return _type->id(); }
 
 private:
-    cudf::data_type _type;
+  std::shared_ptr<arrow::DataType> _type;
 };
 
 struct variable_node : public operad_node {
@@ -73,10 +74,10 @@ struct variable_node : public operad_node {
 
     node * clone() const override { return new variable_node(this->value); };
 
-    cudf::size_type index() const { return index_; }
+    int index() const { return index_; }
 
 private:
-    cudf::size_type index_;
+    int index_;
 };
 
 struct operator_node : public node {
@@ -230,7 +231,7 @@ private:
         assert(round_node.children.size() == 1 || round_node.children.size() == 2);
 
         if (round_node.children.size() == 1) {
-            round_node.children.push_back(std::unique_ptr<node>(new literal_node("0", cudf::data_type{cudf::type_id::INT8})));
+            round_node.children.push_back(std::unique_ptr<node>(new literal_node("0", arrow::int8())));
         }
 
         return &round_node;
@@ -246,7 +247,7 @@ private:
             // Special case for calcite expressions like `CAST(4:INTEGER):INTEGER`
 
             auto literal = static_cast<literal_node *>(operand);
-            cudf::data_type new_type(get_output_type(cast_op, literal->type().id()));
+            auto new_type = get_output_type(cast_op, literal->type());
 
             //get_common_type2(literal->type(), new_type, true); // remove this if not needed
 
@@ -332,13 +333,9 @@ private:
     std::regex string_regex{"^" + std::string(lexer::STRING_REGEX_STR)};
 };
 
-cudf::data_type infer_type_from_literal_token(const lexer::token & token);
+std::shared_ptr<arrow::DataType> infer_type_from_literal_token(const lexer::token & token);
 
-std::shared_ptr<arrow::DataType> infer_arrow_type_from_literal_token(const lexer::token & token);
-
-cudf::data_type type_from_type_token(const lexer::token & token);
-
-std::shared_ptr<arrow::DataType> arrow_type_from_type_token(const lexer::token & token);
+std::shared_ptr<arrow::DataType> type_from_type_token(const lexer::token & token);
 
 class expr_parser {
 public:

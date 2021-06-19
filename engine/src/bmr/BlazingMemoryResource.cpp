@@ -1,5 +1,7 @@
 #include "BlazingMemoryResource.h"
 
+#include <iostream>
+
 // BEGIN internal_blazing_device_memory_resource
 
 // TODO: use another constructor for memory in bytes
@@ -9,6 +11,7 @@ internal_blazing_device_memory_resource::internal_blazing_device_memory_resource
                                         std::string allocator_logging_file,
                                         float custom_threshold)
 {
+#ifdef CUDF_SUPPORT
     total_memory_size = ral::config::gpuTotalMemory();
     used_memory = 0;
     memory_limit = (double)custom_threshold * total_memory_size;
@@ -74,6 +77,7 @@ internal_blazing_device_memory_resource::internal_blazing_device_memory_resource
             memory_resource, allocator_logging_file, /*auto_flush=*/true));
         memory_resource = logging_adaptor.get();
     }
+#endif
     max_used_memory=0;
 }
 
@@ -86,7 +90,11 @@ size_t internal_blazing_device_memory_resource::get_max_memory_used() {
 }
 
 size_t internal_blazing_device_memory_resource::get_from_driver_used_memory() {
+#ifdef CUDF_SUPPORT
     return ral::config::gpuUsedMemory();
+#else
+  return 100000000; // TODO percy arrow
+#endif
 }
 
 size_t internal_blazing_device_memory_resource::get_total_memory() {
@@ -101,8 +109,21 @@ std::string internal_blazing_device_memory_resource::get_type() {
     return type;
 }
 
-bool internal_blazing_device_memory_resource::supports_streams() const noexcept { return memory_resource->supports_streams(); }
-bool internal_blazing_device_memory_resource::supports_get_mem_info() const noexcept { return memory_resource->supports_get_mem_info(); }
+bool internal_blazing_device_memory_resource::supports_streams() const noexcept {
+#ifdef CUDF_SUPPORT
+  return memory_resource->supports_streams();
+#else
+  return false;
+#endif
+}
+
+bool internal_blazing_device_memory_resource::supports_get_mem_info() const noexcept {
+#ifdef CUDF_SUPPORT
+  return memory_resource->supports_get_mem_info();
+#else
+  return false;
+#endif
+}
 
 std::string internal_blazing_device_memory_resource::get_full_memory_summary() {
     std::string summary = "";
@@ -118,6 +139,8 @@ std::string internal_blazing_device_memory_resource::get_full_memory_summary() {
 void internal_blazing_device_memory_resource::reset_max_memory_used(size_t to) noexcept {
     this->max_used_memory = to;
 }
+
+#ifdef CUDF_SUPPORT
 
 void* internal_blazing_device_memory_resource::do_allocate(size_t bytes, rmm::cuda_stream_view stream) {
     if (bytes <= 0) { 
@@ -150,6 +173,8 @@ bool internal_blazing_device_memory_resource::do_is_equal(device_memory_resource
 std::pair<size_t, size_t> internal_blazing_device_memory_resource::do_get_mem_info(rmm::cuda_stream_view stream) const {
     return memory_resource->get_mem_info(stream);
 }
+
+#endif
 
 // END internal_blazing_device_memory_resource
 
@@ -200,9 +225,11 @@ void blazing_device_memory_resource::initialize(std::string allocation_mode,
     initialized_resource.reset(new internal_blazing_device_memory_resource(
             allocation_mode, initial_pool_size, maximum_pool_size, 
             allocator_logging_file, device_mem_resouce_consumption_thresh));
-    
+
+#ifdef CUDF_SUPPORT
     rmm::mr::set_current_device_resource(initialized_resource.get());
-    
+#endif
+
     is_initialized = true;
 }
 

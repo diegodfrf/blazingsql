@@ -1,13 +1,9 @@
 #include <spdlog/spdlog.h>
-#include <cudf/stream_compaction.hpp>
-#include <cudf/copying.hpp>
 #include "LogicalFilter.h"
 #include "LogicalProject.h"
 #include "parser/expression_utils.hpp"
 #include "utilities/error.hpp"
 #include "compute/backend_dispatcher.h"
-#include "blazing_table/BlazingColumn.h"
-#include "blazing_table/BlazingColumnView.h"
 
 #include "compute/api.h"
 

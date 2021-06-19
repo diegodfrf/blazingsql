@@ -37,5 +37,17 @@ enum class NullOrder : bool {
   BEFORE  ///< NULL values are ordered before all other values
 };
 
+enum class NullEquality : bool {
+  EQUAL,   ///< nulls compare equal
+  UNEQUAL  ///< nulls compare unequal
+};
+
+enum class OutOfBoundsPolicy : bool {
+  NULLIFY,    /// Output values corresponding to out-of-bounds indices are null
+  DONT_CHECK  /// No bounds checking is performed, better performance
+};
+
+enum class NegativeIndexPolicy : bool { ALLOWED, NOT_ALLOWED };
+
 } //namespace compute
 } //namespace voltron

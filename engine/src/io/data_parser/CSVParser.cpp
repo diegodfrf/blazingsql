@@ -17,8 +17,6 @@
 #include "ArgsUtil.h"
 #include "compute/api.h"
 
-#include "compute/cudf/detail/types.h"
-
 #define checkError(error, txt)                                                                                         \
 	if(error != GDF_SUCCESS) {                                                                                         \
 		std::cerr << "ERROR:  " << error << "  in " << txt << std::endl;                                               \
@@ -37,11 +35,13 @@ std::unique_ptr<ral::frame::BlazingTable> csv_parser::parse_batch(ral::execution
 	ral::io::data_handle handle,
 	const Schema & schema,
 	std::vector<int> column_indices,
-	std::vector<cudf::size_type> row_groups) {
+	std::vector<int> row_groups) {
 	std::shared_ptr<arrow::io::RandomAccessFile> file = handle.file_handle;
 
 	if(file == nullptr) {
-		return schema.makeEmptyBlazingCudfTable(column_indices);
+    return ral::execution::backend_dispatcher(preferred_compute,
+                                           create_empty_table_functor(),
+                                           schema.get_names(), schema.get_dtypes(), column_indices);
 	}
 
 	if(column_indices.size() > 0) {
@@ -106,14 +106,16 @@ std::unique_ptr<ral::frame::BlazingTable> csv_parser::get_metadata(ral::executio
 		}
 	}
 
+#ifdef CUDF_SUPPORT
 	std::vector< std::unique_ptr<cudf::column> > columns;
-	columns.emplace_back( vector_to_column(file_index_values, cudf::data_type(cudf::type_id::INT32)) );
-	columns.emplace_back( vector_to_column(row_group_values, cudf::data_type(cudf::type_id::INT32)) );
+	columns.emplace_back( voltron::compute::cudf_backend::types::vector_to_column(file_index_values, cudf::data_type(cudf::type_id::INT32)) );
+	columns.emplace_back( voltron::compute::cudf_backend::types::vector_to_column(row_group_values, cudf::data_type(cudf::type_id::INT32)) );
 
 	std::vector<std::string> metadata_names = {"file_handle_index", "row_group_index"};
 	auto metadata_table = std::make_unique<cudf::table>(std::move(columns));
 
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(metadata_table), metadata_names);
+#endif
 }
 
 } /* namespace io */

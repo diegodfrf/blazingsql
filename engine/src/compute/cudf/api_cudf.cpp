@@ -2,7 +2,6 @@
 
 #include "compute/api.h"
 
-
 #include <random>
 #include <cudf/aggregation.hpp>
 #include <cudf/filling.hpp>
@@ -24,9 +23,12 @@
 #include <cudf/filling.hpp>
 #include <cudf/scalar/scalar_factories.hpp>
 #include <cudf/reduction.hpp>
+#include <cudf/detail/interop.hpp>
+#include <cudf/io/orc.hpp> // TODO percy arrow move this or writer to io
 
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
+#include "parser/types_parser_utils.h"
 
 #include "compute/cudf/detail/aggregations.h"
 
@@ -38,9 +40,11 @@
 #include "compute/cudf/detail/concatenate.h"
 #include "compute/cudf/detail/types.h"
 #include "compute/cudf/detail/io.h"
+#include "compute/cudf/detail/scalars.h"
 
 #include "utilities/error.hpp"
 #include "blazing_table/BlazingCudfTable.h"
+#include "communication/messages/GPUComponentMessage.h"
 
 //namespace voltron {
 //namespace compute {
@@ -54,19 +58,42 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator
 	return sorted_merger(tables, sortOrderTypes, sortColIndices, sortOrderNulls);
 }
 
+// TODO percy arrow rommel enable this when we have arrow 4
+#ifdef CUDF_SUPPORT
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingCudfTable>(
 		std::shared_ptr<ral::frame::BlazingTableView> table,
 		std::unique_ptr<cudf::column> column,
-		cudf::out_of_bounds_policy out_of_bounds_policy,
-		cudf::detail::negative_index_policy negative_index_policy) const
+		voltron::compute::OutOfBoundsPolicy out_of_bounds_policy,
+		voltron::compute::NegativeIndexPolicy negative_index_policy) const
 {
+	cudf::out_of_bounds_policy out_of_bounds_policy_cudf;
+	switch (out_of_bounds_policy) {
+		case voltron::compute::OutOfBoundsPolicy::NULLIFY: {
+			out_of_bounds_policy_cudf = cudf::out_of_bounds_policy::NULLIFY; break;
+		}
+		case voltron::compute::OutOfBoundsPolicy::DONT_CHECK: {
+			out_of_bounds_policy_cudf = cudf::out_of_bounds_policy::DONT_CHECK; break;
+		}
+	} ;
+
+	cudf::detail::negative_index_policy negative_index_policy_cudf;
+	switch (negative_index_policy) {
+		case voltron::compute::NegativeIndexPolicy::ALLOWED: {
+			negative_index_policy_cudf = cudf::detail::negative_index_policy::ALLOWED; break;
+		}
+		case voltron::compute::NegativeIndexPolicy::NOT_ALLOWED: {
+			negative_index_policy_cudf = cudf::detail::negative_index_policy::NOT_ALLOWED; break;
+		}
+	}
+
 	// TODO percy rommel arrow
 	ral::frame::BlazingCudfTableView *table_ptr = dynamic_cast<ral::frame::BlazingCudfTableView*>(table.get());
-	std::unique_ptr<cudf::table> pivots = cudf::detail::gather(table_ptr->view(), column->view(), out_of_bounds_policy, negative_index_policy);
+	std::unique_ptr<cudf::table> pivots = cudf::detail::gather(table_ptr->view(), column->view(), out_of_bounds_policy_cudf, negative_index_policy_cudf);
 
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(pivots), table->column_names());
 }
+#endif
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> groupby_without_aggregations_functor::operator()<ral::frame::BlazingCudfTable>(
@@ -130,10 +157,21 @@ template <>
 inline std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> left,
     std::shared_ptr<ral::frame::BlazingTableView> right,
-    std::vector<cudf::size_type> const& left_column_indices,
-    std::vector<cudf::size_type> const& right_column_indices,
-    cudf::null_equality equalityType) const
+    std::vector<int> const& left_column_indices,
+    std::vector<int> const& right_column_indices,
+    voltron::compute::NullEquality equalityType) const
 {
+    
+    cudf::null_equality equalityType_cudf;
+    switch (equalityType) {
+        case voltron::compute::NullEquality::EQUAL: {
+            equalityType_cudf = cudf::null_equality::EQUAL; break;
+        }
+        case voltron::compute::NullEquality::UNEQUAL: {
+            equalityType_cudf = cudf::null_equality::UNEQUAL; break;
+        }
+    };
+
   auto table_left = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(left);
   auto table_right = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(right);
   std::vector<std::string> names = merge_vectors(table_left->column_names(), table_right->column_names());
@@ -142,14 +180,14 @@ inline std::unique_ptr<ral::frame::BlazingTable> inner_join_functor::operator()<
               table_right->view(),
               left_column_indices,
               right_column_indices,
-              equalityType);
+              equalityType_cudf);
   return std::make_unique<ral::frame::BlazingCudfTable>(std::move(tb), names);
 }
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> drop_nulls_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::vector<cudf::size_type> const& keys) const
+    std::vector<int> const& keys) const
 {
   auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
   return std::make_unique<ral::frame::BlazingCudfTable>(cudf::drop_nulls(cudf_table_view->view(), keys), table_view->column_names());
@@ -266,8 +304,8 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_order_gather_functor::op
 {
   auto table = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);
   auto sortColumns = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(sortColumns_view);
-  std::vector<cudf::order> cudfOrderTypes = toCudfOrderTypes(sortOrderTypes);
-  std::vector<cudf::null_order> cudfNullOrderTypes = toCudfNullOrderTypes(null_orders);
+  std::vector<cudf::order> cudfOrderTypes = voltron::compute::cudf_backend::types::toCudfOrderTypes(sortOrderTypes);
+  std::vector<cudf::null_order> cudfNullOrderTypes = voltron::compute::cudf_backend::types::toCudfNullOrderTypes(null_orders);
   std::unique_ptr<cudf::column> output = cudf::sorted_order( sortColumns->view(), cudfOrderTypes, cudfNullOrderTypes );
 	std::unique_ptr<cudf::table> gathered = cudf::gather( table->view(), output->view() );
   return std::make_unique<ral::frame::BlazingCudfTable>(std::move(gathered), table->column_names());
@@ -285,9 +323,10 @@ inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_like_functor
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> create_empty_table_functor::operator()<ral::frame::BlazingCudfTable>(
     const std::vector<std::string> &column_names,
-	  const std::vector<std::shared_ptr<arrow::DataType>> &dtypes) const
+	const std::vector<std::shared_ptr<arrow::DataType>> &dtypes,
+    std::vector<int> column_indices) const
 {
-  return create_empty_cudf_table(column_names, dtypes);
+  return voltron::compute::cudf_backend::types::create_empty_cudf_table(column_names, dtypes, column_indices);
 }
 
 template <>
@@ -363,7 +402,7 @@ normalize_types_functor::operator()<ral::frame::BlazingCudfTable>(
     const std::vector<std::shared_ptr<arrow::DataType>>  & types,
     std::vector<cudf::size_type> column_indices) const
 {
-  normalize_types_gpu(table, types, column_indices);
+  voltron::compute::cudf_backend::types::normalize_types_gpu(table, types, column_indices);
 }
 
 template <>
@@ -402,10 +441,10 @@ upper_bound_split_functor::operator()<ral::frame::BlazingCudfTable>(
   auto columns_to_search = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(t);  
   auto partitionPlan = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(values);  
 
-  std::vector<cudf::order> cudf_column_order = toCudfOrderTypes(column_order);
-  std::vector<cudf::null_order> cudfNullOrderTypes = toCudfNullOrderTypes(null_precedence);
+  std::vector<cudf::order> cudf_column_order = voltron::compute::cudf_backend::types::toCudfOrderTypes(column_order);
+  std::vector<cudf::null_order> cudfNullOrderTypes = voltron::compute::cudf_backend::types::toCudfNullOrderTypes(null_precedence);
   auto pivot_indexes = cudf::upper_bound(columns_to_search->view(), partitionPlan->view(), cudf_column_order, cudfNullOrderTypes);
-	std::vector<cudf::size_type> split_indexes = column_to_vector<cudf::size_type>(pivot_indexes->view());
+	std::vector<cudf::size_type> split_indexes = voltron::compute::cudf_backend::types::column_to_vector<cudf::size_type>(pivot_indexes->view());
   auto tbs = cudf::split(sortedTable->view(), split_indexes);
   std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
   for (auto tb : tbs) {
@@ -500,6 +539,76 @@ io_parse_file_schema_functor<ral::io::DataType::JSON>::operator()<ral::frame::Bl
         const std::map<std::string, std::string> &args_map) const
 {
     voltron::compute::cudf_backend::io::parse_json_schema(schema_out, file, args_map);
+}
+
+template <>
+inline std::unique_ptr<ral::frame::BlazingTable>
+decache_io_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::unique_ptr<ral::frame::BlazingTable> table,
+    std::vector<int> projections,
+    ral::io::Schema schema,
+    std::vector<int> column_indices_in_file,
+    std::map<std::string, std::string> column_values) const
+{
+      std::vector<std::unique_ptr<cudf::column>> all_columns(projections.size());
+      std::vector<std::unique_ptr<cudf::column>> file_columns;
+      std::vector<std::string> names;
+      cudf::size_type num_rows;
+
+      if (column_indices_in_file.size() > 0){
+        names = table->column_names();
+          ral::frame::BlazingCudfTable* table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+          std::unique_ptr<cudf::table> current_table = table_ptr->releaseCudfTable();
+          num_rows = current_table->num_rows();
+          file_columns = current_table->release();
+      }
+
+      int in_file_column_counter = 0;
+      for(int i = 0; i < projections.size(); i++) {
+        int col_ind = projections[i];
+        if(!schema.get_in_file()[col_ind]) {
+          std::string name = schema.get_name(col_ind);
+          //std::shared_ptr<arrow::DataType> type = ;
+          cudf::data_type cudf_dtype = cudf::detail::arrow_to_cudf_type(*schema.get_dtype(col_ind));
+          names.push_back(name);
+          std::string literal_str = column_values[name];
+            std::unique_ptr<cudf::scalar> scalar = get_scalar_from_string(literal_str, cudf_dtype, false);
+            all_columns[i] = cudf::make_column_from_scalar(*scalar, num_rows);
+        } else {
+            all_columns[i] = std::move(file_columns[in_file_column_counter]);
+          in_file_column_counter++;
+        }
+      }
+
+      auto unique_table = std::make_unique<cudf::table>(std::move(all_columns));
+      return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), names);
+}
+
+template<>
+inline
+std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::operator()<ral::frame::BlazingCudfTable>(
+	std::unique_ptr<ral::frame::BlazingTable> table, bool use_pinned){
+
+	ral::frame::BlazingCudfTable *gpu_table_ptr = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
+    return ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
+}
+
+template <>
+inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::string file_path) const
+{
+	auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
+
+	cudf::io::table_metadata metadata;
+	for(auto name : cudf_table_view->column_names()) {
+		metadata.column_names.emplace_back(name);
+	}
+
+	cudf::io::orc_writer_options out_opts = cudf::io::orc_writer_options::builder(cudf::io::sink_info{file_path}, cudf_table_view->view())
+		.metadata(&metadata);
+
+	cudf::io::write_orc(out_opts);
 }
 
 //} // compute

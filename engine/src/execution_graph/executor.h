@@ -34,7 +34,12 @@ public:
 	* This function does not modify the inputs and can throw an exception. In the case it throws an exception it
 	* gets placed back in the executor if it was a memory exception.
 	*/
+#ifdef CUDF_SUPPORT
 	void run(cudaStream_t stream, executor * executor);
+#else
+void run(executor * executor);
+#endif
+
 	void complete();
 	void fail();
 	std::size_t task_memory_needed();
@@ -111,7 +116,9 @@ public:
 private:
 	executor(int num_threads, double processing_memory_limit_threshold, ral::execution::execution_backend preferred_compute);
 	ctpl::thread_pool<BlazingThread> pool;
+#ifdef CUDF_SUPPORT
 	std::vector<cudaStream_t> streams; //one stream per thread
+#endif
 	ral::cache::WaitingQueue< std::unique_ptr<task> > task_queue;
 	int shutdown = 0;
 	static executor * _instance;

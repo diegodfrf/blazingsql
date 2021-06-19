@@ -13,6 +13,8 @@ namespace ral {
 namespace communication {
 namespace messages {
 
+#ifdef CUDF_SUPPORT
+
 gpu_raw_buffer_container serialize_gpu_message_to_gpu_containers(std::shared_ptr<ral::frame::BlazingCudfTableView> table_view){
 	std::vector<std::size_t> buffer_sizes;
 	std::vector<const char *> raw_buffers;
@@ -156,6 +158,8 @@ std::unique_ptr<ral::frame::BlazingHostTable> serialize_gpu_message_to_host_tabl
 	return table;
 }
 
+#endif
+
 template <class DataType>
 void PopulateBufferToReadArrowData(
 	const std::shared_ptr<arrow::Array> & arrayColumn,
@@ -185,6 +189,10 @@ std::unique_ptr<ral::frame::BlazingHostTable>
 serialize_arrow_message_to_host_table(
 	std::shared_ptr<ral::frame::BlazingArrowTableView> table_view,
 	bool use_pinned) {
+  
+//TODO percy arrow c.gonzales
+
+#ifdef CUDF_SUPPORT
 	std::shared_ptr<arrow::Table> table = table_view->view();
 	std::shared_ptr<arrow::Schema> schema = table->schema();
 
@@ -350,8 +358,10 @@ serialize_arrow_message_to_host_table(
 			std::move(allocationChunks));
 
 	return blazingHostTable;
+#endif
 }
 
+#ifdef CUDF_SUPPORT
 std::unique_ptr<ral::frame::BlazingCudfTable> deserialize_from_gpu_raw_buffers(const std::vector<ColumnTransport> & columns_offsets,
 									  const std::vector<rmm::device_buffer> & raw_buffers) {
 	auto num_columns = columns_offsets.size();
@@ -399,7 +409,7 @@ std::unique_ptr<ral::frame::BlazingCudfTable> deserialize_from_gpu_raw_buffers(c
 	auto unique_table = std::make_unique<cudf::table>(std::move(received_samples));
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), column_names);
 }
-
+#endif
 
 }  // namespace messages
 }  // namespace communication

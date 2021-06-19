@@ -11,8 +11,6 @@
 namespace ral {
 namespace io {
 
-namespace cudf_io = cudf::io;
-
 parquet_parser::parquet_parser(){
 	// TODO Auto-generated constructor stub
 }
@@ -26,11 +24,13 @@ std::unique_ptr<ral::frame::BlazingTable> parquet_parser::parse_batch(
 	ral::io::data_handle handle,
 	const Schema & schema,
 	std::vector<int> column_indices,
-	std::vector<cudf::size_type> row_groups)
+	std::vector<int> row_groups)
 {
 	std::shared_ptr<arrow::io::RandomAccessFile> file = handle.file_handle;
 	if(file == nullptr) {
-		return schema.makeEmptyBlazingCudfTable(column_indices);
+    return ral::execution::backend_dispatcher(preferred_compute,
+                                       create_empty_table_functor(),
+                                       schema.get_names(), schema.get_dtypes(), column_indices);
 	}
 	if(column_indices.size() > 0) {
     std::vector<std::string> col_names(column_indices.size());
@@ -65,7 +65,8 @@ std::unique_ptr<ral::frame::BlazingTable> parquet_parser::get_metadata(ral::exec
 	std::vector<ral::io::data_handle> handles, int offset,
 	std::map<std::string, std::string> args_map)
 {
-  // TODO percy arrow
+// TODO percy rommel arrow skip data
+#ifdef CUDF_SUPPORT
 	std::vector<size_t> num_row_groups(handles.size());
 	BlazingThread threads[handles.size()];
 	std::vector<std::unique_ptr<parquet::ParquetFileReader>> parquet_readers(handles.size());
@@ -90,6 +91,7 @@ std::unique_ptr<ral::frame::BlazingTable> parquet_parser::get_metadata(ral::exec
 		reader->Close();
 	}
 	return minmax_metadata_table;
+#endif
 }
 
 } /* namespace io */

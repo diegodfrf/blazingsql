@@ -4,26 +4,17 @@
 
 #include <cmath>
 
-#include <cudf/search.hpp>
-#include <cudf/sorting.hpp>
-#include "cudf/copying.hpp"
-#include <cudf/merge.hpp>
-#include <cudf/utilities/traits.hpp>
-
 #include "operators/OrderBy.h"
 #include "operators/Concatenate.h"
+#include "operators/operators_definitions.h"
 #include "compute/backend_dispatcher.h"
 
 #include "utilities/error.hpp"
 #include "utilities/ctpl_stl.h"
 #include <numeric>
-#include <cudf/detail/interop.hpp>
 #include <spdlog/spdlog.h>
 
 #include "compute/api.h"
-
-// TODO percy arrow delete this include cudf details should never he here
-#include "compute/cudf/detail/types.h"
 
 using namespace fmt::literals;
 
@@ -36,7 +27,7 @@ typedef blazingdb::manager::Context Context;
 typedef blazingdb::transport::Node Node;
 
 std::unique_ptr<BlazingTable> generatePartitionPlans(
-	cudf::size_type number_partitions,
+	int number_partitions,
 	const std::vector<std::unique_ptr<ral::frame::BlazingTable>> & samples,
 	const std::vector<voltron::compute::SortOrder> & sortOrderTypes,
 	const std::vector<voltron::compute::NullOrder> & sortOrderNulls) {
@@ -79,7 +70,7 @@ std::vector<NodeColumnView> partitionData(Context * context,
 
 	RAL_EXPECTS(static_cast<size_t>(pivots->num_columns()) == searchColIndices.size(), "Mismatched pivots num_columns and searchColIndices");
 
-	cudf::size_type num_rows = table->num_rows();
+	int num_rows = table->num_rows();
 	if(num_rows == 0) {
 		std::vector<NodeColumnView> array_node_columns;
 		auto nodes = context->getAllNodes();
@@ -109,10 +100,10 @@ std::vector<NodeColumnView> partitionData(Context * context,
 	return partitioned_node_column_views;
 }
 
-std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partitions, std::shared_ptr<BlazingTableView> sortedSamples){
+std::unique_ptr<BlazingTable> getPivotPointsTable(int number_partitions, std::shared_ptr<BlazingTableView> sortedSamples){
 
-	cudf::size_type outputRowSize = sortedSamples->num_rows();
-	cudf::size_type pivotsSize = outputRowSize > 0 ? number_partitions - 1 : 0;
+	int outputRowSize = sortedSamples->num_rows();
+	int pivotsSize = outputRowSize > 0 ? number_partitions - 1 : 0;
 
 	int32_t step = outputRowSize / number_partitions;
 
@@ -120,15 +111,17 @@ std::unique_ptr<BlazingTable> getPivotPointsTable(cudf::size_type number_partiti
 	std::iota(sequence.begin(), sequence.end(), 1);
 	std::transform(sequence.begin(), sequence.end(), sequence.begin(), [step](int32_t i){ return i*step;});
 
-	auto gather_map = vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
+#ifdef CUDF_SUPPORT
+	auto gather_map = voltron::compute::cudf_backend::types::vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
 
 	// TODO percy rommel arrow
 	std::unique_ptr<ral::frame::BlazingTable> pivots = ral::execution::backend_dispatcher(sortedSamples->get_execution_backend(), gather_functor(),
-													sortedSamples, std::move(gather_map), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED);
+													sortedSamples, std::move(gather_map), voltron::compute::OutOfBoundsPolicy::DONT_CHECK, voltron::compute::NegativeIndexPolicy::NOT_ALLOWED);
 	return std::move(pivots);
+#else
+  return nullptr; // TODO percy arrow 4
+#endif
 }
-
-
 
 }  // namespace distribution
 }  // namespace ral

@@ -1,22 +1,36 @@
 # distutils: language = c++
 # cio.pxd
 
+include "config.pxi"
+
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.pair cimport pair
 from libcpp.map cimport map
 from libcpp.set cimport set
 from libcpp.memory cimport shared_ptr
-from cudf._lib.column cimport Column
 from libcpp.utility cimport pair
 from libcpp cimport bool
 from pyarrow.lib cimport *
-
-from cudf import DataFrame
-from cudf._lib.cpp.types cimport type_id
-from cudf._lib.table cimport table
-
 from pyarrow.includes.libarrow cimport Type
+from pyarrow.includes.libarrow cimport CDataType as ArrowDataType
+
+IF CUDF_SUPPORT == 1:
+    from cudf._lib.column cimport Column
+    from cudf import DataFrame
+    from cudf._lib.cpp.types cimport type_id
+    from cudf._lib.table cimport table
+    from cudf._lib.cpp.column cimport *
+    from cudf._lib.cpp.column.column_view cimport *
+    from cudf._lib.cpp.types cimport *
+    from cudf._lib.cpp.table cimport *
+    from cudf._lib.cpp.table.table_view cimport *
+    
+    
+    ctypedef column_view CudfColumnView
+    ctypedef table_view CudfTableView
+    ctypedef table CudfTable
+
 
 from libc.stdint cimport (  # noqa: E211
     uint8_t,
@@ -48,22 +62,17 @@ cdef extern from "../include/engine/errors.h":
     cdef void raiseInferFolderPartitionMetadataError()
 
 
-from cudf._lib.cpp.column cimport *
-from cudf._lib.cpp.column.column_view cimport *
-from cudf._lib.cpp.types cimport *
-from cudf._lib.cpp.table cimport *
-from cudf._lib.cpp.table.table_view cimport *
-
-ctypedef column_view CudfColumnView
-ctypedef table_view CudfTableView
-ctypedef table CudfTable
-
-
 cdef extern from "../include/io/io.h" nogil:
-    cdef struct ResultTable:
-        bool is_arrow
-        unique_ptr[table] cudf_table
-        shared_ptr[CTable] arrow_table
+
+    IF CUDF_SUPPORT == 1:
+        cdef struct ResultTable:
+            bool is_arrow
+            unique_ptr[table] cudf_table
+            shared_ptr[CTable] arrow_table
+    ELSE:
+        cdef struct ResultTable:
+            bool is_arrow
+            shared_ptr[CTable] arrow_table
 
 
     cdef struct ResultSet:
@@ -89,21 +98,46 @@ cdef extern from "../include/io/io.h" nogil:
         ARROW = 6,
         MYSQL = 7,
         POSTGRESQL = 8,
-        SQLITE = 9
+        SQLITE = 9,
+        SNOWFLAKE = 10,
+        PANDAS_DF = 11,
+    
+    ctypedef enum CompressionType:
+        NONE = 0,
+        AUTO = 1,
+        SNAPPY = 2,
+        GZIP = 3,
+        BZIP2 = 4,
+        BROTLI = 5,
+        ZIP = 6,
+        XZ = 7,
 
-    cdef struct TableSchema:
-        vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
-        vector[Type] types
-        vector[string]  names
-        vector[string]  files
-        vector[string] datasource
-        vector[unsigned long] calcite_to_file_indices
-        vector[bool] in_file
-        int data_type
-        bool has_header_csv
-        shared_ptr[BlazingCudfTableView] metadata
-        vector[vector[int]] row_groups_ids
-        shared_ptr[CTable] arrow_table
+    IF CUDF_SUPPORT == 1:
+        cdef struct TableSchema:
+            vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
+            vector[shared_ptr[ArrowDataType]] types
+            vector[string]  names
+            vector[string]  files
+            vector[string] datasource
+            vector[unsigned long] calcite_to_file_indices
+            vector[bool] in_file
+            int data_type
+            bool has_header_csv
+            shared_ptr[BlazingCudfTableView] metadata
+            vector[vector[int]] row_groups_ids
+            shared_ptr[CTable] arrow_table
+    ELSE:
+        cdef struct TableSchema:
+            vector[shared_ptr[ArrowDataType]] types
+            vector[string]  names
+            vector[string]  files
+            vector[string] datasource
+            vector[unsigned long] calcite_to_file_indices
+            vector[bool] in_file
+            int data_type
+            bool has_header_csv
+            vector[vector[int]] row_groups_ids
+            shared_ptr[CTable] arrow_table
 
 
     cdef struct HDFS:
@@ -140,31 +174,34 @@ cdef extern from "../include/io/io.h" nogil:
     pair[bool, string] registerFileSystemGCS( GCS gcs, string root, string authority) except +raiseRegisterFileSystemGCSError
     pair[bool, string] registerFileSystemS3( S3 s3, string root, string authority) except +raiseRegisterFileSystemS3Error
     pair[bool, string] registerFileSystemLocal(  string root, string authority) except +raiseRegisterFileSystemLocalError
-    TableSchema parseSchema(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, vector[pair[string, Type]] types, bool ignore_missing_paths, string preferred_compute) except +raiseParseSchemaError
-    unique_ptr[ResultSet] parseMetadata(vector[string] files, pair[int,int] offsets, TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, string preferred_compute) except +raiseParseSchemaError
-    vector[FolderPartitionMetadata] inferFolderPartitionMetadata(string folder_path) except +raiseInferFolderPartitionMetadataError
+    TableSchema parseSchema(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, vector[pair[string, shared_ptr[ArrowDataType]]] types, bool ignore_missing_paths, string preferred_compute) except +raiseParseSchemaError
 
-cdef extern from "../src/blazing_table/BlazingCudfTable.h" namespace "ral::frame":
-        cdef cppclass BlazingCudfTable:
-            BlazingTable(unique_ptr[CudfTable] table, const vector[string] & columnNames)
-            BlazingTable(const CudfTableView & table, const vector[string] & columnNames)
-            size_type num_columns
-            size_type num_rows
-            CudfTableView view()
-            vector[string] column_names()
-            void ensureOwnership()
-            unique_ptr[CudfTable] releaseCudfTable()
+    unique_ptr[ResultSet] parseMetadata(vector[string] files, pair[int,int] offsets, TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, string preferred_compute) except +raiseParseSchemaError
+
+    vector[FolderPartitionMetadata] inferFolderPartitionMetadata(string folder_path) except +raiseInferFolderPartitionMetadataError
 
 cdef extern from "../src/blazing_table/BlazingArrowTable.h" namespace "ral::frame":
         cdef cppclass BlazingArrowTable:
             BlazingTable(shared_ptr[CTable])
 
-cdef extern from "../src/blazing_table/BlazingCudfTableView.h" namespace "ral::frame":
-        cdef cppclass BlazingCudfTableView:
-            BlazingTableView()
-            BlazingTableView(CudfTableView, vector[string]) except +
-            CudfTableView view()
-            vector[string] column_names()
+IF CUDF_SUPPORT == 1:
+    cdef extern from "../src/blazing_table/BlazingCudfTable.h" namespace "ral::frame":
+            cdef cppclass BlazingCudfTable:
+                BlazingTable(unique_ptr[CudfTable] table, const vector[string] & columnNames)
+                BlazingTable(const CudfTableView & table, const vector[string] & columnNames)
+                size_type num_columns
+                size_type num_rows
+                CudfTableView view()
+                vector[string] column_names()
+                void ensureOwnership()
+                unique_ptr[CudfTable] releaseCudfTable()
+    
+    cdef extern from "../src/blazing_table/BlazingCudfTableView.h" namespace "ral::frame":
+            cdef cppclass BlazingCudfTableView:
+                BlazingTableView()
+                BlazingTableView(CudfTableView, vector[string]) except +
+                CudfTableView view()
+                vector[string] column_names()
 
 cdef extern from "../src/execution_graph/graph.h" namespace "ral::cache":
         cdef struct graph_progress:
@@ -191,9 +228,10 @@ cdef extern from "../src/cache_machine/CacheData.h" namespace "ral::cache":
         cdef cppclass CacheData:
             MetadataDictionary getMetadata()
 
-cdef extern from "../src/cache_machine/GPUCacheData.h" namespace "ral::cache":
-        cdef cppclass GPUCacheData:
-            MetadataDictionary getMetadata()
+IF CUDF_SUPPORT == 1:
+    cdef extern from "../src/cache_machine/GPUCacheData.h" namespace "ral::cache":
+            cdef cppclass GPUCacheData:
+                MetadataDictionary getMetadata()
 
 # REMARK: We have some compilation errors from cython assigning temp = unique_ptr[ResultSet]
 # We force the move using this function
@@ -208,11 +246,10 @@ cdef extern from * namespace "blazing":
         """
         cdef T blaz_move[T](T) nogil
 
-        cdef unique_ptr[CacheData] blaz_move2(unique_ptr[GPUCacheData]) nogil
+        IF CUDF_SUPPORT == 1:
+            cdef unique_ptr[CacheData] blaz_move2(unique_ptr[GPUCacheData]) nogil
 
 cdef extern from "../include/engine/common.h" nogil:
-
-
     cdef struct NodeMetaDataUCP:
         string worker_id
         string ip

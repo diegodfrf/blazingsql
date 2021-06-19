@@ -30,9 +30,15 @@ public:
 
     std::string kernel_name() { return "TableScan";}
 
+#ifdef CUDF_SUPPORT
     ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
         std::shared_ptr<ral::cache::CacheMachine> output,
         cudaStream_t stream, const std::map<std::string, std::string>& args) override;
+#else
+    ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+        std::shared_ptr<ral::cache::CacheMachine> output,
+        const std::map<std::string, std::string>& args) override;
+#endif
 
     /**
      * Executes the batch processing.
@@ -78,9 +84,15 @@ public:
 
     std::string kernel_name() { return "BindableTableScan";}
 
+#ifdef CUDF_SUPPORT
     ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
         std::shared_ptr<ral::cache::CacheMachine> output,
         cudaStream_t stream, const std::map<std::string, std::string>& args) override;
+#else
+    ral::execution::task_result do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+        std::shared_ptr<ral::cache::CacheMachine> output,
+        const std::map<std::string, std::string>& args) override;
+#endif
 
     /**
      * Executes the batch processing.

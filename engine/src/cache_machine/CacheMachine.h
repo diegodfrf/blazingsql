@@ -10,7 +10,6 @@
 #include <map>
 
 #include <spdlog/spdlog.h>
-#include "cudf/types.hpp"
 #include "utilities/error.hpp"
 #include "utilities/CodeTimer.h"
 #include "blazing_table/BlazingTable.h"
@@ -21,7 +20,10 @@
 #include "io/data_provider/DataProvider.h"
 #include "io/data_parser/DataParser.h"
 
+#ifdef CUDF_SUPPORT
 #include "GPUCacheData.h"
+#endif
+
 #include "ArrowCacheData.h"
 #include "communication/messages/GPUComponentMessage.h"
 #include "CacheData.h"
@@ -43,6 +45,7 @@ const int CACHE_LEVEL_DISK = 2;
 	@brief A class that represents a Cache Machine on a
 	multi-tier (GPU memory, CPU memory, Disk memory) cache system.
 */
+// TODO refactor split cudf/arrow
 class CacheMachine {
 public:
 	CacheMachine(std::shared_ptr<Context> context, std::string cache_machine_name, bool log_timeout = true, int cache_level_override = -1, bool is_array_access = false);
@@ -192,12 +195,14 @@ std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::Blazin
 	return std::make_unique<ArrowCacheData>(std::move(arrow_table));
 }
 
+#ifdef CUDF_SUPPORT
 template<>
 inline
 std::unique_ptr<CacheData> make_cachedata_functor::operator()<ral::frame::BlazingCudfTable>(std::unique_ptr<ral::frame::BlazingTable> table){
 	std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
 	return std::make_unique<GPUCacheData>(std::move(cudf_table));
 }
+#endif
 
 }  // namespace cache
 }  // namespace ral

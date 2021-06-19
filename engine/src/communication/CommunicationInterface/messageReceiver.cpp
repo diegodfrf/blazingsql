@@ -89,8 +89,11 @@ bool message_receiver::is_finished(){
   return _finished_called;
 }
 
+#ifdef CUDF_SUPPORT
 void message_receiver::finish(cudaStream_t stream) {
-
+#else
+void message_receiver::finish() {
+#endif
   std::lock_guard<std::mutex> lock(_finish_mutex);
   if(!_finished_called){
     std::shared_ptr<spdlog::logger> comms_logger;

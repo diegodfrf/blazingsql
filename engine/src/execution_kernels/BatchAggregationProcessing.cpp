@@ -1,14 +1,11 @@
 #include "BatchAggregationProcessing.h"
 #include "execution_graph/executor.h"
-#include <cudf/partitioning.hpp>
 
 #include "parser/expression_utils.hpp"
 #include "operators/LogicalProject.h"
 #include "operators/GroupBy.h"
 #include "operators/Concatenate.h"
 #include "parser/CalciteExpressionParsing.h"
-#include <cudf/aggregation.hpp>
-#include <cudf/reduction.hpp>
 #include "utilities/DebuggingUtils.h"
 #include "parser/groupby_parser_utils.h"
 #include "compute/api.h"
@@ -23,10 +20,15 @@ ComputeAggregateKernel::ComputeAggregateKernel(std::size_t kernel_id, const std:
     this->query_graph = query_graph;
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result ComputeAggregateKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
-
+#else
+ral::execution::task_result ComputeAggregateKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
     try{
         auto & input = inputs[0];
         std::unique_ptr<ral::frame::BlazingTable> columns;
@@ -55,7 +57,11 @@ ral::execution::task_result ComputeAggregateKernel::do_process(std::vector< std:
                         group_column_indices);
         }
         output->addToCache(std::move(columns));
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::bad_alloc& e){
+#endif
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
         return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -143,12 +149,12 @@ std::vector<std::shared_ptr<ral::frame::BlazingTableView>> DistributeAggregateKe
 {
     std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partitioned;
     if (table_view->num_rows() > 0) {
-        std::vector<cudf::size_type> hashed_data_offsets;
+        std::vector<int> hashed_data_offsets;
         std::tie(hashed_data, hashed_data_offsets) = ral::execution::backend_dispatcher(table_view->get_execution_backend(),
                                                                                        hash_partition_functor(), table_view, this->columns_to_hash, num_partitions);
         
         // the offsets returned by hash_partition will always start at 0, which is a value we want to ignore for cudf::split
-        std::vector<cudf::size_type> split_indexes(hashed_data_offsets.begin() + 1, hashed_data_offsets.end());
+        std::vector<int> split_indexes(hashed_data_offsets.begin() + 1, hashed_data_offsets.end());
         partitioned = ral::execution::backend_dispatcher(hashed_data->get_execution_backend(), split_functor(), hashed_data->to_table_view(), split_indexes);
     } else {
         //  copy empty view
@@ -172,9 +178,17 @@ DistributeAggregateKernel::DistributeAggregateKernel(std::size_t kernel_id, cons
     set_number_of_message_trackers(1); //default
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
+#else
+ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
+
+
     auto & input = inputs[0];
 
     // num_partitions = context->getTotalNodes() will do for now, but may want a function to determine this in the future.
@@ -210,7 +224,11 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
                     "", //cache_id
                     {this->context->getMasterNode().id()}); //target_id
             }
+#ifdef CUDF_SUPPORT
         }catch(const rmm::bad_alloc& e){
+#else
+        }catch(const std::bad_alloc& e){
+#endif
             return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
         }catch(const std::exception& e){
             return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -230,7 +248,11 @@ ral::execution::task_result DistributeAggregateKernel::do_process(std::vector< s
                 "", //message_id_prefix
                 "" //cache_id
             );
+#ifdef CUDF_SUPPORT
         }catch(const rmm::bad_alloc& e){
+#else
+        }catch(const std::bad_alloc& e){
+#endif
             return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
         }catch(const std::exception& e){
             return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -313,9 +335,15 @@ MergeAggregateKernel::MergeAggregateKernel(std::size_t kernel_id, const std::str
     this->query_graph = query_graph;
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
+#else  
+ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
     try{
         std::vector<std::shared_ptr<ral::frame::BlazingTableView>> tableViewsToConcat;
         for (std::size_t i = 0; i < inputs.size(); i++){
@@ -388,7 +416,11 @@ ral::execution::task_result MergeAggregateKernel::do_process(std::vector< std::u
 
         output->addToCache(std::move(columns));
         columns = nullptr;
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::bad_alloc& e){
+#endif
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
         return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};

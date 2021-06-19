@@ -8,7 +8,8 @@ from setuptools.command.build_ext import build_ext
 import numpy as np
 from Cython.Build import cythonize
 from setuptools import find_packages, setup
-from setuptools.extension import Extension
+#from setuptools.extension import Extension
+from Cython.Distutils.extension import Extension
 
 def is_conda_env():
   return "CONDA_PREFIX" in os.environ or "CONDA_BUILD" in os.environ
@@ -40,8 +41,15 @@ conda_env_lib = os.path.join(conda_env_dir, "lib")
 
 print("Using CONDA_PREFIX : " + conda_env_dir)
 
+def get_build_path():
+    voltron_engine = os.environ.get("VOLTRON_ENGINE", "arrow")
+    ret = 'build-'+voltron_engine
+    return ret
+
 def use_gtest_lib():
-    bt_sock = os.popen('grep BUILD_TYPE build/CMakeCache.txt')
+    build_path = get_build_path()+'/CMakeCache.txt'
+
+    bt_sock = os.popen('grep BUILD_TYPE '+build_path)
     bt = bt_sock.read()
     bt_val = bt.split("=")[1].strip()
 
@@ -58,14 +66,44 @@ def get_libs():
         ret.append("gtest")
     return ret
 
+def get_compile_args():
+    cpp_args = [
+        "-std=c++17",
+        "-Wno-unknown-pragmas",
+        "-Wno-unused-variable",
+        "-Wno-unused-function",
+        '-isystem' + conda_env_inc,
+        '-isystem' + conda_env_inc_io,
+        '-isystem' + conda_env_inc_communication,
+        '-isystem' + conda_env_inc_manager,
+        '-isystem' + np.get_include()]
+    if get_build_path() == "build-cudf":
+        cpp_args.append('-isystem' + conda_env_inc_cudf)
+        cpp_args.append('-isystem' + conda_env_inc_cub)
+        cpp_args.append('-isystem' + "/usr/local/cuda/include")
+        cpp_args.append('-isystem' + conda_env_inc_libcudacxx)
+    print("C++ compiler args: " + str(cpp_args))
+    return cpp_args
+
 class BuildExt(build_ext):
     def build_extensions(self):
+        if get_build_path() == "build-cudf":
+            self.compiler.compiler_so.append('-DCUDF_SUPPORT')
         if '-Wstrict-prototypes' in self.compiler.compiler_so:
             self.compiler.compiler_so.remove('-Wstrict-prototypes')
         super().build_extensions()
 
 
 cython_files = ["bsql_engine/io/io.pyx"]
+
+c_options = {
+  "CUDF_SUPPORT": get_build_path() == "build-cudf"
+}
+
+print('Generate config.pxi')
+with open(os.path.join(os.path.dirname(__file__), 'bsql_engine', 'io', 'config.pxi'), 'w') as fd:
+    for k, v in c_options.items():
+        fd.write('DEF %s = %d\n' % (k.upper(), int(v)))
 
 extensions = [
     Extension(
@@ -83,21 +121,12 @@ extensions = [
         ],
         libraries=get_libs(),
         language="c++",
-        extra_compile_args=["-std=c++17",
-                            "-Wno-unknown-pragmas",
-                            "-Wno-unused-variable",
-                            "-Wno-unused-function",
-                            '-isystem' + conda_env_inc,
-                            '-isystem' + conda_env_inc_cudf,
-                            '-isystem' + conda_env_inc_cub,
-                            '-isystem' + conda_env_inc_libcudacxx,
-                            '-isystem' + conda_env_inc_io,
-                            '-isystem' + conda_env_inc_communication,
-                            '-isystem' + conda_env_inc_manager,
-                            '-isystem' + "/usr/local/cuda/include",
-                            '-isystem' + np.get_include()],
+        extra_compile_args=get_compile_args(),
     )
 ]
+
+build_path_base = get_build_path()
+print("====>> Voltron engine build path: " + build_path_base)
 
 setup(
     name="bsql_engine",
@@ -118,7 +147,7 @@ setup(
     ],
     # Include the separately-compiled shared library
     setup_requires=["cython"],
-    ext_modules=cythonize(extensions),
+    ext_modules=cythonize(extensions, build_dir=get_build_path()),
     packages=find_packages(include=["bsql_engine", "bsql_engine.*"]),
     # TODO: force comment to pass style issue
     package_data={

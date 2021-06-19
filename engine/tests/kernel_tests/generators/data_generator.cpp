@@ -4,7 +4,6 @@
 #include <vector>
 #include "io/DataLoader.h"
 
-namespace cudf_io = cudf::io;
 
 namespace blazingdb {
 namespace test {

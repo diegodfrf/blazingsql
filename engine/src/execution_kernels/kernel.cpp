@@ -73,11 +73,16 @@ std::pair<bool, uint64_t> kernel::get_estimated_output_num_rows(){
     return this->query_graph->get_estimated_input_rows_to_kernel(this->kernel_id);
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result kernel::process(std::vector<std::unique_ptr<ral::frame::BlazingTable>>  inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream,
     const std::map<std::string, std::string>& args){
-
+#else
+ral::execution::task_result kernel::process(std::vector<std::unique_ptr<ral::frame::BlazingTable>>  inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& args){
+#endif
     if(inputs.size()==0){
         return {ral::execution::task_status::SUCCESS, std::string(), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
     }
@@ -88,8 +93,11 @@ ral::execution::task_result kernel::process(std::vector<std::unique_ptr<ral::fra
         bytes += input->size_in_bytes();
         rows += input->num_rows();
     }
+#ifdef CUDF_SUPPORT
     auto result = do_process(std::move(inputs), output, stream, args);
-    
+#else
+    auto result = do_process(std::move(inputs), output, args);
+#endif
     
     if(result.status == ral::execution::SUCCESS){
          // increment these AFTER its been processed successfully

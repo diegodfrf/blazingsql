@@ -32,7 +32,7 @@ std::tuple<std::string, std::string, std::string, std::string> parseExpressionTo
 
 void parseJoinConditionToColumnIndices(const std::string & condition, std::vector<int> & columnIndices);
 
-cudf::null_equality parseJoinConditionToEqualityTypes(const std::string & condition);
+voltron::compute::NullEquality parseJoinConditionToEqualityTypes(const std::string & condition);
 
 void split_inequality_join_into_join_and_filter(const std::string & join_statement, std::string & new_join_statement, std::string & filter_statement);
 
@@ -46,10 +46,16 @@ public:
 		std::shared_ptr<ral::frame::BlazingTableView> table_left,
 		std::shared_ptr<ral::frame::BlazingTableView> table_right);
 
+#ifdef CUDF_SUPPORT
 	ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream, const std::map<std::string, std::string>& args) override;
-
+#else
+  ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+		const std::map<std::string, std::string>& args) override;
+#endif
+  
 	kstatus run() override;
 
 	std::string get_join_type();
@@ -86,7 +92,7 @@ private:
 	std::string join_type;
 	std::string condition;
 	std::string filter_statement;
-	std::vector<cudf::size_type> left_column_indices, right_column_indices;
+	std::vector<int> left_column_indices, right_column_indices;
 	std::vector<std::shared_ptr<arrow::DataType>> join_column_common_types;
 	bool normalize_left, normalize_right;
 	std::vector<std::string> result_names;
@@ -97,9 +103,15 @@ class JoinPartitionKernel : public distributing_kernel {
 public:
 	JoinPartitionKernel(std::size_t kernel_id, const std::string & queryString, std::shared_ptr<Context> context, std::shared_ptr<ral::cache::graph> query_graph);
 
+#ifdef CUDF_SUPPORT
 	ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 		std::shared_ptr<ral::cache::CacheMachine> output,
 		cudaStream_t stream, const std::map<std::string, std::string>& args) override;
+#else
+  ral::execution::task_result do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
+		std::shared_ptr<ral::cache::CacheMachine> output,
+		const std::map<std::string, std::string>& args) override;
+#endif
 
 	kstatus run() override;
 
@@ -133,7 +145,7 @@ private:
 	std::string join_type;
 	std::string condition;
 	std::string filter_statement;
-	std::vector<cudf::size_type> left_column_indices, right_column_indices;
+	std::vector<int> left_column_indices, right_column_indices;
 	std::vector<std::shared_ptr<arrow::DataType>> join_column_common_types;
 	bool normalize_left, normalize_right;
 };

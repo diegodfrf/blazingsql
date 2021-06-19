@@ -14,9 +14,6 @@
 #include <memory>
 #include <vector>
 
-#include <cudf/io/datasource.hpp>
-#include <cudf/io/csv.hpp>
-
 namespace ral {
 namespace io {
 
@@ -31,7 +28,7 @@ public:
 		ral::io::data_handle handle,
 		const Schema & schema,
 		std::vector<int> column_indices,
-		std::vector<cudf::size_type> row_groups);
+		std::vector<int> row_groups);
 
 	void parse_schema(ral::execution::execution_backend preferred_compute, ral::io::data_handle handle, ral::io::Schema & schema);
 

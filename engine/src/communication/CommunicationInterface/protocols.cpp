@@ -6,8 +6,11 @@
 #include "messageReceiver.hpp"
 #include "utilities/CodeTimer.h"
 
+#ifdef CUDF_SUPPORT
 #include <ucp/api/ucp.h>
 #include <ucp/api/ucp_def.h>
+#endif
+
 #include <thread>
 
 
@@ -105,6 +108,8 @@ graphs_info & graphs_info::getInstance() {
 }
 
 std::mutex instance_mutex;
+
+#ifdef CUDF_SUPPORT
 ucp_progress_manager * instance = nullptr;
 ucp_progress_manager * ucp_progress_manager::get_instance(ucp_worker_h ucp_worker, size_t request_size) {
     std::unique_lock<std::mutex> lock(instance_mutex);
@@ -128,11 +133,13 @@ ucp_progress_manager * ucp_progress_manager::get_instance() {
 
 ucp_progress_manager::ucp_progress_manager(ucp_worker_h ucp_worker, size_t request_size) :
  _request_size{request_size}, ucp_worker{ucp_worker} {
+#ifdef CUDF_SUPPORT
     std::thread t([this]{
         cudaSetDevice(0);
         this->check_progress();
     });
     t.detach();
+#endif
 }
 
 void ucp_progress_manager::add_recv_request(char * request, std::function<void()> callback, ucs_status_t status){
@@ -220,7 +227,7 @@ void ucp_progress_manager::check_progress(){
         throw;
     }
 }
-
+#endif
 
 
 void graphs_info::register_graph(int32_t ctx_token, std::shared_ptr<ral::cache::graph> graph){
@@ -242,7 +249,7 @@ std::shared_ptr<ral::cache::graph> graphs_info::get_graph(int32_t ctx_token) {
     return _ctx_token_to_graph_map.at(ctx_token);
 }
 
-
+#ifdef CUDF_SUPPORT
 ucx_buffer_transport::ucx_buffer_transport(size_t request_size,
     ucp_worker_h origin_node,
     std::vector<node> destinations,
@@ -373,7 +380,7 @@ void ucx_buffer_transport::receive_acknowledge(){
         }
     }
 }
-
+#endif
 
 
 tcp_buffer_transport::tcp_buffer_transport(

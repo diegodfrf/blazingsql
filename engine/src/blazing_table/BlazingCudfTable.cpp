@@ -4,6 +4,7 @@
 #include "parser/types_parser_utils.h"
 #include <cudf/detail/interop.hpp> //cudf::from_arrow
 #include <cudf/column/column_factories.hpp> //cudf::make_empty_column
+#include "compute/cudf/detail/types.h"
 
 namespace ral {
 namespace frame {
@@ -74,7 +75,7 @@ std::vector<std::shared_ptr<arrow::DataType>> BlazingCudfTable::column_types() c
 	std::vector<std::shared_ptr<arrow::DataType>> data_types;
 	auto view = this->view();
 	for (size_t i = 0; i < view.num_columns(); ++i) {
-		data_types.push_back(cudf_type_id_to_arrow_data_type(view.column(i).type().id()));
+		data_types.push_back(voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(view.column(i).type().id()));
 	}
 	return data_types;
 }
@@ -148,7 +149,7 @@ std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(
     std::vector< std::unique_ptr<cudf::column> > empty_columns;
     empty_columns.resize(column_types.size());
     for(size_t i = 0; i < column_types.size(); ++i) {
-        cudf::data_type dtype = arrow_type_to_cudf_data_type(column_types[i]);
+        cudf::data_type dtype = voltron::compute::cudf_backend::types::arrow_type_to_cudf_data_type_cudf(column_types[i]);
         std::unique_ptr<cudf::column> empty_column = cudf::make_empty_column(dtype);
         empty_columns[i] = std::move(empty_column);
     }
@@ -163,7 +164,7 @@ std::unique_ptr<ral::frame::BlazingCudfTable> createEmptyBlazingCudfTable(
     std::vector< std::unique_ptr<cudf::column> > empty_columns;
     empty_columns.resize(column_types.size());
     for(size_t i = 0; i < column_types.size(); ++i) {
-        cudf::data_type dtype = arrow_type_to_cudf_data_type(column_types[i]->id());
+        cudf::data_type dtype = voltron::compute::cudf_backend::types::arrow_type_to_cudf_data_type_cudf(column_types[i]->id());
         std::unique_ptr<cudf::column> empty_column = cudf::make_empty_column(dtype);
         empty_columns[i] = std::move(empty_column);
     }

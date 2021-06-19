@@ -3,7 +3,11 @@
 #include "execution_graph/executor.h"
 #include "parser/expression_utils.hpp"
 #include "cache_machine/CPUCacheData.h"
+
+#ifdef CUDF_SUPPORT
 #include "cache_machine/GPUCacheData.h"
+#endif
+
 #include "cache_machine/CacheMachine.h"
 #include "compute/backend_dispatcher.h"
 #include "compute/api.h"
@@ -32,9 +36,15 @@ PartitionSingleNodeKernel::PartitionSingleNodeKernel(std::size_t kernel_id, cons
     }
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result PartitionSingleNodeKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> /*output*/,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
+#else
+ral::execution::task_result PartitionSingleNodeKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> /*output*/,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
     
     try{
         auto & input = inputs[0];
@@ -54,7 +64,12 @@ ral::execution::task_result PartitionSingleNodeKernel::do_process(std::vector< s
                 cache_id
             );
         }
-    }catch(const rmm::bad_alloc& e){
+    }
+#ifdef CUDF_SUPPORT
+  catch(const rmm::bad_alloc& e){
+#else
+  catch(const std::bad_alloc& e){
+#endif
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
         return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -237,9 +252,15 @@ bool SortAndSampleKernel::all_node_samples_are_available(){
     return this->query_graph->get_input_message_cache()->has_messages_now(messged_ids_expected);
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result SortAndSampleKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& args) {
+#else
+ral::execution::task_result SortAndSampleKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& args) {
+#endif
 
     try{
         auto& operation_type = args.at("operation_type");
@@ -287,7 +308,12 @@ ral::execution::task_result SortAndSampleKernel::do_process(std::vector< std::un
         else if (operation_type == "compute_partition_plan") {
             compute_partition_plan(std::move(inputs));
         }
-    }catch(const rmm::bad_alloc& e){
+    }
+#ifdef CUDF_SUPPORT
+  catch(const rmm::bad_alloc& e){
+#else
+  catch(const std::bad_alloc& e){
+#endif
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
         return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -385,9 +411,16 @@ PartitionKernel::PartitionKernel(std::size_t kernel_id, const std::string & quer
     }
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result PartitionKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> /*output*/,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
+#else
+ral::execution::task_result PartitionKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> /*output*/,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
+
     try{
         auto & input = inputs[0];
         auto & partition_plan_input = inputs[1];
@@ -400,7 +433,12 @@ ral::execution::task_result PartitionKernel::do_process(std::vector< std::unique
             "", //message_id_prefix
             part_ids
         );
-    }catch(const rmm::bad_alloc& e){
+    }
+#ifdef CUDF_SUPPORT
+  catch(const rmm::bad_alloc& e){
+#else
+  catch(const std::bad_alloc& e){
+#endif
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
         return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -492,9 +530,15 @@ MergeStreamKernel::MergeStreamKernel(std::size_t kernel_id, const std::string & 
     this->query_graph = query_graph;
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result MergeStreamKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
+#else
+ral::execution::task_result MergeStreamKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
 
     try{
         if (inputs.empty()) {
@@ -509,7 +553,12 @@ ral::execution::task_result MergeStreamKernel::do_process(std::vector< std::uniq
             auto output_merge = ral::operators::merge(tableViewsToConcat, this->expression);
             output->addToCache(std::move(output_merge));
         }
-    }catch(const rmm::bad_alloc& e){
+    }
+#ifdef CUDF_SUPPORT
+  catch(const rmm::bad_alloc& e){
+#else
+  catch(const std::bad_alloc& e){
+#endif
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
         return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -600,9 +649,16 @@ LimitKernel::LimitKernel(std::size_t kernel_id, const std::string & queryString,
     set_number_of_message_trackers(1); //default
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result LimitKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
+#else
+ral::execution::task_result LimitKernel::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
+
     try{
         CodeTimer eventTimer(false);
         auto & input = inputs[0];
@@ -629,7 +685,11 @@ ral::execution::task_result LimitKernel::do_process(std::vector< std::unique_ptr
             else
                 output->addToCache(std::move(limited_input));
         }
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::bad_alloc& e){
+#endif
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
         return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -650,7 +710,7 @@ kstatus LimitKernel::run() {
         cache_vector.push_back(std::move(batch));
     }
 
-    cudf::size_type limitRows;
+    int limitRows;
     std::tie(std::ignore, std::ignore, std::ignore, limitRows) = get_sort_vars(this->expression);
     rows_limit = limitRows;
 

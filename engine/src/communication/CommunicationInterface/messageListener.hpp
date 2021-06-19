@@ -5,8 +5,12 @@
 
 #include "utilities/ctpl_stl.h"
 #include "ExceptionHandling/BlazingThread.h"
+
+#ifdef CUDF_SUPPORT
 #include <ucp/api/ucp.h>
 #include <ucp/api/ucp_def.h>
+#endif
+
 #include "messageReceiver.hpp"
 #include <mutex>
 
@@ -35,7 +39,11 @@ protected:
 class tcp_message_listener : public message_listener {
 
 public:
-    static void initialize_message_listener(const std::map<std::string, comm::node>& nodes, int port, int num_threads, std::shared_ptr<ral::cache::CacheMachine> input_cache);
+    static void initialize_message_listener(
+        const std::map<std::string, comm::node>& nodes,
+        int port,
+        int num_threads,
+        std::shared_ptr<ral::cache::CacheMachine> input_cache);
     static tcp_message_listener * get_instance();
     void start_polling() override;
     int get_port() {
@@ -51,7 +59,7 @@ private:
 };
 
 
-
+#ifdef CUDF_SUPPORT
 class ucx_message_listener : public message_listener {
 public:
 
@@ -75,5 +83,6 @@ private:
 	static ucx_message_listener * instance;
     std::mutex receiver_mutex;
 };
+#endif
 
 } // namespace comm

@@ -7,6 +7,8 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
+include "config.pxi"
+
 from collections import OrderedDict
 
 from libcpp.vector cimport vector
@@ -26,48 +28,27 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 
-import cudf
+ctypedef int32_t underlying_type_t_type_id
 
-from cudf._lib cimport *
-from cudf._lib.types import np_to_cudf_types, cudf_to_np_types
-from cudf._lib.cpp.types cimport type_id
-from cudf._lib.types cimport underlying_type_t_type_id
-from cudf._lib.cpp.io.types cimport compression_type
+IF CUDF_SUPPORT == 1:
+    import cudf
+    from cudf._lib cimport *
+    from cudf._lib.types import np_to_cudf_types, cudf_to_np_types
+    from cudf._lib.cpp.types cimport type_id
+    from cudf._lib.types cimport underlying_type_t_type_id
+    from cudf._lib.cpp.io.types cimport compression_type
+    from cudf._lib.table cimport Table as CudfXxTable
 
 from bsql_engine.io cimport cio
 from bsql_engine.io.cio cimport *
 from cpython.ref cimport PyObject
 from cython.operator cimport dereference, postincrement
 
-from cudf._lib.table cimport Table as CudfXxTable
-
 from libcpp.utility cimport pair
 import logging
 
-ctypedef int32_t underlying_type_t_compression
 
-class Compression(IntEnum):
-    INFER = (
-        <underlying_type_t_compression> compression_type.AUTO
-    )
-    SNAPPY = (
-        <underlying_type_t_compression> compression_type.SNAPPY
-    )
-    GZIP = (
-        <underlying_type_t_compression> compression_type.GZIP
-    )
-    BZ2 = (
-        <underlying_type_t_compression> compression_type.BZIP2
-    )
-    BROTLI = (
-        <underlying_type_t_compression> compression_type.BROTLI
-    )
-    ZIP = (
-        <underlying_type_t_compression> compression_type.ZIP
-    )
-    XZ = (
-        <underlying_type_t_compression> compression_type.XZ
-    )
+ctypedef int32_t underlying_type_t_compression
 
 # TODO: module for errors and move pyerrors to cpyerrors
 class BlazingError(Exception):
@@ -138,7 +119,7 @@ class InferFolderPartitionMetadataError(BlazingError):
     """InferFolderPartitionMetadata Error."""
 cdef public PyObject * InferFolderPartitionMetadataError_ = <PyObject *>InferFolderPartitionMetadataError
 
-cdef cio.TableSchema parseSchemaPython(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values,vector[pair[string, Type]] extra_columns, bool ignore_missing_paths, string preferred_compute) nogil except *:
+cdef cio.TableSchema parseSchemaPython(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values,vector[pair[string, shared_ptr[ArrowDataType]]] extra_columns, bool ignore_missing_paths, string preferred_compute) nogil except *:
     with nogil:
         return cio.parseSchema(files, file_format_hint, arg_keys, arg_values, extra_columns, ignore_missing_paths, preferred_compute)
 
@@ -371,12 +352,14 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
 
     preferred_compute = str.encode(preferred_compute_py)
 
+    """ TODO percy arrow
     if 'compression' in args:
         if args['compression'] is None:
-            c_compression = <underlying_type_t_compression> compression_type.NONE
+            c_compression = <underlying_type_t_compression> CompressionType.NONE
         else:
             c_compression = <underlying_type_t_compression> Compression[args['compression'].upper()]
         args.update(compression=c_compression)
+    """
 
     for file in fileList:
       files.push_back(str.encode(file))
@@ -385,13 +368,12 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
       arg_keys.push_back(str.encode(key))
       arg_values.push_back(str.encode(str(value)))
 
-    cdef vector[pair[string, Type]] extra_columns_cpp
-    cdef pair[string, Type] extra_column_cpp
+    cdef vector[pair[string, shared_ptr[ArrowDataType]]] extra_columns_cpp
+    cdef pair[string, shared_ptr[ArrowDataType]] extra_column_cpp
 
     for extra_column in extra_columns:
         extra_column_cpp.first = extra_column[0].encode()
-        #extra_column_cpp.second = <type_id>(<underlying_type_t_type_id>(extra_column[1]))
-        extra_column_cpp.second = extra_column[1]
+        extra_column_cpp.second = pyarrow_unwrap_data_type(extra_column[1])
         extra_columns_cpp.push_back(extra_column_cpp)
 
     tableSchema = parseSchemaPython(files,str.encode(file_format_hint), arg_keys,arg_values, extra_columns_cpp, ignore_missing_paths, preferred_compute)
@@ -403,13 +385,12 @@ cpdef parseSchemaCaller(fileList, file_format_hint, args, extra_columns, ignore_
     return_object['args'] = args
     return_object['types'] = []
     for type in tableSchema.types:
-        return_object['types'].append(<underlying_type_t_type_id>(type))
+        return_object['types'].append(pyarrow_wrap_data_type(type).id)
     return_object['names'] = tableSchema.names
     return_object['calcite_to_file_indices']= tableSchema.calcite_to_file_indices
     return_object['has_header_csv']= tableSchema.has_header_csv
 
     return return_object
-
 
 cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, preferred_compute_py):
     cdef string preferred_compute
@@ -421,7 +402,6 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, pref
     cdef vector[string] arg_keys
     cdef vector[string] arg_values
     cdef TableSchema cpp_schema
-    cdef Type tid
 
     preferred_compute = str.encode(preferred_compute_py)
 
@@ -429,9 +409,7 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, pref
         cpp_schema.names.push_back(col)
 
     for col_type in schema['types']:
-        #tid = <type_id>(<underlying_type_t_type_id>(col_type))
-        tid = col_type
-        cpp_schema.types.push_back(tid)
+        cpp_schema.types.push_back(pyarrow_unwrap_data_type(col_type))
 
     for key, value in args.items():
       arg_keys.push_back(str.encode(key))
@@ -443,6 +421,7 @@ cpdef parseMetadataCaller(fileList, offset, schema, file_format_hint, args, pref
     resultTable = blaz_move(dereference(resultSet.get()).table)
     df = pyarrow_wrap_table(dereference(resultTable).arrow_table).to_pandas()
     return df
+
 
 cpdef inferFolderPartitionMetadataCaller(folder_path):
     folderMetadataArr = inferFolderPartitionMetadataPython(folder_path.encode())
@@ -513,20 +492,21 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
     cdef vector[string] currentTableSchemaCppArgValues
     cdef vector[string] tableNames
     cdef vector[string] tableScans
-    cdef vector[Type] types
+    cdef vector[shared_ptr[ArrowDataType]] types
     cdef vector[string] names
     cdef TableSchema currentTableSchemaCpp
 
     cdef vector[vector[string]] filesAll
     cdef vector[string] currentFilesAll
-    cdef vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
+
+    IF CUDF_SUPPORT == 1:
+        cdef vector[shared_ptr[BlazingCudfTableView]] blazingTableViews
+        cdef vector[column_view] column_views
+        cdef Column cython_col
 
     cdef vector[vector[map[string,string]]] uri_values_cpp_all
     cdef vector[map[string,string]] uri_values_cpp
     cdef map[string,string] cur_uri_values
-
-    cdef vector[column_view] column_views
-    cdef Column cython_col
 
     cdef PyBlazingGraph pyGraph = PyBlazingGraph()
 
@@ -569,17 +549,17 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
               names.push_back(col_name)
 
       for col_type in table.column_types:
-        #types.push_back(<type_id>(<underlying_type_t_type_id>(col_type)))
-        types.push_back(col_type)
+        types.push_back(pyarrow_unwrap_data_type(col_type))
 
-      if table.fileType in (4, 5): # if cudf DataFrame or dask.cudf DataFrame
-        blazingTableViews.resize(0)
-        for cython_table in table.input:
-          column_views.resize(0)
-          for cython_col in cython_table._data.columns:
-            column_views.push_back(cython_col.view())
-          blazingTableViews.push_back(make_shared[BlazingCudfTableView](table_view(column_views), names))
-        currentTableSchemaCpp.blazingTableViews = blazingTableViews
+      IF CUDF_SUPPORT == 1:
+          if table.fileType in (4, 5): # if cudf DataFrame or dask.cudf DataFrame
+            blazingTableViews.resize(0)
+            for cython_table in table.input:
+              column_views.resize(0)
+              for cython_col in cython_table._data.columns:
+                column_views.push_back(cython_col.view())
+              blazingTableViews.push_back(make_shared[BlazingCudfTableView](table_view(column_views), names))
+            currentTableSchemaCpp.blazingTableViews = blazingTableViews
 
       if table.fileType == 6: # if arrow Table
         currentTableSchemaCpp.arrow_table =  pyarrow_unwrap_table(table.arrow_table)
@@ -635,7 +615,10 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
         if is_arrow:
             df = pyarrow_wrap_table(dereference(dereference(resultSet.get()).tables[0].get()).arrow_table).to_pandas()
         else:
-            df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[0].get()).cudf_table), decoded_names)._data)
+            IF CUDF_SUPPORT == 1:
+                df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[0].get()).cudf_table), decoded_names)._data)
+            ELSE:
+                pass
         return df
     else: # the engine returns a vector of dataframes
         dfs = []
@@ -645,7 +628,10 @@ cpdef getExecuteGraphResultCaller(PyBlazingGraph graph, int ctx_token, bool is_s
             if is_arrow:
                 df = pyarrow_wrap_table(dereference(dereference(resultSet.get()).tables[i].get()).arrow_table).to_pandas()
             else:
-                df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[i].get()).cudf_table), decoded_names)._data)
+                IF CUDF_SUPPORT == 1:
+                    df = cudf.DataFrame(CudfXxTable.from_unique_ptr(blaz_move(dereference(dereference(resultSet.get()).tables[i].get()).cudf_table), decoded_names)._data)
+                ELSE:
+                    pass
             dfs.append(df)
         return dfs
 
@@ -653,7 +639,6 @@ cpdef runSkipDataCaller(table, queryPy):
     cdef string query
     cdef shared_ptr[CTable] metadata
     cdef vector[string] all_column_names
-    cdef Column cython_col
 
     query = str.encode(queryPy)
     all_column_names.resize(0)
@@ -685,10 +670,3 @@ cpdef getTableScanInfoCaller(logicalPlan):
     table_names = [name.decode('utf-8') for name in temp.table_names]
     table_scans = [step.decode('utf-8') for step in temp.relational_algebra_steps]
     return table_names, table_scans
-
-
-cpdef np_to_cudf_types_int(dtype):
-    return <underlying_type_t_type_id> ( np_to_cudf_types[dtype])
-
-cpdef cudf_type_int_to_np_types(type_int):
-    return cudf_to_np_types[<underlying_type_t_type_id> (type_int)]

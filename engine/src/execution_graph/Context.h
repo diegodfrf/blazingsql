@@ -4,6 +4,8 @@
 #include <map>
 #include <mutex>
 #include "transport/Node.h"
+#include "compute/backend.h"
+#include "io/DataType.h"
 
 namespace blazingdb {
 namespace manager {
@@ -21,8 +23,8 @@ public:
                    const std::string& logicalPlan,
                    const std::map<std::string, std::string>& config_options,
                    const std::string current_timestamp,
-                   const std::string &output_type,
-                   const std::string &preferred_compute);
+                   ral::io::DataType output_type,
+                   const ral::execution::execution_backend &preferred_compute);
 
       // TODO Cristhian Gonzalez no copies allowed
   std::shared_ptr<Context> clone();
@@ -70,8 +72,8 @@ public:
     return config_options_;
   }
 
-  std::string output_type() const { return this->output_type_; } // TODO percy arrow make enums "pandas", "cudf"
-  std::string preferred_compute() const { return this->preferred_compute_; } // TODO percy arrow make enums "arrow", "cudf"
+  ral::io::DataType output_type() const { return this->output_type_; }
+  ral::execution::execution_backend preferred_compute() const { return this->preferred_compute_; }
 
 private:
   const uint32_t token_;
@@ -84,8 +86,8 @@ private:
   std::mutex increment_step_mutex;
   std::map<std::string, std::string> config_options_;
   std::string current_timestamp_;
-  std::string output_type_; // TODO percy arrow make enums "pandas", "cudf"
-  std::string preferred_compute_; // TODO percy arrow make enums "arrow", "cudf"
+  ral::io::DataType output_type_;
+  ral::execution::execution_backend preferred_compute_;
 };
 
 }  // namespace manager

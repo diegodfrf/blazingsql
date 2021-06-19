@@ -1,5 +1,9 @@
 #include "executor.h"
+
+#ifdef CUDF_SUPPORT
 #include "cache_machine/GPUCacheData.h"
+#endif
+
 #include "cache_machine/CacheDataIO.h"
 
 using namespace fmt::literals;
@@ -72,7 +76,11 @@ std::size_t task::task_memory_needed() {
     return bytes_to_decache + kernel->estimate_output_bytes(inputs) + kernel->estimate_operating_bytes(inputs);
 }
 
+#ifdef CUDF_SUPPORT
 void task::run(cudaStream_t stream, executor * executor){
+#else
+void task::run(executor * executor){
+#endif
 
     std::vector< std::unique_ptr<ral::frame::BlazingTable> > input_tables;
     CodeTimer decachingEventTimer;
@@ -100,14 +108,21 @@ void task::run(cudaStream_t stream, executor * executor){
             this->kernel->accumulated_rows += decached_input->num_rows();
             input_tables.push_back(std::move(decached_input));
         }
-    }catch(const rmm::bad_alloc& e){
+    }
+#ifdef CUDF_SUPPORT
+    catch(const rmm::bad_alloc& e){
+#else
+    catch(const std::bad_alloc& e){
+#endif
         int i = 0;
         for(auto & input : inputs){
             if (i < last_input_decached && input->get_type() == ral::cache::CacheDataType::GPU){
-                //this was a gpu cachedata so now its not valid
-                
-                std::unique_ptr<ral::frame::BlazingCudfTable> temp_cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(input_tables[i].release()));
-                static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(temp_cudf_table));
+#ifdef CUDF_SUPPORT
+              //this was a gpu cachedata so now its not valid
+              
+              std::unique_ptr<ral::frame::BlazingCudfTable> temp_cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(input_tables[i].release()));
+              static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(temp_cudf_table));
+#endif
             }
             i++;
         }
@@ -144,7 +159,11 @@ void task::run(cudaStream_t stream, executor * executor){
     }
     
     CodeTimer executionEventTimer;
+#ifdef CUDF_SUPPORT
     auto task_result = kernel->process(std::move(input_tables),output,stream, args);
+#else
+    auto task_result = kernel->process(std::move(input_tables),output,args);
+#endif
 
     if(task_logger) {
         task_logger->info("{time_started}|{ral_id}|{query_id}|{kernel_id}|{duration_decaching}|{duration_execution}|{input_num_rows}|{input_num_bytes}",
@@ -165,14 +184,17 @@ void task::run(cudaStream_t stream, executor * executor){
         for(auto & input : inputs){
             if(input != nullptr){
                 if  (input->get_type() == ral::cache::CacheDataType::GPU){
+#ifdef CUDF_SUPPORT
                     //this was a gpu cachedata so now its not valid
                     if(task_result.inputs.size() > 0 && i <= task_result.inputs.size() && task_result.inputs[i] != nullptr && task_result.inputs[i]->is_valid()){ 
                         std::unique_ptr<ral::frame::BlazingCudfTable> temp_cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(task_result.inputs[i].release()));
                         static_cast<ral::cache::GPUCacheData *>(input.get())->set_data(std::move(temp_cudf_table));                        
                     }else{
-                        //the input was lost and it was a gpu dataframe which is not recoverable
-                        throw rmm::bad_alloc(task_result.what.c_str());
+
+                      //the input was lost and it was a gpu dataframe which is not recoverable
+                      throw rmm::bad_alloc(task_result.what.c_str());
                     }
+#endif
                 }
             } else {
                 throw std::runtime_error("Input is null, cannot recover");
@@ -183,7 +205,9 @@ void task::run(cudaStream_t stream, executor * executor){
         if(this->attempts < this->attempts_limit){
             executor->add_task(std::move(inputs), output, kernel, attempts, task_id, args);
         }else{
-            throw rmm::bad_alloc("Ran out of memory processing");
+#ifdef CUDF_SUPPORT
+          throw rmm::bad_alloc("Ran out of memory processing");
+#endif
         }
     }else{
         throw std::runtime_error(task_result.what.c_str());
@@ -214,11 +238,13 @@ executor::executor(int num_threads, double processing_memory_limit_threshold, ra
  pool(num_threads), task_id_counter(0), resource(&blazing_device_memory_resource::getInstance()), task_queue("executor_task_queue"),
  preferred_compute_(preferred_compute) {
      processing_memory_limit = resource->get_total_memory() * processing_memory_limit_threshold;
+#ifdef CUDF_SUPPORT
      for( int i = 0; i < num_threads; i++){
          cudaStream_t stream;
          cudaStreamCreate(&stream);
          streams.push_back(stream);
      }
+#endif
 }
 
 void executor::execute(){
@@ -248,7 +274,11 @@ void executor::execute(){
             active_tasks_counter++;
 
             try {
-                cur_task->run(this->streams[thread_id], this);
+#ifdef CUDF_SUPPORT
+              cur_task->run(this->streams[thread_id], this);
+#else
+              cur_task->run(this);
+#endif
             } catch(...) {
                 std::unique_lock<std::mutex> lock(exception_holder_mutex);
                 exception_holder.push(std::current_exception());

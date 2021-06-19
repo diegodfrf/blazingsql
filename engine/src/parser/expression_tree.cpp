@@ -263,7 +263,7 @@ std::unique_ptr<node> expr_parser::literal() {
       || accept(lexer::token_type::Timestamp_ns)
       || accept(lexer::token_type::String))
   {
-    cudf::data_type type;
+    std::shared_ptr<arrow::DataType> type;
     //std::shared_ptr<arrow::DataType> type;
     if (accept(lexer::token_type::Colon)) {
         lexer::token type_token = token_;
@@ -280,103 +280,7 @@ std::unique_ptr<node> expr_parser::literal() {
   return nullptr;
 }
 
-cudf::data_type infer_type_from_literal_token(const lexer::token & token) {
-  if(token.type == lexer::token_type::Null) {
-    return cudf::data_type{cudf::type_id::EMPTY};
-  } else if(token.type == lexer::token_type::Boolean) {
-    return cudf::data_type{cudf::type_id::BOOL8};
-  } else if(token.type == lexer::token_type::Number) {
-    const std::string & token_value = token.value;
-    if(token_value.find_first_of(".eE") != std::string::npos) {
-      double parsed_double = std::stod(token_value);
-      float casted_float = static_cast<float>(parsed_double);
-      return parsed_double == casted_float ? cudf::data_type{cudf::type_id::FLOAT32} : cudf::data_type{cudf::type_id::FLOAT64};
-    } else {
-      int64_t parsed_int64 = std::stoll(token_value);
-      if (parsed_int64 > INT_MAX){
-        return cudf::data_type{cudf::type_id::INT64};
-      } else {
-        // as other SQL engines, defaults to int32
-        return cudf::data_type{cudf::type_id::INT32};
-      }      
-    }
-  } else if (token.type == lexer::token_type::Duration_s) {
-    return cudf::data_type{cudf::type_id::DURATION_SECONDS};
-  } else if (token.type == lexer::token_type::Duration_ms) {
-    return cudf::data_type{cudf::type_id::DURATION_MILLISECONDS};
-  } else if (token.type == lexer::token_type::Duration_us) {
-    return cudf::data_type{cudf::type_id::DURATION_MICROSECONDS};
-  } else if (token.type == lexer::token_type::Duration_ns) {
-    return cudf::data_type{cudf::type_id::DURATION_NANOSECONDS};
-  } else if (token.type == lexer::token_type::Timestamp_ns) {
-    return cudf::data_type{cudf::type_id::TIMESTAMP_NANOSECONDS};
-  } else if (token.type == lexer::token_type::Timestamp_us) {
-    return cudf::data_type{cudf::type_id::TIMESTAMP_MICROSECONDS};
-  } else if (token.type == lexer::token_type::Timestamp_ms) {
-    return cudf::data_type{cudf::type_id::TIMESTAMP_MILLISECONDS};
-  } else if (token.type == lexer::token_type::Timestamp_s) {
-    return cudf::data_type{cudf::type_id::TIMESTAMP_SECONDS};
-  } else if(token.type == lexer::token_type::Timestamp_d) {
-    return cudf::data_type{cudf::type_id::TIMESTAMP_DAYS};
-  } else { // token.type == lexer::token_type::String
-    return cudf::data_type{cudf::type_id::STRING};
-  }
-}
-
-cudf::data_type type_from_type_token(const lexer::token & token) {
-  const std::string & token_value = token.value;
-  if (token_value == "NULL" || token_value == "BOOLEAN") {
-    // Default Null type to boolean
-    return cudf::data_type{cudf::type_id::BOOL8};
-  }
-  if (token_value == "TINYINT") {
-    return cudf::data_type{cudf::type_id::INT8};
-  }
-  if (token_value == "SMALLINT") {
-    return cudf::data_type{cudf::type_id::INT16};
-  }
-  if (token_value == "INTEGER") {
-    return cudf::data_type{cudf::type_id::INT32};
-  }
-  if (token_value == "INTERVAL SECOND" || token_value == "INTERVAL MINUTE"
-      || token_value == "INTERVAL HOUR" || token_value == "INTERVAL DAY") {
-    return cudf::data_type{cudf::type_id::DURATION_SECONDS}; 
-  }
-  if (token_value == "INTERVAL MONTH" || token_value == "INTERVAL YEAR") {
-    throw std::runtime_error("operation over MONTH or YEAR units are not currently supported.");
-  }
-  if (token_value == "BIGINT") {
-    return cudf::data_type{cudf::type_id::INT64};
-  }
-  if (token_value == "FLOAT") {
-    return cudf::data_type{cudf::type_id::FLOAT32};
-  }
-  if (token_value == "DOUBLE") {
-    return cudf::data_type{cudf::type_id::FLOAT64};
-  }
-  if (token_value == "DATE") {
-    return cudf::data_type{cudf::type_id::TIMESTAMP_DAYS};
-  }
-  if (token_value == "TIMESTAMP_SECONDS") {
-    return cudf::data_type{cudf::type_id::TIMESTAMP_SECONDS};
-  }
-  if (token_value == "TIMESTAMP_MILLISECONDS") {
-    return cudf::data_type{cudf::type_id::TIMESTAMP_MILLISECONDS};
-  }
-  if (token_value == "TIMESTAMP_MICROSECONDS") {
-    return cudf::data_type{cudf::type_id::TIMESTAMP_MICROSECONDS};
-  }
-  if (token_value == "TIMESTAMP") {
-    return cudf::data_type{cudf::type_id::TIMESTAMP_NANOSECONDS};
-  }
-  if (token_value == "VARCHAR") {
-    return cudf::data_type{cudf::type_id::STRING};
-  }
-
-  RAL_FAIL("Invalid literal cast type");
-}
-
-std::shared_ptr<arrow::DataType> infer_arrow_type_from_literal_token(const lexer::token & token) {
+std::shared_ptr<arrow::DataType> infer_type_from_literal_token(const lexer::token & token) {
   if(token.type == lexer::token_type::Null) {
     return arrow::null();
   } else if(token.type == lexer::token_type::Boolean) {
@@ -393,56 +297,81 @@ std::shared_ptr<arrow::DataType> infer_arrow_type_from_literal_token(const lexer
         return arrow::int64();
       } else {
         // as other SQL engines, defaults to int32
-        return arrow::uint32();
+        return arrow::int32();
       }      
     }
   } else if (token.type == lexer::token_type::Duration_s) {
-    return duration(arrow::TimeUnit::type::SECOND);
+    return arrow::duration(arrow::TimeUnit::SECOND);
   } else if (token.type == lexer::token_type::Duration_ms) {
-    return duration(arrow::TimeUnit::type::MILLI);
+    return arrow::duration(arrow::TimeUnit::MILLI);
   } else if (token.type == lexer::token_type::Duration_us) {
-    return duration(arrow::TimeUnit::type::MICRO);
+    return arrow::duration(arrow::TimeUnit::MICRO);
   } else if (token.type == lexer::token_type::Duration_ns) {
-    return duration(arrow::TimeUnit::type::NANO);
+    return arrow::duration(arrow::TimeUnit::NANO);
   } else if (token.type == lexer::token_type::Timestamp_ns) {
-    return timestamp(arrow::TimeUnit::type::NANO);
+    return arrow::timestamp(arrow::TimeUnit::NANO);
   } else if (token.type == lexer::token_type::Timestamp_us) {
-    return timestamp(arrow::TimeUnit::type::MICRO);
+    return arrow::timestamp(arrow::TimeUnit::MICRO);
   } else if (token.type == lexer::token_type::Timestamp_ms) {
-    return timestamp(arrow::TimeUnit::type::MILLI);
+    return arrow::timestamp(arrow::TimeUnit::MILLI);
   } else if (token.type == lexer::token_type::Timestamp_s) {
-    return timestamp(arrow::TimeUnit::type::SECOND);
+    return arrow::timestamp(arrow::TimeUnit::SECOND);
   } else if(token.type == lexer::token_type::Timestamp_d) {
-    return arrow::date32();
+    return arrow::date64();
   } else { // token.type == lexer::token_type::String
     return arrow::utf8();
   }
 }
 
-std::shared_ptr<arrow::DataType> arrow_type_from_type_token(const lexer::token & token) {
+std::shared_ptr<arrow::DataType> type_from_type_token(const lexer::token & token) {
   const std::string & token_value = token.value;
-  // Default Null type to boolean
-  if (token_value == "NULL" || token_value == "BOOLEAN") return arrow::boolean();
-  if (token_value == "TINYINT") return arrow::int8();
-  if (token_value == "SMALLINT") return arrow::int16();
-  if (token_value == "INTEGER") return arrow::int32();
-  if (token_value == "BIGINT") return arrow::int64();
-  if (token_value == "FLOAT") return arrow::float32();
-  if (token_value == "DOUBLE") return arrow::float64();
-  if (token_value == "DATE") return arrow::date32();
+  if (token_value == "NULL" || token_value == "BOOLEAN") {
+    // Default Null type to boolean
+    return arrow::boolean();
+  }
+  if (token_value == "TINYINT") {
+    return arrow::int8();
+  }
+  if (token_value == "SMALLINT") {
+    return arrow::int16();
+  }
+  if (token_value == "INTEGER") {
+    return arrow::int32();
+  }
   if (token_value == "INTERVAL SECOND" || token_value == "INTERVAL MINUTE"
       || token_value == "INTERVAL HOUR" || token_value == "INTERVAL DAY") {
-    return duration(arrow::TimeUnit::type::MILLI); 
+    return arrow::duration(arrow::TimeUnit::SECOND); 
   }
   if (token_value == "INTERVAL MONTH" || token_value == "INTERVAL YEAR") {
-    // TODO: Arrow handle better these cases ..
     throw std::runtime_error("operation over MONTH or YEAR units are not currently supported.");
   }
-  if (token_value == "TIMESTAMP_SECONDS") return timestamp(arrow::TimeUnit::type::SECOND);
-  if (token_value == "TIMESTAMP_MILLISECONDS") return timestamp(arrow::TimeUnit::type::MILLI);
-  if (token_value == "TIMESTAMP_MICROSECONDS") return timestamp(arrow::TimeUnit::type::MICRO);
-  if (token_value == "TIMESTAMP") return timestamp(arrow::TimeUnit::type::NANO);
-  if (token_value == "VARCHAR") return arrow::utf8();
+  if (token_value == "BIGINT") {
+    return arrow::int64();
+  }
+  if (token_value == "FLOAT") {
+    return arrow::float32();
+  }
+  if (token_value == "DOUBLE") {
+    return arrow::float64();
+  }
+  if (token_value == "DATE") {
+    return arrow::date64();
+  }
+  if (token_value == "TIMESTAMP_SECONDS") {
+    return arrow::timestamp(arrow::TimeUnit::SECOND);
+  }
+  if (token_value == "TIMESTAMP_MILLISECONDS") {
+    return arrow::timestamp(arrow::TimeUnit::MILLI);
+  }
+  if (token_value == "TIMESTAMP_MICROSECONDS") {
+    return arrow::timestamp(arrow::TimeUnit::MICRO);
+  }
+  if (token_value == "TIMESTAMP") {
+    return arrow::timestamp(arrow::TimeUnit::NANO);
+  }
+  if (token_value == "VARCHAR") {
+    return arrow::utf8();
+  }
 
   RAL_FAIL("Invalid literal cast type");
 }

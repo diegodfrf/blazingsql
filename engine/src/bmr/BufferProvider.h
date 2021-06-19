@@ -6,7 +6,10 @@
 #include <mutex>
 #include <memory>
 
+
+#ifdef CUDF_SUPPORT
 #include <ucp/api/ucp.h>
+#endif
 
 namespace ral{
 
@@ -59,10 +62,12 @@ public:
     void allocate(void ** ptr, std::size_t size);
     void deallocate(void * ptr);
 
+#ifdef CUDF_SUPPORT
     virtual ucp_mem_h getUcpMemoryHandle() const
         {
         throw std::runtime_error("getUcpMemoryHandle not implemented in base class");
         }
+#endif
 
 protected:
     virtual void do_allocate(void ** ptr, std::size_t size) = 0;
@@ -81,19 +86,23 @@ class pinned_allocator : public base_allocator {
 public:
     pinned_allocator();
 
+#ifdef CUDF_SUPPORT
     void setUcpContext(ucp_context_h context);
 
     virtual ucp_mem_h getUcpMemoryHandle() const
         {
         return mem_handle;
         }
+#endif
 
 protected:
+#ifdef CUDF_SUPPORT
     void do_allocate(void ** ptr, std::size_t size);
     void do_deallocate(void * ptr);
     bool use_ucx;
     ucp_context_h context;
     ucp_mem_h mem_handle;
+#endif
 };
 
 class allocation_pool {
@@ -104,10 +113,12 @@ public:
 
   std::unique_ptr<blazing_allocation_chunk> get_chunk();
 
+#ifdef CUDF_SUPPORT
   ucp_mem_h getUcpMemoryHandle() const
     {
     return allocator->getUcpMemoryHandle();
     }
+#endif
 
   void free_chunk(std::unique_ptr<blazing_allocation_chunk> allocation);
 
@@ -159,9 +170,15 @@ public:
 };
 
 // this function is what originally initialized the pinned memory and host memory allocation pools
+#ifdef CUDF_SUPPORT
 void set_allocation_pools(std::size_t size_buffers_host, std::size_t num_buffers_host,
     std::size_t size_buffers_pinned, std::size_t num_buffers_pinned, bool map_ucx,
     ucp_context_h context);
+#else
+void set_allocation_pools(std::size_t size_buffers_host, std::size_t num_buffers_host,
+    std::size_t size_buffers_pinned, std::size_t num_buffers_pinned, bool map_ucx);
+#endif
+
 void empty_pools();
 } //namespace memory
 

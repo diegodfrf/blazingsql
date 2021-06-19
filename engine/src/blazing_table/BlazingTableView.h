@@ -1,7 +1,6 @@
 #pragma once
 
 #include "compute/backend.h"
-#include "cudf/types.hpp"
 #include <arrow/type.h>
 #include <vector>
 #include <string>
@@ -11,7 +10,6 @@ namespace ral {
 namespace frame {
 
 class BlazingTable;
-class BlazingCudfTable;
 
 class BlazingTableView : public execution::BlazingDispatchable {
 public:

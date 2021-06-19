@@ -1,24 +1,6 @@
 #pragma once
 
-#include <execution_graph//Context.h>
-#include <string>
-#include <vector>
-#include <tuple>
-
-#include <cudf/aggregation.hpp>
-#include <cudf/groupby.hpp>
-#include <cudf/detail/aggregation/aggregation.hpp>
-
-#include <cudf/column/column_view.hpp>
-#include "operators_definitions.h"
-#include "parser/CalciteExpressionParsing.h"
-#include "parser/expression_utils.hpp"
-#include "parser/CalciteExpressionParsing.h"
-#include "utilities/CodeTimer.h"
-#include "operators/Distribution.h"
-#include <blazingdb/io/Util/StringUtil.h>
-#include <regex>
-
+// TODO percy arrow delete this file if there are not related groupby ops
 namespace ral {
 namespace operators {
 

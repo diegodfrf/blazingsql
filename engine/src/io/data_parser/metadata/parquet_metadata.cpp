@@ -2,13 +2,12 @@
 // Created by aocsa on 12/9/19.
 //
 
-#ifndef BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_PARQUET_METADATA_CPP_H_
-#define BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_PARQUET_METADATA_CPP_H_
-
 #include "parquet_metadata.h"
 #include "ExceptionHandling/BlazingThread.h"
-#include <cudf/column/column_factories.hpp>
-#include "blazing_table/BlazingCudfTable.h"
+#include <mutex>
+
+#include "common_metadata.h"
+#include "blazing_table/BlazingArrowTable.h"
 #include <arrow/table.h>
 
 void set_min_max(
@@ -174,55 +173,6 @@ std::shared_ptr<arrow::DataType> to_arrow_dtype(parquet::Type::type physical, pa
 	return arrow::null();
 }
 
-// This function is copied and adapted from cudf
-cudf::type_id to_dtype(parquet::Type::type physical, parquet::ConvertedType::type logical) {
-
-	// Logical type used for actual data interpretation; the legacy converted type
-	// is superceded by 'logical' type whenever available.
-	switch (logical) {
-	case parquet::ConvertedType::type::UINT_8:
-		return cudf::type_id::UINT8;
-	case parquet::ConvertedType::type::INT_8:
-		return cudf::type_id::INT8;
-	case parquet::ConvertedType::type::UINT_16:
-		return cudf::type_id::UINT16;
-	case parquet::ConvertedType::type::INT_16:
-		return cudf::type_id::INT16;
-	case parquet::ConvertedType::type::DATE:
-		return cudf::type_id::TIMESTAMP_DAYS;
-	case parquet::ConvertedType::type::TIMESTAMP_MILLIS:
-		return cudf::type_id::TIMESTAMP_MILLISECONDS;
-	case parquet::ConvertedType::type::TIMESTAMP_MICROS:
-		return cudf::type_id::TIMESTAMP_MICROSECONDS;
-	default:
-		break;
-	}
-
-	// Physical storage type supported by Parquet; controls the on-disk storage
-	// format in combination with the encoding type.
-	switch (physical) {
-	case parquet::Type::type::BOOLEAN:
-		return cudf::type_id::BOOL8;
-	case parquet::Type::type::INT32:
-		return cudf::type_id::INT32;
-	case parquet::Type::type::INT64:
-		return cudf::type_id::INT64;
-	case parquet::Type::type::FLOAT:
-		return cudf::type_id::FLOAT32;
-	case parquet::Type::type::DOUBLE:
-		return cudf::type_id::FLOAT64;
-	case parquet::Type::type::BYTE_ARRAY:
-	case parquet::Type::type::FIXED_LEN_BYTE_ARRAY:
-		// TODO: Check GDF_STRING_CATEGORY
-		return cudf::type_id::STRING;
-	case parquet::Type::type::INT96:
-	default:
-		break;
-	}
-
-	return cudf::type_id::EMPTY;
-}
-
 std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 	std::vector<std::unique_ptr<parquet::ParquetFileReader>> &parquet_readers,
 	size_t total_num_row_groups, int metadata_offset) {
@@ -366,4 +316,3 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 
 	return std::make_unique<ral::frame::BlazingArrowTable>(table);
 }
-#endif	// BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_PARQUET_METADATA_CPP_H_

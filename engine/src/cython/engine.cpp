@@ -2,12 +2,20 @@
 #include "execution_graph/manager.h"
 #include "io/data_parser/ArgsUtil.h"
 #include "io/data_parser/CSVParser.h"
+
+#ifdef CUDF_SUPPORT
 #include "io/data_parser/GDFParser.h"
+#endif
+
 #include "io/data_parser/JSONParser.h"
 #include "io/data_parser/OrcParser.h"
 #include "io/data_parser/ArrowParser.h"
 #include "io/data_parser/ParquetParser.h"
+
+#ifdef CUDF_SUPPORT
 #include "io/data_provider/GDFDataProvider.h"
+#endif
+
 #include "io/data_provider/ArrowDataProvider.h"
 #include "io/data_provider/UriDataProvider.h"
 #include "skip_data/SkipDataProcessor.h"
@@ -72,7 +80,7 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 
 		auto args_map = ral::io::to_map(tableSchemaCppArgKeys[i], tableSchemaCppArgValues[i]);
 
-		std::vector<arrow::Type::type> types;
+    std::vector<std::shared_ptr<arrow::DataType>> types;
 		for(size_t col = 0; col < tableSchemas[i].types.size(); col++) {
 			types.push_back(tableSchemas[i].types[col]);
 		}
@@ -101,7 +109,9 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 		if(fileType == ral::io::DataType::PARQUET) {
 			parser = std::make_shared<ral::io::parquet_parser>();
 		} else if(fileType == gdfFileType || fileType == daskFileType) {
+#ifdef CUDF_SUPPORT
 			parser = std::make_shared<ral::io::gdf_parser>();
+#endif
 		} else if(fileType == ral::io::DataType::ORC) {
 			parser = std::make_shared<ral::io::orc_parser>(args_map);
 		} else if(fileType == ral::io::DataType::JSON) {
@@ -159,8 +169,10 @@ std::pair<std::vector<ral::io::data_loader>, std::vector<ral::io::Schema>> get_l
 
 		if (!isSqlProvider) {
 			if(fileType == ral::io::DataType::CUDF || fileType == ral::io::DataType::DASK_CUDF) {
+#ifdef CUDF_SUPPORT
 				// is gdf
 				provider = std::make_shared<ral::io::gdf_data_provider>(tableSchema.blazingTableViews, uri_values[i]);
+#endif
 			} else if (fileType == ral::io::DataType::ARROW) {
 				std::vector<std::shared_ptr<arrow::Table>> arrow_tables = {tableSchema.arrow_table};
 				provider = std::make_shared<ral::io::arrow_data_provider>(arrow_tables, uri_values[i]);
@@ -218,12 +230,18 @@ std::string runGeneratePhysicalGraph(uint32_t masterIndex,
     using blazingdb::manager::Context;
     using blazingdb::transport::Node;
 
+    // TODO percy arrow improve pyblazing dont use strings
+    ral::io::DataType output_type_t =
+        output_type=="pandas"? ral::io::DataType::PANDAS_DF : ral::io::DataType::CUDF;
+    ral::execution::execution_backend preferred_compute_t(
+      preferred_compute=="arrow"? ral::execution::backend_id::ARROW : ral::execution::backend_id::CUDF);
+
     std::vector<Node> contextNodes;
     for (const auto &worker_id : worker_ids) {
         contextNodes.emplace_back(worker_id);
     }
     Context queryContext{static_cast<uint32_t>(ctxToken), contextNodes, contextNodes[masterIndex], "", {}, "",
-                         output_type, preferred_compute};
+                         output_type_t, preferred_compute_t};
 
     return get_physical_plan(query, queryContext);
 }
@@ -255,8 +273,15 @@ std::shared_ptr<ral::cache::graph> runGenerateGraph(uint32_t masterIndex,
   for (const auto &worker_id : worker_ids) {
     contextNodes.emplace_back(worker_id);
   }
+  
+  // TODO percy arrow improve pyblazing dont use strings
+  ral::io::DataType output_type_t =
+      output_type=="pandas"? ral::io::DataType::PANDAS_DF : ral::io::DataType::CUDF;
+  ral::execution::execution_backend preferred_compute_t(
+    preferred_compute=="arrow"? ral::execution::backend_id::ARROW : ral::execution::backend_id::CUDF);
+
 	Context queryContext{static_cast<uint32_t>(ctxToken), contextNodes, contextNodes[masterIndex], "", config_options, current_timestamp,
-                       output_type, preferred_compute};
+                       output_type_t, preferred_compute_t};
   	auto& self_node = ral::communication::CommunicationData::getInstance().getSelfNode();
   	int self_node_idx = queryContext.getNodeIndex(self_node);
 
@@ -295,9 +320,11 @@ std::unique_ptr<PartitionedResultSet> getExecuteGraphResult(std::shared_ptr<ral:
     if (is_arrow) {
       result->tables.emplace_back(std::make_unique<ResultTable>(arrow_table->view()));
     } else {
+#ifdef CUDF_SUPPORT
       auto cudf_table = dynamic_cast<ral::frame::BlazingCudfTable*>(table.get());
       assert(cudf_table != nullptr);
       result->tables.emplace_back(std::make_unique<ResultTable>(cudf_table->releaseCudfTable()));
+#endif
     }
 	}
 

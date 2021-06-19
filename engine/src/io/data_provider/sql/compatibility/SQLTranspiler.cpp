@@ -118,11 +118,11 @@ ral::parser::node * default_predicate_transformer::transform(ral::parser::operad
     node.value = column_names[col];
   } else if (node.type == ral::parser::node_type::LITERAL) {
     ral::parser::literal_node &literal_node = ((ral::parser::literal_node&)node);
-    if (literal_node.type().id() == cudf::type_id::TIMESTAMP_DAYS ||
-        literal_node.type().id() == cudf::type_id::TIMESTAMP_SECONDS ||
-        literal_node.type().id() == cudf::type_id::TIMESTAMP_NANOSECONDS ||
-        literal_node.type().id() == cudf::type_id::TIMESTAMP_MICROSECONDS ||
-        literal_node.type().id() == cudf::type_id::TIMESTAMP_MILLISECONDS)
+    if (literal_node.type()->Equals(arrow::date64()) ||
+        literal_node.type()->Equals(arrow::timestamp(arrow::TimeUnit::SECOND)) ||
+        literal_node.type()->Equals(arrow::timestamp(arrow::TimeUnit::NANO)) ||
+        literal_node.type()->Equals(arrow::timestamp(arrow::TimeUnit::MICRO)) ||
+        literal_node.type()->Equals(arrow::timestamp(arrow::TimeUnit::MILLI)))
     {
       node.value = "\"" + node.value + "\"";
     }

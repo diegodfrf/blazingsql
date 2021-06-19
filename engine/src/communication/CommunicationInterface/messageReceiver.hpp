@@ -5,7 +5,11 @@
 #include <map>
 #include <tuple>
 #include <memory>
+
+#ifdef CUDF_SUPPORT
 #include <rmm/device_buffer.hpp>
+#endif
+
 #include <transport/ColumnTransport.h>
 #include "bmr/BufferProvider.h"
 #include "cache_machine/CacheMachine.h"
@@ -67,7 +71,11 @@ public:
   void confirm_transmission();
   void * get_buffer(uint16_t index);
   bool is_finished();
+#ifdef CUDF_SUPPORT
   void finish(cudaStream_t stream = 0);
+#else
+  void finish();
+#endif
 private:
 
 

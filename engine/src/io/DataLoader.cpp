@@ -6,8 +6,6 @@
 #include "utilities/CodeTimer.h"
 #include <blazingdb/io/Library/Logging/Logger.h>
 #include "ExceptionHandling/BlazingThread.h"
-#include <cudf/filling.hpp>
-#include <cudf/column/column_factories.hpp>
 #include "parser/CalciteExpressionParsing.h"
 #include "operators/LogicalFilter.h"
 #include "operators/Concatenate.h"
@@ -29,7 +27,7 @@ std::shared_ptr<data_loader> data_loader::clone() {
 
 data_loader::~data_loader() {}
 
-void data_loader::get_schema(ral::execution::execution_backend preferred_compute,Schema & schema, std::vector<std::pair<std::string, arrow::Type::type>> non_file_columns) {
+void data_loader::get_schema(ral::execution::execution_backend preferred_compute,Schema & schema, std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> non_file_columns) {
 	bool got_schema = false;
 	while (!got_schema && this->provider->has_next()){
 		data_handle handle = this->provider->get_next();
@@ -66,6 +64,7 @@ void data_loader::get_schema(ral::execution::execution_backend preferred_compute
 std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(ral::execution::execution_backend preferred_compute,int offset,
 	std::map<std::string, std::string> args_map)
 {
+#ifdef CUDF_SUPPORT
 	std::size_t NUM_FILES_AT_A_TIME = 64;
 	std::vector<std::unique_ptr<ral::frame::BlazingTable>> metadata_batches;
 	std::vector<std::shared_ptr<ral::frame::BlazingTableView>> metadata_batches_views;
@@ -94,6 +93,10 @@ std::unique_ptr<ral::frame::BlazingTable> data_loader::get_metadata(ral::executi
 
 		return concatTables(metadata_batches_views);
 	}
+#else
+  // TODO percy arrow rommel skip data
+  return nullptr;
+#endif
 }
 
 } /* namespace io */

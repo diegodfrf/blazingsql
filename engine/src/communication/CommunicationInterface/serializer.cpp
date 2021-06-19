@@ -1,12 +1,16 @@
+#include "serializer.hpp"
+
+#ifdef CUDF_SUPPORT
 #include <cudf/null_mask.hpp>
 #include <cudf/column/column_factories.hpp>
-#include <cstring>
-
-#include "serializer.hpp"
 #include "communication/messages/MessageUtil.cuh"
+#endif
+
+#include <cstring>
 
 namespace comm {
 
+#ifdef CUDF_SUPPORT
 std::unique_ptr<ral::frame::BlazingCudfTable> deserialize_from_gpu_raw_buffers(
 	const std::vector<blazingdb::transport::ColumnTransport> & columns_offsets,
 	const std::vector<rmm::device_buffer> & raw_buffers,
@@ -68,5 +72,6 @@ std::unique_ptr<ral::frame::BlazingCudfTable> deserialize_from_gpu_raw_buffers(
 
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(unique_table), column_names);
 }
+#endif
 
 }  // namespace comm

@@ -113,42 +113,42 @@ bool is_binary_operator(operator_type op) {
 	}
 }
 
-cudf::type_id get_output_type(operator_type op) {
+std::shared_ptr<arrow::DataType> get_output_type(operator_type op) {
 	switch (op)
 	{
 	case operator_type::BLZ_RAND:
-		return cudf::type_id::FLOAT64;
+		return arrow::float64();
 	default:
 	 	assert(false);
-		return cudf::type_id::EMPTY;
+		return arrow::null();
 	}
 }
 
-cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type) {
+std::shared_ptr<arrow::DataType> get_output_type(operator_type op, std::shared_ptr<arrow::DataType> input_left_type) {
 	switch (op)
 	{
 	case operator_type::BLZ_CAST_TINYINT:
-		return cudf::type_id::INT8;
+		return arrow::int8();
 	case operator_type::BLZ_CAST_SMALLINT:
-		return cudf::type_id::INT16;
+		return arrow::int16();
 	case operator_type::BLZ_CAST_INTEGER:
-		return cudf::type_id::INT32;
+		return arrow::int32();
 	case operator_type::BLZ_CAST_BIGINT:
-		return cudf::type_id::INT64;
+		return arrow::int64();
 	case operator_type::BLZ_CAST_FLOAT:
-		return cudf::type_id::FLOAT32;
+		return arrow::float32();
 	case operator_type::BLZ_CAST_DOUBLE:
-		return cudf::type_id::FLOAT64;
+		return arrow::float64();
 	case operator_type::BLZ_CAST_DATE:
-		return cudf::type_id::TIMESTAMP_DAYS;
+		return arrow::date64();
 	case operator_type::BLZ_CAST_TIMESTAMP_SECONDS:
-		return cudf::type_id::TIMESTAMP_SECONDS;
+		return arrow::timestamp(arrow::TimeUnit::SECOND);
 	case operator_type::BLZ_CAST_TIMESTAMP_MILLISECONDS:
-		return cudf::type_id::TIMESTAMP_MILLISECONDS;
+		return arrow::timestamp(arrow::TimeUnit::MILLI);
 	case operator_type::BLZ_CAST_TIMESTAMP_MICROSECONDS:
-		return cudf::type_id::TIMESTAMP_MICROSECONDS;
+		return arrow::timestamp(arrow::TimeUnit::MICRO);
 	case operator_type::BLZ_CAST_TIMESTAMP:
-		return cudf::type_id::TIMESTAMP_NANOSECONDS;
+		return arrow::timestamp(arrow::TimeUnit::NANO);
 	case operator_type::BLZ_STR_LOWER:
 	case operator_type::BLZ_STR_UPPER:
 	case operator_type::BLZ_STR_INITCAP:
@@ -156,7 +156,7 @@ cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type) {
 	case operator_type::BLZ_STR_LEFT:
 	case operator_type::BLZ_STR_RIGHT:
 	case operator_type::BLZ_CAST_VARCHAR:
-		return cudf::type_id::STRING;
+		return arrow::utf8();
 	case operator_type::BLZ_YEAR:
 	case operator_type::BLZ_MONTH:
 	case operator_type::BLZ_DAY:
@@ -164,7 +164,7 @@ cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type) {
 	case operator_type::BLZ_HOUR:
 	case operator_type::BLZ_MINUTE:
 	case operator_type::BLZ_SECOND:
-		return cudf::type_id::INT16;
+		return arrow::int16();
 	case operator_type::BLZ_SIN:
 	case operator_type::BLZ_COS:
 	case operator_type::BLZ_ASIN:
@@ -179,7 +179,7 @@ cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type) {
 		if(is_type_float(input_left_type)) {
 			return input_left_type;
 		} else {
-			return cudf::type_id::FLOAT64;
+			return arrow::float64();
 		}
 	case operator_type::BLZ_ABS:
 		return input_left_type;
@@ -190,21 +190,24 @@ cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type) {
 	case operator_type::BLZ_IS_NOT_TRUE:
 	case operator_type::BLZ_IS_NOT_FALSE:
 	case operator_type::BLZ_IS_NOT_DISTINCT_FROM:
-		return cudf::type_id::BOOL8;
+		return arrow::boolean();
 	case operator_type::BLZ_CHAR_LENGTH:
-		return cudf::type_id::INT32;
+		return arrow::int32();
 	default:
 	 	assert(false);
-		return cudf::type_id::EMPTY;
+		return arrow::null();
 	}
 }
 
-cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type, cudf::type_id input_right_type) {
-	RAL_EXPECTS(input_left_type != cudf::type_id::EMPTY || input_right_type != cudf::type_id::EMPTY, "In get_output_type function: both operands types are empty");
 
-	if(input_left_type == cudf::type_id::EMPTY) {
+std::shared_ptr<arrow::DataType> get_output_type(operator_type op, std::shared_ptr<arrow::DataType> input_left_type, std::shared_ptr<arrow::DataType> input_right_type) {
+	RAL_EXPECTS(
+        input_left_type->id() != arrow::Type::NA || input_right_type->id() != arrow::Type::NA,
+        "In get_output_type function: both operands types are empty");
+
+	if(input_left_type->id() == arrow::Type::NA) {
 		input_left_type = input_right_type;
-	} else if(input_right_type == cudf::type_id::EMPTY) {
+	} else if(input_right_type->id() == arrow::Type::NA) {
 		input_right_type = input_left_type;
 	}
 
@@ -214,9 +217,11 @@ cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type, c
 	case operator_type::BLZ_SUB:
 	case operator_type::BLZ_MUL:
 	case operator_type::BLZ_DIV:
-	case operator_type::BLZ_MOD:
+	case operator_type::BLZ_MOD: {
 		if(is_type_float(input_left_type) && is_type_float(input_right_type)) {
-			return (cudf::size_of(cudf::data_type{input_left_type}) >= cudf::size_of(cudf::data_type{input_right_type}))
+      auto input_left_type_t = std::dynamic_pointer_cast<arrow::FixedWidthType>(input_left_type);
+      auto input_right_type_t = std::dynamic_pointer_cast<arrow::FixedWidthType>(input_right_type);
+			return (input_left_type_t->bit_width() >= input_right_type_t->bit_width())
 							? input_left_type
 							: input_right_type;
 		}	else if(is_type_float(input_left_type)) {
@@ -224,10 +229,13 @@ cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type, c
 		} else if(is_type_float(input_right_type)) {
 			return input_right_type;
 		} else {
-			return (cudf::size_of(cudf::data_type{input_left_type}) >= cudf::size_of(cudf::data_type{input_right_type}))
+      auto input_left_type_t = std::dynamic_pointer_cast<arrow::FixedWidthType>(input_left_type);
+      auto input_right_type_t = std::dynamic_pointer_cast<arrow::FixedWidthType>(input_right_type);
+			return (input_left_type_t->bit_width() >= input_right_type_t->bit_width())
 							? input_left_type
 							: input_right_type;
 		}
+  }
 	case operator_type::BLZ_EQUAL:
 	case operator_type::BLZ_NOT_EQUAL:
 	case operator_type::BLZ_LESS:
@@ -236,187 +244,39 @@ cudf::type_id get_output_type(operator_type op, cudf::type_id input_left_type, c
 	case operator_type::BLZ_GREATER_EQUAL:
 	case operator_type::BLZ_LOGICAL_AND:
 	case operator_type::BLZ_LOGICAL_OR:
-		return cudf::type_id::BOOL8;
+		return arrow::boolean();
 	case operator_type::BLZ_POW:
-	case operator_type::BLZ_ROUND:
-		return cudf::size_of(cudf::data_type{input_left_type}) <= cudf::size_of(cudf::data_type{cudf::type_id::FLOAT32})
-					 ? cudf::type_id::FLOAT32
-					 : cudf::type_id::FLOAT64;
+	case operator_type::BLZ_ROUND: {
+    auto input_left_type_t = std::dynamic_pointer_cast<arrow::FixedWidthType>(input_left_type);
+    auto input_right_type_t = std::dynamic_pointer_cast<arrow::FixedWidthType>(input_right_type);
+		return (input_left_type_t->bit_width() <= std::dynamic_pointer_cast<arrow::FixedWidthType>(arrow::float32())->bit_width())
+					 ? arrow::float32()
+					 : arrow::float64();
+  }
 	case operator_type::BLZ_MAGIC_IF_NOT:
 		return input_right_type;
-	case operator_type::BLZ_FIRST_NON_MAGIC:
-		return (cudf::size_of(cudf::data_type{input_left_type}) >= cudf::size_of(cudf::data_type{input_right_type}))
+	case operator_type::BLZ_FIRST_NON_MAGIC: {
+    auto input_left_type_t = std::dynamic_pointer_cast<arrow::FixedWidthType>(input_left_type);
+    auto input_right_type_t = std::dynamic_pointer_cast<arrow::FixedWidthType>(input_right_type);
+		return (input_left_type_t->bit_width() >= input_right_type_t->bit_width())
 				   ? input_left_type
 				   : input_right_type;
+  }
 	case operator_type::BLZ_STR_LIKE:
-		return cudf::type_id::BOOL8;
+		return arrow::boolean();
 	case operator_type::BLZ_STR_SUBSTRING:
 	case operator_type::BLZ_STR_REPLACE:
 	case operator_type::BLZ_STR_REGEXP_REPLACE:
 	case operator_type::BLZ_STR_CONCAT:
 	case operator_type::BLZ_STR_TRIM:
-		return cudf::type_id::STRING;
+		return arrow::utf8();
 	case operator_type::BLZ_TO_DATE:
-		return cudf::type_id::TIMESTAMP_DAYS;
+		return arrow::date64();
 	case operator_type::BLZ_TO_TIMESTAMP:
-		return cudf::type_id::TIMESTAMP_NANOSECONDS;
+		return arrow::timestamp(arrow::TimeUnit::NANO);
 	default:
 		assert(false);
-		return cudf::type_id::EMPTY;
-	}
-}
-
-arrow::Type::type get_output_arrow_type(operator_type op) {
-	switch (op)
-	{
-	case operator_type::BLZ_RAND:
-		return arrow::Type::DOUBLE;
-	default:
-	 	assert(false);
-		return arrow::Type::NA;
-	}
-}
-
-arrow::Type::type get_output_arrow_type(operator_type op, arrow::Type::type input_left_type) {
-	switch (op)
-	{
-	case operator_type::BLZ_CAST_TINYINT:
-		return arrow::Type::INT8;
-	case operator_type::BLZ_CAST_SMALLINT:
-		return arrow::Type::INT16;
-	case operator_type::BLZ_CAST_INTEGER:
-		return arrow::Type::INT32;
-	case operator_type::BLZ_CAST_BIGINT:
-		return arrow::Type::INT64;
-	case operator_type::BLZ_CAST_FLOAT:
-		return arrow::Type::FLOAT;
-	case operator_type::BLZ_CAST_DOUBLE:
-		return arrow::Type::DOUBLE;
-	case operator_type::BLZ_CAST_DATE:
-		return arrow::Type::DATE32;
-	case operator_type::BLZ_CAST_TIMESTAMP_SECONDS:
-	case operator_type::BLZ_CAST_TIMESTAMP_MILLISECONDS:
-	case operator_type::BLZ_CAST_TIMESTAMP_MICROSECONDS:
-	case operator_type::BLZ_CAST_TIMESTAMP:
-		return arrow::Type::TIMESTAMP;
-	case operator_type::BLZ_STR_LOWER:
-	case operator_type::BLZ_STR_UPPER:
-	case operator_type::BLZ_STR_INITCAP:
-	case operator_type::BLZ_STR_REVERSE:
-	case operator_type::BLZ_STR_LEFT:
-	case operator_type::BLZ_STR_RIGHT:
-	case operator_type::BLZ_CAST_VARCHAR:
-		return arrow::Type::STRING;
-	case operator_type::BLZ_YEAR:
-	case operator_type::BLZ_MONTH:
-	case operator_type::BLZ_DAY:
-	case operator_type::BLZ_DAYOFWEEK:
-	case operator_type::BLZ_HOUR:
-	case operator_type::BLZ_MINUTE:
-	case operator_type::BLZ_SECOND:
-		return arrow::Type::INT16;
-	case operator_type::BLZ_SIN:
-	case operator_type::BLZ_COS:
-	case operator_type::BLZ_ASIN:
-	case operator_type::BLZ_ACOS:
-	case operator_type::BLZ_TAN:
-	case operator_type::BLZ_COTAN:
-	case operator_type::BLZ_ATAN:
-	case operator_type::BLZ_LN:
-	case operator_type::BLZ_LOG:
-	case operator_type::BLZ_FLOOR:
-	case operator_type::BLZ_CEIL:
-		if(is_type_float_arrow(input_left_type)) {
-			return input_left_type;
-		} else {
-			return arrow::Type::DOUBLE;
-		}
-	case operator_type::BLZ_ABS:
-		return input_left_type;
-	case operator_type::BLZ_NOT:
-	case operator_type::BLZ_IS_TRUE:
-	case operator_type::BLZ_IS_NULL:
-	case operator_type::BLZ_IS_NOT_NULL:
-	case operator_type::BLZ_IS_NOT_TRUE:
-	case operator_type::BLZ_IS_NOT_FALSE:
-	case operator_type::BLZ_IS_NOT_DISTINCT_FROM:
-		return arrow::Type::BOOL;
-	case operator_type::BLZ_CHAR_LENGTH:
-		return arrow::Type::INT32;
-	default:
-	 	assert(false);
-		return arrow::Type::NA;
-	}
-}
-
-arrow::Type::type get_output_arrow_type(operator_type op, arrow::Type::type input_left_type, arrow::Type::type input_right_type) {
-	RAL_EXPECTS(input_left_type != arrow::Type::NA || input_right_type != arrow::Type::NA, "In get_output_type function: both operands types are empty");
-
-	std::shared_ptr<arrow::DataType> left_dtype = get_right_arrow_datatype(input_left_type);
-	std::shared_ptr<arrow::DataType> right_dtype = get_right_arrow_datatype(input_right_type);
-	std::shared_ptr<arrow::DataType> float_dtype = get_right_arrow_datatype(arrow::Type::INT32);
-
-	if(input_left_type == arrow::Type::NA) {
-		input_left_type = input_right_type;
-	} else if(input_right_type == arrow::Type::NA) {
-		input_right_type = input_left_type;
-	}
-
-	switch (op)
-	{
-	case operator_type::BLZ_ADD:
-	case operator_type::BLZ_SUB:
-	case operator_type::BLZ_MUL:
-	case operator_type::BLZ_DIV:
-	case operator_type::BLZ_MOD:
-		if(is_type_float_arrow(input_left_type) && is_type_float_arrow(input_right_type)) {
-			return (arrow::internal::GetByteWidth(*left_dtype) >= arrow::internal::GetByteWidth(*right_dtype))
-							? input_left_type
-							: input_right_type;
-		}	else if(is_type_float_arrow(input_left_type)) {
-			return input_left_type;
-		} else if(is_type_float_arrow(input_right_type)) {
-			return input_right_type;
-		} else {
-			return (arrow::internal::GetByteWidth(*left_dtype) >= arrow::internal::GetByteWidth(*right_dtype))
-							? input_left_type
-							: input_right_type;
-		}
-	case operator_type::BLZ_EQUAL:
-	case operator_type::BLZ_NOT_EQUAL:
-	case operator_type::BLZ_LESS:
-	case operator_type::BLZ_GREATER:
-	case operator_type::BLZ_LESS_EQUAL:
-	case operator_type::BLZ_GREATER_EQUAL:
-	case operator_type::BLZ_LOGICAL_AND:
-	case operator_type::BLZ_LOGICAL_OR:
-		return arrow::Type::BOOL;
-	case operator_type::BLZ_POW:
-	case operator_type::BLZ_ROUND:
-		return (arrow::internal::GetByteWidth(*left_dtype) <= arrow::internal::GetByteWidth(*float_dtype))
-							? arrow::Type::FLOAT
-							: arrow::Type::DOUBLE;
-	case operator_type::BLZ_MAGIC_IF_NOT:
-		return input_right_type;
-	case operator_type::BLZ_FIRST_NON_MAGIC:
-		return (arrow::internal::GetByteWidth(*left_dtype) >= arrow::internal::GetByteWidth(*float_dtype))
-				   ? input_left_type
-				   : input_right_type;
-	case operator_type::BLZ_STR_LIKE:
-		return arrow::Type::BOOL;
-	case operator_type::BLZ_STR_SUBSTRING:
-	case operator_type::BLZ_STR_REPLACE:
-	case operator_type::BLZ_STR_REGEXP_REPLACE:
-	case operator_type::BLZ_STR_CONCAT:
-	case operator_type::BLZ_STR_TRIM:
-		return arrow::Type::STRING;
-	case operator_type::BLZ_TO_DATE:
-		return arrow::Type::DATE32;
-	case operator_type::BLZ_TO_TIMESTAMP:
-		return arrow::Type::TIMESTAMP;
-	default:
-		assert(false);
-		return arrow::Type::NA;
+		return arrow::null();
 	}
 }
 

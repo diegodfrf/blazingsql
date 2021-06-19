@@ -12,6 +12,10 @@
 
 #include "blazingdb/io/Config/BlazingContext.h"
 
+#ifdef CUDF_SUPPORT
+#include "blazing_table/BlazingCudfTable.h"
+#endif
+
 #ifdef MYSQL_SUPPORT
 #include "io/data_parser/sql/MySQLParser.h"
 #include "io/data_provider/sql/MySQLDataProvider.h"
@@ -42,12 +46,14 @@ using namespace fmt::literals;
 ResultTable::ResultTable() {
 }
 
+#ifdef CUDF_SUPPORT
 ResultTable::ResultTable(std::unique_ptr<cudf::table> cudf_table)
-  : is_arrow(false), cudf_table(std::move(cudf_table)), arrow_table(nullptr){
+  : is_arrow(false), cudf_table(std::move(cudf_table)) {
 }
+#endif
 
 ResultTable::ResultTable(std::shared_ptr<arrow::Table> arrow_table)
-  : is_arrow(true), cudf_table(nullptr), arrow_table(arrow_table){
+  : is_arrow(true), arrow_table(arrow_table){
 }
 
 TableSchema::TableSchema() {
@@ -58,7 +64,7 @@ TableSchema parseSchema(std::vector<std::string> files,
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
-	std::vector<std::pair<std::string, arrow::Type::type>> extra_columns,
+	std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> extra_columns,
 	bool ignore_missing_paths,
   std::string preferred_compute) {
 
@@ -281,12 +287,14 @@ std::unique_ptr<ResultSet> parseMetadata(std::vector<std::string> files,
 	try{
 		std::unique_ptr<ral::frame::BlazingTable> metadata = loader->get_metadata(preferred_compute_backend, offset.first, args_map);
 		// ral::utilities::print_blazing_table_view(metadata->to_table_view());
+#ifdef CUDF_SUPPORT
 		std::unique_ptr<ResultSet> result = std::make_unique<ResultSet>();
 		result->names = metadata->column_names();
 		ral::frame::BlazingArrowTable* current_metadata_ptr = dynamic_cast<ral::frame::BlazingArrowTable*>(metadata.get());
 		result->table = std::make_unique<ResultTable>(current_metadata_ptr->to_table_view()->view());
 		result->skipdata_analysis_fail = false;
 		return result;
+#endif
 	} catch(std::exception & e) {
 		std::cerr << e.what() << std::endl;
 		throw;
@@ -405,7 +413,7 @@ std::vector<FolderPartitionMetadata> inferFolderPartitionMetadata(std::string fo
 				token = {ral::parser::detail::lexer::token_type::String, value};
 			}
 
-			std::shared_ptr<arrow::DataType> inferred_type = ral::parser::detail::infer_arrow_type_from_literal_token(token);
+			std::shared_ptr<arrow::DataType> inferred_type = ral::parser::detail::infer_type_from_literal_token(token);
 			if (m.data_type == arrow::Type::NA) {
 				m.data_type = inferred_type->id();
 			} else {
@@ -422,7 +430,7 @@ std::pair<TableSchema, error_code_t> parseSchema_C(std::vector<std::string> file
 	std::string file_format_hint,
 	std::vector<std::string> arg_keys,
 	std::vector<std::string> arg_values,
-	std::vector<std::pair<std::string, arrow::Type::type>> extra_columns,
+	std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> extra_columns,
 	bool ignore_missing_paths,
   std::string preferred_compute) {
 

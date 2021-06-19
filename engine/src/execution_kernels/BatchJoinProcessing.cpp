@@ -4,9 +4,6 @@
 #include "parser/expression_tree.hpp"
 #include "parser/types_parser_utils.h"
 #include "utilities/CodeTimer.h"
-#include <cudf/partitioning.hpp>
-#include <cudf/join.hpp>
-#include <cudf/stream_compaction.hpp>
 #include <src/operators/LogicalFilter.h>
 #include "execution_graph/executor.h"
 #include "cache_machine/CPUCacheData.h"
@@ -76,22 +73,22 @@ void parseJoinConditionToColumnIndices(const std::string & condition, std::vecto
 	}
 }
 
-cudf::null_equality parseJoinConditionToEqualityTypes(const std::string & condition) {
+voltron::compute::NullEquality parseJoinConditionToEqualityTypes(const std::string & condition) {
 	// TODO: right now this only works for equijoins
 	// since this is all that is implemented at the time
 
 	std::string clean_expression = clean_calcite_expression(condition);
 	std::vector<std::string> tokens = get_tokens_in_reverse_order(clean_expression);
 
-	std::vector<cudf::null_equality> joinEqualityTypes;
+	std::vector<voltron::compute::NullEquality> joinEqualityTypes;
 
 	for(std::string token : tokens) {
 		if(is_operator_token(token)) {
 			// so far only equijoins are supported in libgdf
 			if(token == "="){
-				joinEqualityTypes.push_back(cudf::null_equality::UNEQUAL);
+				joinEqualityTypes.push_back(voltron::compute::NullEquality::UNEQUAL);
 			} else if(token == "IS_NOT_DISTINCT_FROM") {
-				joinEqualityTypes.push_back(cudf::null_equality::EQUAL);
+				joinEqualityTypes.push_back(voltron::compute::NullEquality::EQUAL);
 			} else if(token != "AND") {
 				throw std::runtime_error("In evaluate_join function: unsupported non-equijoins operator");
 			}
@@ -107,7 +104,7 @@ cudf::null_equality parseJoinConditionToEqualityTypes(const std::string & condit
 	// since that is not supported in cudf.
 	// We only rely on the first equality type found.
 
-	bool all_types_are_equal = std::all_of(joinEqualityTypes.begin(), joinEqualityTypes.end(), [&](const cudf::null_equality & elem) {return elem == joinEqualityTypes.front();});
+	bool all_types_are_equal = std::all_of(joinEqualityTypes.begin(), joinEqualityTypes.end(), [&](const voltron::compute::NullEquality & elem) {return elem == joinEqualityTypes.front();});
 	if(!all_types_are_equal){
 		throw std::runtime_error("In evaluate_join function: unsupported different equijoins operators");
 	}
@@ -387,7 +384,7 @@ std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 		bool has_nulls_left = ral::execution::backend_dispatcher(table_left->get_execution_backend(), check_if_has_nulls_functor(), table_left, left_column_indices);
 		bool has_nulls_right = ral::execution::backend_dispatcher(table_right->get_execution_backend(), check_if_has_nulls_functor(), table_right, right_column_indices);
 		if(this->join_type == INNER_JOIN) {
-			cudf::null_equality equalityType = parseJoinConditionToEqualityTypes(this->condition);
+			voltron::compute::NullEquality equalityType = parseJoinConditionToEqualityTypes(this->condition);
 			result_table = ral::execution::backend_dispatcher(table_left->get_execution_backend(), inner_join_functor(), 
 				table_left,
 				table_right,
@@ -439,10 +436,16 @@ std::unique_ptr<ral::frame::BlazingTable> PartwiseJoin::join_set(
 	return result_table;
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 	std::shared_ptr<ral::cache::CacheMachine> /*output*/,
 	cudaStream_t /*stream*/, const std::map<std::string, std::string>& args) {
-	CodeTimer eventTimer;
+#else
+ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
+	std::shared_ptr<ral::cache::CacheMachine> /*output*/,
+	const std::map<std::string, std::string>& args) {
+#endif
+  CodeTimer eventTimer;
 
 	auto & left_batch = inputs[0];
 	auto & right_batch = inputs[1];
@@ -475,8 +478,11 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 			eventTimer.stop();
 			this->add_to_output_cache(std::move(joined));
 		}
-
+#ifdef CUDF_SUPPORT
 	}catch(const rmm::bad_alloc& e){
+#else
+  }catch(const std::bad_alloc& e){
+#endif
 		return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
 	}catch(const std::exception& e){
 		return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
@@ -485,7 +491,11 @@ ral::execution::task_result PartwiseJoin::do_process(std::vector<std::unique_ptr
 	try{
 		this->leftArrayCache->put(std::stoi(args.at("left_idx")), std::move(left_batch));
 		this->rightArrayCache->put(std::stoi(args.at("right_idx")), std::move(right_batch));
+#ifdef CUDF_SUPPORT
 	}catch(const rmm::bad_alloc& e){
+#else
+  }catch(const std::bad_alloc& e){
+#endif
 		//can still recover if the input was not a GPUCacheData
 		return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
 	}catch(const std::exception& e){
@@ -1041,9 +1051,16 @@ void JoinPartitionKernel::small_table_scatter_distribution(std::unique_ptr<ral::
 	this->output_cache(small_output_cache_name)->wait_for_count(total_count);	
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
 	std::shared_ptr<ral::cache::CacheMachine> /*output*/,
 	cudaStream_t /*stream*/, const std::map<std::string, std::string>& args) {
+#else
+ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::unique_ptr<ral::frame::BlazingTable>> inputs,
+	std::shared_ptr<ral::cache::CacheMachine> /*output*/,
+	const std::map<std::string, std::string>& args) {
+#endif
+
 	bool input_consumed = false;
 	try{
 		auto& operation_type = args.at("operation_type");
@@ -1063,7 +1080,7 @@ ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::uni
 			bool normalize_types_flag;
 			int table_idx;
 			std::string cache_id;
-			std::vector<cudf::size_type> column_indices;
+			std::vector<int> column_indices;
 			if(args.at("side") == "left"){
 				normalize_types_flag = this->normalize_left;
 				table_idx = LEFT_TABLE_IDX;
@@ -1091,12 +1108,12 @@ ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::uni
 				}
 
 				int num_partitions = context->getTotalNodes();
-				std::vector<cudf::size_type> hased_data_offsets;
+				std::vector<int> hased_data_offsets;
 				std::tie(hashed_data, hased_data_offsets) = ral::execution::backend_dispatcher(batch_view->get_execution_backend(), hash_partition_functor(), batch_view, column_indices, num_partitions);
 				assert(hased_data_offsets.begin() != hased_data_offsets.end());
 
 				// the offsets returned by hash_partition will always start at 0, which is a value we want to ignore for cudf::split
-				std::vector<cudf::size_type> split_indexes(hased_data_offsets.begin() + 1, hased_data_offsets.end());
+				std::vector<int> split_indexes(hased_data_offsets.begin() + 1, hased_data_offsets.end());
 				partitioned = ral::execution::backend_dispatcher(hashed_data->get_execution_backend(), split_functor(), hashed_data->to_table_view(), split_indexes);
 			} else {
 				for(int i = 0; i < context->getTotalNodes(); i++){
@@ -1122,7 +1139,11 @@ ral::execution::task_result JoinPartitionKernel::do_process(std::vector<std::uni
 
 			return {ral::execution::task_status::FAIL, std::string("In JoinPartitionKernel::do_process Invalid operation_type"), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};
 		}
+#ifdef CUDF_SUPPORT
 	}catch(const rmm::bad_alloc& e){
+#else
+  }catch(const std::bad_alloc& e){
+#endif
 		return {ral::execution::task_status::RETRY, std::string(e.what()), input_consumed ? std::vector< std::unique_ptr<ral::frame::BlazingTable> > () : std::move(inputs)};
 	}catch(const std::exception& e){
 		return {ral::execution::task_status::FAIL, std::string(e.what()), std::vector< std::unique_ptr<ral::frame::BlazingTable> > ()};

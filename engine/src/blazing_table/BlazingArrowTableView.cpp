@@ -1,6 +1,7 @@
 #include "BlazingArrowTableView.h"
 #include "BlazingArrowTable.h"
-#include <cudf/detail/interop.hpp>
+
+#include <arrow/array.h>
 
 namespace ral {
 namespace frame {

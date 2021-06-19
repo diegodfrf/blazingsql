@@ -16,6 +16,7 @@ std::map<std::string, comm::node> message_listener::get_node_map(){
 	return _nodes_info_map;
 }
 
+#ifdef CUDF_SUPPORT
 void poll_for_frames(std::shared_ptr<message_receiver> receiver,
 		                 ucp_tag_t tag,
                      ucp_worker_h ucp_worker,
@@ -25,7 +26,9 @@ void poll_for_frames(std::shared_ptr<message_receiver> receiver,
 		blazing_ucp_tag message_tag = *reinterpret_cast<blazing_ucp_tag *>(&tag);
 
 		if (receiver->num_buffers() == 0) {
+#ifdef CUDF_SUPPORT
             ucx_message_listener::get_instance()->remove_receiver(tag);
+#endif
 			receiver->finish();
 			return;
 		}
@@ -77,7 +80,6 @@ void poll_for_frames(std::shared_ptr<message_receiver> receiver,
         }
         throw;
     }
-
 }
 
 
@@ -100,7 +102,7 @@ void recv_begin_callback_c(std::shared_ptr<ucp_tag_recv_info_t> info, std::share
 		throw;
 	}
 }
-
+#endif
 
 void tcp_message_listener::start_polling() {
 	if(!polling_started) {
@@ -182,10 +184,16 @@ void tcp_message_listener::start_polling() {
 							//   std::cout<<"Transfer duration before finish "<<duration <<" Throughput was "<<
 							//   (( (float) total_size) / 1000000.0)/(((float) duration)/1000.0)<<" MB/s"<<std::endl;
 
+#ifdef CUDF_SUPPORT
 							receiver->finish(stream);
+#else
+              receiver->finish();
+#endif
 						}
+#ifdef CUDF_SUPPORT
 						cudaStreamSynchronize(stream);
 						//	cudaStreamDestroy(stream);
+#endif
 					}catch(std::exception & e){
 						close(connection_fd);
 						std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
@@ -204,8 +212,8 @@ void tcp_message_listener::start_polling() {
 	}
 }
 
+#ifdef CUDF_SUPPORT
 void ucx_message_listener::poll_begin_message_tag(bool running_from_unit_test){
-
 	if (!polling_started){
 		polling_started = true;
 		auto thread = std::thread([running_from_unit_test, this]{
@@ -262,7 +270,6 @@ void ucx_message_listener::poll_begin_message_tag(bool running_from_unit_test){
 	}
 }
 
-
 void ucx_message_listener::add_receiver(ucp_tag_t tag,std::shared_ptr<message_receiver> receiver){
 	std::lock_guard<std::mutex> lock(this->receiver_mutex);
 	tag_to_receiver[tag] = receiver;
@@ -313,9 +320,6 @@ ucp_worker_h ucx_message_listener::get_worker(){
 	return ucp_worker;
 }
 
-ucx_message_listener * ucx_message_listener::instance = nullptr;
-tcp_message_listener * tcp_message_listener::instance = nullptr;
-
 ucx_message_listener::ucx_message_listener(ucp_context_h context, ucp_worker_h worker, const std::map<std::string, comm::node>& nodes, int num_threads, std::shared_ptr<ral::cache::CacheMachine> input_cache) :
 	message_listener(nodes, num_threads,input_cache), ucp_worker{worker}
 {
@@ -338,19 +342,9 @@ ucx_message_listener::ucx_message_listener(ucp_context_h context, ucp_worker_h w
     }
 }
 
-tcp_message_listener::tcp_message_listener(const std::map<std::string, comm::node>& nodes,int port, int num_threads, std::shared_ptr<ral::cache::CacheMachine> input_cache) : message_listener{nodes,num_threads,input_cache}, _port{port} {
-
-}
-
 void ucx_message_listener::initialize_message_listener(ucp_context_h context, ucp_worker_h worker, const std::map<std::string, comm::node>& nodes, int num_threads, std::shared_ptr<ral::cache::CacheMachine> input_cache){
 	if(instance == NULL) {
 		instance = new ucx_message_listener(context, worker, nodes, num_threads, input_cache);
-	}
-}
-
-void tcp_message_listener::initialize_message_listener(const std::map<std::string, comm::node>& nodes, int port, int num_threads, std::shared_ptr<ral::cache::CacheMachine> input_cache){
-	if(instance == NULL){
-		instance = new tcp_message_listener(nodes,port,num_threads,input_cache);
 	}
 }
 
@@ -365,6 +359,26 @@ ucx_message_listener * ucx_message_listener::get_instance() {
 		throw std::runtime_error("ERROR: ucx_message_listener::get_instance() had a NULL instance");
 	}
 	return instance;
+}
+
+ucx_message_listener * ucx_message_listener::instance = nullptr;
+#endif
+
+tcp_message_listener * tcp_message_listener::instance = nullptr;
+
+tcp_message_listener::tcp_message_listener(const std::map<std::string, comm::node>& nodes,int port, int num_threads, std::shared_ptr<ral::cache::CacheMachine> input_cache) : message_listener{nodes,num_threads,input_cache}, _port{port} {
+
+}
+
+void tcp_message_listener::initialize_message_listener(
+    const std::map<std::string, comm::node>& nodes,
+    int port,
+    int num_threads,
+    std::shared_ptr<ral::cache::CacheMachine> input_cache)
+{
+	if(instance == NULL){
+		instance = new tcp_message_listener(nodes,port,num_threads,input_cache);
+	}
 }
 
 tcp_message_listener * tcp_message_listener::get_instance() {

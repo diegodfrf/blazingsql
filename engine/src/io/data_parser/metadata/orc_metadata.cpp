@@ -3,12 +3,14 @@
 
 #include "orc_metadata.h"
 
-#include <cudf/column/column_factories.hpp>
+#include <numeric>
+
+#ifdef CUDF_SUPPORT
 #include <cudf/detail/utilities/vector_factories.hpp>
 #include <cudf/io/orc_metadata.hpp>
+#include <cudf/column/column_factories.hpp>
 #include "blazing_table/BlazingCudfTable.h"
-
-#include <numeric>
+#include "compute/cudf/detail/types.h"
 
 std::basic_string<char> get_typed_vector_str_content(cudf::type_id dtype, std::vector<std::string> & vector) {
 	std::basic_string<char> output = std::basic_string<char>((char *)vector.data(), vector.size() * sizeof(char));
@@ -277,6 +279,7 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 	// we are handling two separated minmax_metadas
 	std::size_t string_count = 0;
 	std::size_t not_string_count = 0;
+
 	for (std::size_t index = 0; index < metadata_names.size(); index++) {
 		cudf::data_type dtype = metadata_dtypes[index];
 		if (is_decimal_or_empty_dtype(dtype.id())) {
@@ -293,13 +296,15 @@ std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
 		} else {
 			std::vector<int64_t> vector = get_all_values_in_the_same_col(minmax_metadata, not_string_count);
 			not_string_count++;
-			std::basic_string<char> content = get_typed_vector_content(dtype.id(), vector);
-			minmax_metadata_gdf_table[index] = make_cudf_column_from_vector(dtype, content, total_stripes);
+			std::basic_string<char> content = voltron::compute::cudf_backend::types::get_typed_vector_content(dtype.id(), vector);
+			minmax_metadata_gdf_table[index] = voltron::compute::cudf_backend::types::make_cudf_column_from_vector(dtype, content, total_stripes);
 		}
 	}
 
 	auto table = std::make_unique<cudf::table>(std::move(minmax_metadata_gdf_table));
 	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(table), metadata_names);
 }
+
+#endif
 
 #endif	// BLAZINGDB_RAL_SRC_IO_DATA_PARSER_METADATA_ORC_METADATA_CPP_H_

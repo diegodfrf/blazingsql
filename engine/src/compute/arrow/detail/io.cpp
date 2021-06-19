@@ -6,13 +6,11 @@
 #include <parquet/arrow/schema.h>
 
 #include "io/data_parser/ArgsUtil.h"
+#include "parser/types_parser_utils.h"
 
 #include <arrow/csv/api.h>
 #include <arrow/json/api.h>
 #include <arrow/adapters/orc/adapter.h>
-
-// TODO percy arrow c.cordova remove this header
-#include <cudf/detail/interop.hpp>
 
 namespace voltron {
 namespace compute {
@@ -75,7 +73,7 @@ std::unique_ptr<ral::frame::BlazingTable> read_parquet_file(
     std::shared_ptr<arrow::io::RandomAccessFile> file,
     std::vector<int> column_indices,
     std::vector<std::string> /*col_names*/,
-    std::vector<cudf::size_type> row_groups)
+    std::vector<int> row_groups)
 {
   // Open Parquet file reader
   arrow::MemoryPool* pool = arrow::default_memory_pool();
@@ -91,7 +89,11 @@ std::unique_ptr<ral::frame::BlazingTable> read_parquet_file(
 
   // Read entire file as a single Arrow table
   std::shared_ptr<arrow::Table> table;
-  st = arrow_reader->ReadRowGroups(myrow_groups, column_indices, &table);
+
+  // TODO percy arrow rommel skip data use group info here  
+  //st = arrow_reader->ReadRowGroups(myrow_groups, column_indices, &table);
+  st = arrow_reader->ReadTable(column_indices, &table);
+
   if (!st.ok()) {
       throw std::runtime_error("Error read_parquet_file: " + st.message());
   }
@@ -112,7 +114,7 @@ std::unique_ptr<ral::frame::BlazingTable> read_csv_file(
         std::shared_ptr<arrow::io::RandomAccessFile> file,
         std::vector<int> /*column_indices*/,
         std::vector<std::string> /*col_names*/,
-        std::vector<cudf::size_type> /*row_groups*/,
+        std::vector<int> /*row_groups*/,
         const std::map<std::string, std::string> &args_map)
 {
     arrow::MemoryPool* pool = arrow::default_memory_pool();
@@ -146,7 +148,7 @@ std::unique_ptr<ral::frame::BlazingTable> read_orc_file(
         std::shared_ptr<arrow::io::RandomAccessFile> file,
         std::vector<int> /*column_indices*/,
         std::vector<std::string> /*col_names*/,
-        std::vector<cudf::size_type> /*row_groups*/)
+        std::vector<int> /*row_groups*/)
 {
     arrow::MemoryPool* pool = arrow::default_memory_pool();
 
@@ -169,7 +171,7 @@ std::unique_ptr<ral::frame::BlazingTable> read_json_file(
         std::shared_ptr<arrow::io::RandomAccessFile> file,
         std::vector<int> /*column_indices*/,
         std::vector<std::string> /*col_names*/,
-        std::vector<cudf::size_type> /*row_groups*/)
+        std::vector<int> /*row_groups*/)
 {
     arrow::MemoryPool* pool = arrow::default_memory_pool();
 
@@ -215,7 +217,7 @@ void parse_parquet_schema(
       bool is_in_file = true;
       schema_out.add_column(
               name,
-              arrow_schema->field(i)->type()->id(),
+              arrow_schema->field(i)->type(),
               file_index, is_in_file);
   }
 }
@@ -256,7 +258,7 @@ void parse_csv_schema(
     for(std::size_t i = 0; i < fields.size(); ++i)
     {
         std::string name       = fields[i]->name();
-        arrow::Type::type type = fields[i]->type()->id();
+        auto type = fields[i]->type();
         size_t file_index      = i;
         bool is_in_file        = true;
 
@@ -288,7 +290,7 @@ void parse_orc_schema(
     for(std::size_t i = 0; i < fields.size(); ++i)
     {
         std::string name       = fields[i]->name();
-        arrow::Type::type type = fields[i]->type()->id();
+        auto type = fields[i]->type();
         size_t file_index      = i;
         bool is_in_file        = true;
 
@@ -327,7 +329,7 @@ void parse_json_schema(
     for(std::size_t i = 0; i < fields.size(); ++i)
     {
         std::string name       = fields[i]->name();
-        arrow::Type::type type = fields[i]->type()->id();
+        auto type = fields[i]->type();
         size_t file_index      = i;
         bool is_in_file        = true;
 

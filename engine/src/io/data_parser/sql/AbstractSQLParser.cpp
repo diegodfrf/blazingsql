@@ -30,6 +30,12 @@
 #include <sqltypes.h>
 #endif
 
+#include <cudf/detail/interop.hpp>
+#include "compute/api.h"
+#include "parser/types_parser_utils.h"
+#include "compute/cudf/detail/types.h"
+#include "blazing_table/BlazingCudfTable.h"
+
 namespace ral {
 namespace io {
 
@@ -85,14 +91,14 @@ std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_batch(ral::e
 #endif
   }
 
-  return this->parse_raw_batch(
+  return this->parse_raw_batch(preferred_compute,
     src, schema, column_indices, row_groups, handle.sql_handle.row_count);
 }
 
 void abstractsql_parser::parse_schema(ral::execution::execution_backend preferred_compute,ral::io::data_handle handle, ral::io::Schema & schema) {
 	for(int i = 0; i < handle.sql_handle.column_names.size(); i++) {
 		cudf::type_id type_cudf = get_cudf_type_id(handle.sql_handle.column_types.at(i));
-    arrow::Type::type type = cudf_type_id_to_arrow_type(type_cudf);
+    auto type = voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(type_cudf);
 		size_t file_index = i;
 		bool is_in_file = true;
 		std::string name = handle.sql_handle.column_names.at(i);
@@ -134,7 +140,7 @@ std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::get_metadata(ral::
 
 void abstractsql_parser::parse_sql(void *src,
   const std::vector<int> &column_indices,
-  const std::vector<arrow::Type::type> &cudf_types,
+  const std::vector<std::shared_ptr<arrow::DataType>> &cudf_types,
   size_t row,
   std::vector<void*> &host_cols,
   std::vector<std::vector<cudf::bitmask_type>> &null_masks)
@@ -142,7 +148,7 @@ void abstractsql_parser::parse_sql(void *src,
   for (int col = 0; col < column_indices.size(); ++col) {
     size_t projection = column_indices[col];
     uint8_t valid = 1; // 1: not null 0: null
-    cudf::type_id cudf_type_id = arrow_type_to_cudf_data_type(cudf_types[projection]).id();
+    cudf::type_id cudf_type_id = cudf::detail::arrow_to_cudf_type(*cudf_types[projection]).id();
     switch (cudf_type_id) {
       case cudf::type_id::EMPTY: {} break;
       case cudf::type_id::INT8: {
@@ -221,7 +227,7 @@ void abstractsql_parser::parse_sql(void *src,
 
 std::pair<std::vector<void*>, std::vector<std::vector<cudf::bitmask_type>>> init(
     size_t total_rows, const std::vector<int> &column_indices,
-    const std::vector<arrow::Type::type> &cudf_types)
+    const std::vector<std::shared_ptr<arrow::DataType>> &cudf_types)
 {
   cudf::io::table_with_metadata ret;
   std::vector<void*> host_cols(column_indices.size());
@@ -231,7 +237,7 @@ std::pair<std::vector<void*>, std::vector<std::vector<cudf::bitmask_type>>> init
   for (int col = 0; col < host_cols.size(); ++col) {
     null_masks[col].resize(num_words, 0);
     size_t projection = column_indices[col];
-    cudf::type_id cudf_type_id = arrow_type_to_cudf_data_type(cudf_types[projection]).id();
+    cudf::type_id cudf_type_id = cudf::detail::arrow_to_cudf_type(*cudf_types[projection]).id();
     switch (cudf_type_id) {
       case cudf::type_id::EMPTY: {} break;
       case cudf::type_id::INT8: {
@@ -320,7 +326,7 @@ std::pair<std::vector<void*>, std::vector<std::vector<cudf::bitmask_type>>> init
 
 cudf::io::table_with_metadata abstractsql_parser::read_sql(void *src,
     const std::vector<int> &column_indices,
-    const std::vector<arrow::Type::type> &cudf_types,
+    const std::vector<std::shared_ptr<arrow::DataType>> &cudf_types,
     size_t total_rows)
 {
   auto setup = init(total_rows, column_indices, cudf_types);
@@ -331,7 +337,7 @@ cudf::io::table_with_metadata abstractsql_parser::read_sql(void *src,
 
   for (int col = 0; col < column_indices.size(); ++col) {
     size_t projection = column_indices[col];
-    cudf::type_id cudf_type_id = arrow_type_to_cudf_data_type(cudf_types[projection]).id();
+    cudf::type_id cudf_type_id = cudf::detail::arrow_to_cudf_type(*cudf_types[projection]).id();
     switch (cudf_type_id) {
       case cudf::type_id::EMPTY: {} break;
       case cudf::type_id::INT8: {
@@ -423,7 +429,7 @@ cudf::io::table_with_metadata abstractsql_parser::read_sql(void *src,
 
   for (int col = 0; col < host_cols.size(); ++col) {
     size_t projection = column_indices[col];
-    cudf::type_id cudf_type_id = arrow_type_to_cudf_data_type(cudf_types[projection]).id();
+    cudf::type_id cudf_type_id = cudf::detail::arrow_to_cudf_type(*cudf_types[projection]).id();
     switch (cudf_type_id) {
       case cudf::type_id::EMPTY: {} break;
       case cudf::type_id::INT8: {
@@ -499,6 +505,7 @@ cudf::io::table_with_metadata abstractsql_parser::read_sql(void *src,
 }
 
 std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_raw_batch(
+    ral::execution::execution_backend preferred_compute,
 	void *src,
 	const Schema & schema,
 	std::vector<int> column_indices,
@@ -508,7 +515,11 @@ std::unique_ptr<ral::frame::BlazingTable> abstractsql_parser::parse_raw_batch(
   // DEBUG
   //std::cout << "PARSING BATCH: " << handle.sql_handle.row_count << "\n";
 
-  if (src == nullptr) { return schema.makeEmptyBlazingCudfTable(column_indices); }
+  if (src == nullptr) {
+    return ral::execution::backend_dispatcher(preferred_compute,
+                                       create_empty_table_functor(),
+                                       schema.get_names(), schema.get_dtypes(), column_indices);
+  }
 
 	if(column_indices.size() > 0) {
 		std::vector<std::string> col_names(column_indices.size());

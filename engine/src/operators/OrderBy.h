@@ -10,12 +10,6 @@
 #include <vector>
 #include <tuple>
 #include "blazing_table/BlazingTable.h"
-#include <cudf/copying.hpp>
-#include <cudf/sorting.hpp>
-#include <cudf/search.hpp>
-#include <arrow/array/builder_primitive.h>
-#include <arrow/api.h>
-#include <arrow/compute/api.h>
 #include "operators_definitions.h"
 
 namespace ral {
@@ -42,7 +36,7 @@ std::vector<std::shared_ptr<ral::frame::BlazingTableView>> partition_table(std::
 	std::shared_ptr<ral::frame::BlazingTableView> sortedTable, const std::vector<voltron::compute::SortOrder> & sortOrderTypes,	const std::vector<int> & sortColIndices,
   const std::vector<voltron::compute::NullOrder> & sortOrderNulls);
 
-std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<ral::frame::BlazingTableView> table_view, cudf::size_type num_rows, bool front=true);
+std::unique_ptr<ral::frame::BlazingTable> getLimitedRows(std::shared_ptr<ral::frame::BlazingTableView> table_view, int num_rows, bool front=true);
 
 std::tuple<std::unique_ptr<ral::frame::BlazingTable>, bool, int64_t> limit_table(std::shared_ptr<ral::frame::BlazingTableView> table_view, int64_t num_rows_limit);
 

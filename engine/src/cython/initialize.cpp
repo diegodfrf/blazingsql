@@ -17,7 +17,13 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 
 #include <algorithm>
+
+#ifdef CUDF_SUPPORT
 #include <cuda_runtime.h>
+#include "communication/ucx_init.h"
+#include "cudf/detail/gather.hpp"
+#endif
+
 #include <memory>
 #include <chrono>
 #include <thread>         // std::this_thread::sleep_for
@@ -31,7 +37,6 @@
 #include "blazingdb/io/Library/Logging/ServiceLogging.h"
 #include <blazingdb/io/Util/StringUtil.h>
 
-#include "communication/ucx_init.h"
 #include "communication/CommunicationData.h"
 #include "communication/CommunicationInterface/protocols.hpp"
 
@@ -40,7 +45,6 @@
 
 #include "utilities/error.hpp"
 
-#include "cudf/detail/gather.hpp"
 #include "communication/CommunicationInterface/node.hpp"
 #include "communication/CommunicationInterface/protocols.hpp"
 #include "communication/CommunicationInterface/messageSender.hpp"
@@ -473,13 +477,18 @@ std::pair<std::pair<std::shared_ptr<CacheMachine>,std::shared_ptr<CacheMachine> 
 
 	auto output_input_caches = std::make_pair(std::make_shared<CacheMachine>(nullptr, "messages_out", false,CACHE_LEVEL_CPU ),std::make_shared<CacheMachine>(nullptr, "messages_in", false));
 
+#ifdef CUDF_SUPPORT
 	ucp_context_h ucp_context = nullptr;
+#endif
 	// start ucp servers
 	if(!singleNode){
 		std::map<std::string, comm::node> nodes_info_map;
 
+#ifdef CUDF_SUPPORT
 		ucp_worker_h self_worker = nullptr;
+#endif
 		if(protocol == comm::blazing_protocol::ucx){
+#ifdef CUDF_SUPPORT
 			ucp_context = reinterpret_cast<ucp_context_h>(workers_ucp_info[0].context_handle);
 
 			self_worker = ral::communication::CreatetUcpWorker(ucp_context);
@@ -579,7 +588,7 @@ std::pair<std::pair<std::shared_ptr<CacheMachine>,std::shared_ptr<CacheMachine> 
 				ucp_context, self_worker,nodes_info_map,20, output_input_caches.second);
 			comm::ucx_message_listener::get_instance()->poll_begin_message_tag(true);
 			output_input_caches.second = comm::ucx_message_listener::get_instance()->get_input_cache();
-
+#endif
 		}else{
 
 
@@ -591,23 +600,40 @@ std::pair<std::pair<std::shared_ptr<CacheMachine>,std::shared_ptr<CacheMachine> 
 				nodes_info_map.emplace(worker_info.worker_id, comm::node(ralId, worker_info.worker_id, worker_info.ip, worker_info.port));
 			}
 
-			comm::tcp_message_listener::initialize_message_listener(nodes_info_map,ralCommunicationPort,num_comm_threads, output_input_caches.second);
+      auto cm = output_input_caches.second;
+			comm::tcp_message_listener::initialize_message_listener(
+            nodes_info_map,
+            ralCommunicationPort,
+            num_comm_threads,
+            cm);
 			comm::tcp_message_listener::get_instance()->start_polling();
 			ralCommunicationPort = comm::tcp_message_listener::get_instance()->get_port(); // if the listener was already initialized, we want to get the port that was originally set and send that back to python side
 			output_input_caches.second = comm::tcp_message_listener::get_instance()->get_input_cache();
 		}
+    
+#ifdef CUDF_SUPPORT
 		comm::message_sender::initialize_instance(output_input_caches.first,
 			nodes_info_map,
 			num_comm_threads, ucp_context, self_worker, ralId,protocol,require_acknowledge);
+#else
+    comm::message_sender::initialize_instance(output_input_caches.first,
+			nodes_info_map,
+			num_comm_threads, ralId,protocol,require_acknowledge);
+#endif
 		comm::message_sender::get_instance()->run_polling();
 
 		output_input_caches.first = comm::message_sender::get_instance()->get_output_cache();
 	}
 
 	bool map_ucx = protocol == comm::blazing_protocol::ucx;
+  
+#ifdef CUDF_SUPPORT
 	ral::memory::set_allocation_pools(buffers_size, num_buffers,
 										buffers_size, num_buffers, map_ucx, ucp_context);
-
+#else
+  ral::memory::set_allocation_pools(buffers_size, num_buffers,
+										buffers_size, num_buffers, map_ucx);
+#endif
 	double processing_memory_limit_threshold = 0.9;
 	config_it = config_options.find("BLAZING_PROCESSING_DEVICE_MEM_CONSUMPTION_THRESHOLD");
 	if (config_it != config_options.end()){

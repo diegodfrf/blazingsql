@@ -77,7 +77,7 @@ std::shared_ptr<Context> make_context() {
 	std::string logicalPlan;
 	std::map<std::string, std::string> config_options;
 	std::string current_timestamp;
-	std::shared_ptr<Context> context = std::make_shared<Context>(0, nodes, master_node, logicalPlan, config_options, current_timestamp, "cudf", "cudf");
+	std::shared_ptr<Context> context = std::make_shared<Context>(0, nodes, master_node, logicalPlan, config_options, current_timestamp, ral::io::DataType::CUDF, ral::execution::execution_backend(ral::execution::backend_id::CUDF));
 	return context;
 }
 
@@ -229,11 +229,11 @@ TYPED_TEST(ProjectionTest, OneBatchEmptyWithoutDelay) {
 	// Empty Data
 	std::vector<std::string> names{"A", "B", "C"};
 	std::vector<std::shared_ptr<arrow::DataType>> types {
-    cudf_type_id_to_arrow_data_type(cudf::type_id::INT32),
-    cudf_type_id_to_arrow_data_type(cudf::type_id::STRING),
-    cudf_type_id_to_arrow_data_type(cudf::type_id::FLOAT64)
+    voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::INT32),
+    voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::STRING),
+    voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::FLOAT64)
   };
-	std::unique_ptr<BlazingCudfTable> batch_empty = create_empty_cudf_table(names, types);
+	std::unique_ptr<BlazingCudfTable> batch_empty = voltron::compute::cudf_backend::types::create_empty_cudf_table(names, types);
 
 	// Context
 	std::shared_ptr<Context> context = make_context();
@@ -344,9 +344,9 @@ TYPED_TEST(ProjectionTest, TwoBatchsFirstFullSecondEmptyWithoutDelays) {
 
 	// Batch 2
     std::vector<std::shared_ptr<arrow::DataType>> types {
-      cudf_type_id_to_arrow_data_type(cudf::type_id::INT32),
-      cudf_type_id_to_arrow_data_type(cudf::type_id::STRING) };
-	std::unique_ptr<BlazingCudfTable> batch_empty = create_empty_cudf_table(names, types);
+      voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::INT32),
+      voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::STRING) };
+	std::unique_ptr<BlazingCudfTable> batch_empty = voltron::compute::cudf_backend::types::create_empty_cudf_table(names, types);
 
 	// Context
 	std::shared_ptr<Context> context = make_context();
@@ -436,10 +436,10 @@ TYPED_TEST(ProjectionTest, OneBatchEmptyWithDelay) {
 	// Empty Data
 	std::vector<std::string> names{"A", "B", "C"};
 	std::vector<std::shared_ptr<arrow::DataType>> types {
-    cudf_type_id_to_arrow_data_type(cudf::type_id::INT32),
-    cudf_type_id_to_arrow_data_type(cudf::type_id::STRING),
-    cudf_type_id_to_arrow_data_type(cudf::type_id::FLOAT64) };
-	std::unique_ptr<BlazingCudfTable> batch_empty = create_empty_cudf_table(names, types);
+    voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::INT32),
+    voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::STRING),
+    voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::FLOAT64) };
+	std::unique_ptr<BlazingCudfTable> batch_empty = voltron::compute::cudf_backend::types::create_empty_cudf_table(names, types);
 
 	// Context
 	std::shared_ptr<Context> context = make_context();
@@ -541,13 +541,13 @@ TYPED_TEST(ProjectionTest, TwoBatchsEmptyWithDelays) {
 	// Empty Data
 	std::vector<std::string> names{"A", "B", "C", "D"};
 	std::vector<std::shared_ptr<arrow::DataType>> types {
-    cudf_type_id_to_arrow_data_type(cudf::type_id::INT32),
-		cudf_type_id_to_arrow_data_type(cudf::type_id::STRING),
-    cudf_type_id_to_arrow_data_type(cudf::type_id::FLOAT64),
-		cudf_type_id_to_arrow_data_type(cudf::type_id::STRING)
+    voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::INT32),
+		voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::STRING),
+    voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::FLOAT64),
+		voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::STRING)
   };
-	std::unique_ptr<BlazingCudfTable> batch_empty_1 = create_empty_cudf_table(names, types);
-	std::unique_ptr<BlazingCudfTable> batch_empty_2 = create_empty_cudf_table(names, types);
+	std::unique_ptr<BlazingCudfTable> batch_empty_1 = voltron::compute::cudf_backend::types::create_empty_cudf_table(names, types);
+	std::unique_ptr<BlazingCudfTable> batch_empty_2 = voltron::compute::cudf_backend::types::create_empty_cudf_table(names, types);
 
 	// Context
 	std::shared_ptr<Context> context = make_context();
@@ -594,9 +594,9 @@ TYPED_TEST(ProjectionTest, TwoBatchsFirstEmptySecondFullWithDelays) {
 
 	// Batch 1 - empty
 	std::vector<std::shared_ptr<arrow::DataType>> types {
-    cudf_type_id_to_arrow_data_type(cudf::type_id::INT32),
-    cudf_type_id_to_arrow_data_type(cudf::type_id::STRING) };
-	std::unique_ptr<BlazingCudfTable> batch_empty = create_empty_cudf_table(names, types);
+    voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::INT32),
+    voltron::compute::cudf_backend::types::cudf_type_id_to_arrow_type_cudf(cudf::type_id::STRING) };
+	std::unique_ptr<BlazingCudfTable> batch_empty = voltron::compute::cudf_backend::types::create_empty_cudf_table(names, types);
 
 	// Batch2
     cudf::test::fixed_width_column_wrapper<T> col1{{14, 25, 3, 5}, {1, 1, 1, 1}};

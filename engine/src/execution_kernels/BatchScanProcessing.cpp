@@ -21,6 +21,7 @@
 #endif
 
 #include "parser/project_parser_utils.h"
+#include "compute/api.h"
 
 namespace ral {
 namespace batch {
@@ -64,12 +65,23 @@ TableScan::TableScan(std::size_t kernel_id, const std::string & queryString, std
     this->query_graph = query_graph;
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result TableScan::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
+#else
+ral::execution::task_result TableScan::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
+
     try{
         output->addToCache(std::move(inputs[0]));
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::bad_alloc& e){
+#endif
         //can still recover if the input was not a GPUCacheData
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
@@ -86,7 +98,9 @@ kstatus TableScan::run() {
 
     //if its empty we can just add it to the cache without scheduling
     if (!provider->has_next()) {
-        this->add_to_output_cache(schema.makeEmptyBlazingCudfTable(projections));
+        this->add_to_output_cache(ral::execution::backend_dispatcher(this->context->preferred_compute(),
+                                                                     create_empty_table_functor(),
+                                                                     schema.get_names(), schema.get_dtypes(), projections));
     } else {
         bool is_batched_csv = false;
         while(provider->has_next()) {
@@ -197,9 +211,15 @@ BindableTableScan::BindableTableScan(std::size_t kernel_id, const std::string & 
     }
 }
 
+#ifdef CUDF_SUPPORT
 ral::execution::task_result BindableTableScan::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
     std::shared_ptr<ral::cache::CacheMachine> output,
     cudaStream_t /*stream*/, const std::map<std::string, std::string>& /*args*/) {
+#else
+ral::execution::task_result BindableTableScan::do_process(std::vector< std::unique_ptr<ral::frame::BlazingTable> > inputs,
+    std::shared_ptr<ral::cache::CacheMachine> output,
+    const std::map<std::string, std::string>& /*args*/) {
+#endif
     auto & input = inputs[0];
     std::unique_ptr<ral::frame::BlazingTable> filtered_input;
 
@@ -212,7 +232,11 @@ ral::execution::task_result BindableTableScan::do_process(std::vector< std::uniq
             input->set_column_names(fix_column_aliases(input->column_names(), expression));
             output->addToCache(std::move(input));
         }
+#ifdef CUDF_SUPPORT
     }catch(const rmm::bad_alloc& e){
+#else
+    }catch(const std::bad_alloc& e){
+#endif
         //can still recover if the input was not a GPUCacheData
         return {ral::execution::task_status::RETRY, std::string(e.what()), std::move(inputs)};
     }catch(const std::exception& e){
@@ -225,11 +249,13 @@ ral::execution::task_result BindableTableScan::do_process(std::vector< std::uniq
 kstatus BindableTableScan::run() {
     CodeTimer timer;
 
-    std::vector<int> projections = get_projections_wrapper(schema.get_num_columns(), expression);
+    auto projections = get_projections_wrapper(schema.get_num_columns(), expression);
 
     //if its empty we can just add it to the cache without scheduling
     if (!provider->has_next()) {
-        auto empty = schema.makeEmptyBlazingCudfTable(projections);
+        auto empty = ral::execution::backend_dispatcher(this->context->preferred_compute(),
+                                                        create_empty_table_functor(),
+                                                        schema.get_names(), schema.get_dtypes(), projections);
         empty->set_column_names(fix_column_aliases(empty->column_names(), expression));
         this->add_to_output_cache(std::move(empty));
     } else {

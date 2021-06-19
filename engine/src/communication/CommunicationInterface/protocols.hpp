@@ -19,7 +19,7 @@ namespace io{
 namespace comm {
 
 
-
+#ifdef CUDF_SUPPORT
 class ucp_progress_manager{
 
 public:
@@ -49,7 +49,7 @@ private:
     ucp_worker_h ucp_worker;
     void check_progress();
 };
-
+#endif
 
 
 enum class status_code {
@@ -85,6 +85,7 @@ private:
     std::map<int32_t, std::shared_ptr<ral::cache::graph>> _ctx_token_to_graph_map;
 };
 
+#ifdef CUDF_SUPPORT
 /**
  * A class that can send a buffer via  ucx protocol
  */
@@ -128,7 +129,7 @@ private:
 
     size_t _request_size;
 };
-
+#endif
 
 class tcp_buffer_transport : public buffer_transport {
 public:
@@ -160,10 +161,10 @@ private:
 
 
 
-
+#ifdef CUDF_SUPPORT
 static const ucp_tag_t begin_tag_mask =        0xFFFF000000000000;
 static const ucp_tag_t message_tag_mask =      0x0000FFFFFFFFFFFF;
 static const ucp_tag_t acknownledge_tag_mask = 0xFFFFFFFFFFFFFFFF;
-
+#endif
 
 } // namespace comm

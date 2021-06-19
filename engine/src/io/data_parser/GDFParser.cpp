@@ -11,6 +11,9 @@
 #include <blazingdb/io/Library/Logging/Logger.h>
 #include <cudf/concatenate.hpp>
 
+#include "blazing_table/BlazingCudfTableView.h"
+#include "blazing_table/BlazingCudfTable.h"
+
 namespace ral {
 namespace io {
 

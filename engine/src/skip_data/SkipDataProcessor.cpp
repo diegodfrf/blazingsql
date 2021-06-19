@@ -5,17 +5,20 @@
 
 #include "SkipDataProcessor.h"
 
-#include "blazing_table/BlazingColumnView.h"
-#include <cudf/column/column_factories.hpp>
 #include "parser/CalciteExpressionParsing.h"
 #include "operators/LogicalFilter.h"
 #include "operators/LogicalProject.h"
 #include "utilities/error.hpp"
 
 #include <numeric>
-#include <cudf/interop.hpp>
 #include "compute/backend_dispatcher.h"
 #include "compute/api.h"
+
+#ifdef CUDF_SUPPORT
+#include <cudf/column/column_factories.hpp>
+#include <cudf/interop.hpp>
+#include "blazing_table/BlazingColumnView.h"
+#endif
 
 using namespace fmt::literals;
 
@@ -248,6 +251,7 @@ bool apply_skip_data_rules(ral::parser::parse_tree& tree) {
 std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_table(
     std::shared_ptr<ral::frame::BlazingArrowTable> metadata, const std::vector<std::string> & names, std::string table_scan) {
 
+#ifdef CUDF_SUPPORT
     std::unique_ptr<cudf::table> cudf_table = cudf::from_arrow(*(metadata->to_table_view()->view().get()));
     std::shared_ptr<ral::frame::BlazingCudfTableView> metadata_view = std::make_shared<ral::frame::BlazingCudfTableView>(cudf_table->view(), metadata->column_names());
 
@@ -367,6 +371,9 @@ std::pair<std::unique_ptr<ral::frame::BlazingTable>, bool> process_skipdata_for_
     ral::frame::BlazingCudfTable* filtered_metadata_ids_cudf_table = dynamic_cast<ral::frame::BlazingCudfTable*>(filtered_metadata_ids.get());
     std::unique_ptr<ral::frame::BlazingCudfTable> filtered_metadata_ids_table = std::make_unique<ral::frame::BlazingCudfTable>(filtered_metadata_ids_cudf_table->releaseCudfTable(), filtered_metadata_ids_cudf_table->column_names());
     return std::make_pair(std::make_unique<ral::frame::BlazingArrowTable>(std::move(filtered_metadata_ids_table)), false);
+#else
+    return std::make_pair(nullptr, false);
+#endif
 }
 
 

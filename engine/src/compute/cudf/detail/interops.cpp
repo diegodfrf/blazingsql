@@ -1,31 +1,35 @@
-#include "blazing_table/BlazingColumn.h"
-#include "blazing_table/BlazingColumnView.h"
-#include "blazing_table/BlazingColumnOwner.h"
-#include "parser/expression_tree.hpp"
-#include "parser/expression_utils.hpp"
-#include "parser/types_parser_utils.h"
-#include "interpreter/interpreter_cpp.h"
+#include <cudf/column/column_factories.hpp>
 #include <cudf/copying.hpp>
 #include <cudf/replace.hpp>
 #include <cudf/search.hpp>
 #include <cudf/strings/capitalize.hpp>
+#include <cudf/strings/case.hpp>
 #include <cudf/strings/combine.hpp>
 #include <cudf/strings/contains.hpp>
-#include <cudf/column/column_factories.hpp>
-#include <cudf/strings/replace_re.hpp>
-#include <cudf/strings/replace.hpp>
-#include <cudf/strings/substring.hpp>
-#include <cudf/strings/case.hpp>
-#include <cudf/strings/strip.hpp>
 #include <cudf/strings/convert/convert_booleans.hpp>
 #include <cudf/strings/convert/convert_datetime.hpp>
 #include <cudf/strings/convert/convert_floats.hpp>
 #include <cudf/strings/convert/convert_integers.hpp>
+#include <cudf/strings/replace.hpp>
+#include <cudf/strings/replace_re.hpp>
+#include <cudf/strings/strip.hpp>
+#include <cudf/strings/substring.hpp>
 #include <cudf/unary.hpp>
 
-#include "compute/cudf/detail/types.h"
+#include "blazing_table/BlazingColumn.h"
+#include "blazing_table/BlazingColumnOwner.h"
+#include "blazing_table/BlazingColumnView.h"
+#include "compute/cudf/detail/scalars.h"
 #include "compute/cudf/detail/transform.hpp"
+#include "compute/cudf/detail/types.h"
+#include "interpreter/interpreter_cpp.h"
+#include "parser/expression_tree.hpp"
+#include "parser/expression_utils.hpp"
 #include "parser/project_parser_utils.h"
+#include "parser/types_parser_utils.h"
+
+#include "parser/project_parser_utils.h"
+#include "parser/types_parser_utils.h"
 
 using namespace ral;
 
@@ -151,7 +155,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         RAL_EXPECTS(!is_literal(arg_tokens[0]), "REPLACE function not supported for string literals");
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "REPLACE argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "REPLACE argument must be a column of type string");
 
         std::string target = StringUtil::removeEncapsulation(arg_tokens[1], encapsulation_character);
         std::string repl = StringUtil::removeEncapsulation(arg_tokens[2], encapsulation_character);
@@ -168,7 +172,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         RAL_EXPECTS(!is_literal(arg_tokens[0]), "REGEXP_REPLACE function not supported for string literals");
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "REGEXP_REPLACE argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "REGEXP_REPLACE argument must be a column of type string");
 
         std::string pattern = StringUtil::removeEncapsulation(arg_tokens[1], encapsulation_character);
         std::string repl = StringUtil::removeEncapsulation(arg_tokens[2], encapsulation_character);
@@ -200,7 +204,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         RAL_EXPECTS(!is_literal(arg_tokens[0]), "LEFT function not supported for string literals");
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "LEFT argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "LEFT argument must be a column of type string");
 
         int32_t end = std::max(std::stoi(arg_tokens[1]), 0);
         computed_col = cudf::strings::slice_strings(
@@ -216,7 +220,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         RAL_EXPECTS(!is_literal(arg_tokens[0]), "RIGHT function not supported for string literals");
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "RIGHT argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "RIGHT argument must be a column of type string");
 
         int32_t offset = std::max(std::stoi(arg_tokens[1]), 0);
         computed_col = cudf::strings::slice_strings(column, -offset, cudf::numeric_scalar<int32_t>(0, offset < 1));
@@ -261,7 +265,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
                 computed_start_column = cudf::make_column_from_scalar(start_scalar, table.num_rows());
             } else {
                 auto evaluated_col = evaluate_expressions(table, {arg_tokens[1]});
-                RAL_EXPECTS(evaluated_col.size() == 1 && is_type_integer(evaluated_col[0]->view().type().id()), "Expression does not evaluate to an integer column");
+                RAL_EXPECTS(evaluated_col.size() == 1 && voltron::compute::cudf_backend::types::is_type_integer_cudf(evaluated_col[0]->view().type().id()), "Expression does not evaluate to an integer column");
 
                 computed_start_column = evaluated_col[0]->release();
             }
@@ -279,14 +283,14 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
                     computed_end_column = cudf::make_column_from_scalar(*end_scalar, table.num_rows());
                 } else {
                     auto evaluated_col = evaluate_expressions(table, {arg_tokens[2]});
-                    RAL_EXPECTS(evaluated_col.size() == 1 && is_type_integer(evaluated_col[0]->view().type().id()), "Expression does not evaluate to an integer column");
+                    RAL_EXPECTS(evaluated_col.size() == 1 && voltron::compute::cudf_backend::types::is_type_integer_cudf(evaluated_col[0]->view().type().id()), "Expression does not evaluate to an integer column");
 
                     computed_end_column = evaluated_col[0]->release();
                 }
 
                 // lets make sure that the start and end are the same type
                 if (!(start_column.type() == computed_end_column->type())){
-                    cudf::data_type common_type = get_common_cudf_type(start_column.type(), computed_end_column->type(), true);
+                    cudf::data_type common_type = voltron::compute::cudf_backend::types::get_common_cudf_type(start_column.type(), computed_end_column->type(), true);
                     if (!(start_column.type() == common_type)){
                         computed_start_column = cudf::cast(start_column, common_type);
                         start_column = computed_start_column->view();
@@ -381,11 +385,11 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
             computed_column = evaluated_col[0]->release();
             column = computed_column->view();
         }
-        if (is_type_string(column.type().id())) {
+        if (voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id())) {
             // this should not happen, but sometimes calcite produces inefficient plans that ask to cast a string column to a "VARCHAR NOT NULL"
             computed_col = std::make_unique<cudf::column>(column);
         } else {
-            computed_col = cudf::type_dispatcher(column.type(), cast_to_str_functor{}, column);
+            computed_col = cudf::type_dispatcher(column.type(), voltron::compute::cudf_backend::types::cast_to_str_functor{}, column);
         }
         break;
     }
@@ -399,7 +403,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         }
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        if (is_type_string(column.type().id())) {
+        if (voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id())) {
             computed_col = cudf::strings::to_integers(column, cudf::data_type{cudf::type_id::INT8});
         }
         break;
@@ -414,7 +418,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         }
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        if (is_type_string(column.type().id())) {
+        if (voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id())) {
             computed_col = cudf::strings::to_integers(column, cudf::data_type{cudf::type_id::INT16});
         }
         break;
@@ -429,7 +433,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         }
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        if (is_type_string(column.type().id())) {
+        if (voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id())) {
             computed_col = cudf::strings::to_integers(column, cudf::data_type{cudf::type_id::INT32});
         }
         break;
@@ -444,7 +448,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         }
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        if (is_type_string(column.type().id())) {
+        if (voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id())) {
             computed_col = cudf::strings::to_integers(column, cudf::data_type{cudf::type_id::INT64});
         }
         break;
@@ -459,7 +463,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         }
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        if (is_type_string(column.type().id())) {
+        if (voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id())) {
             computed_col = cudf::strings::to_floats(column, cudf::data_type{cudf::type_id::FLOAT32});
         }
         break;
@@ -474,7 +478,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         }
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        if (is_type_string(column.type().id())) {
+        if (voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id())) {
             computed_col = cudf::strings::to_floats(column, cudf::data_type{cudf::type_id::FLOAT64});
         }
         break;
@@ -489,7 +493,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         }
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        if (is_type_string(column.type().id())) {
+        if (voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id())) {
             computed_col = cudf::strings::to_timestamps(column, cudf::data_type{cudf::type_id::TIMESTAMP_DAYS}, "%Y-%m-%d");
         }
         break;
@@ -507,7 +511,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         }
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        if (is_type_string(column.type().id())) {
+        if (voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id())) {
             if (op == operator_type::BLZ_CAST_TIMESTAMP_SECONDS) {
                 computed_col = cudf::strings::to_timestamps(column, cudf::data_type{cudf::type_id::TIMESTAMP_SECONDS}, "%Y-%m-%d %H:%M:%S");
             } else if (op == operator_type::BLZ_CAST_TIMESTAMP_MILLISECONDS) {
@@ -526,7 +530,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         RAL_EXPECTS(is_var_column(arg_tokens[0]) && is_string(arg_tokens[1]), "TO_DATE operator arguments must be a column and a string format");
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "TO_DATE first argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "TO_DATE first argument must be a column of type string");
 
         std::string format_str = StringUtil::removeEncapsulation(arg_tokens[1], encapsulation_character);
         computed_col = cudf::strings::to_timestamps(column, cudf::data_type{cudf::type_id::TIMESTAMP_DAYS}, format_str);
@@ -538,7 +542,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         RAL_EXPECTS(is_var_column(arg_tokens[0]) && is_string(arg_tokens[1]), "TO_TIMESTAMP operator arguments must be a column and a string format");
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "TO_TIMESTAMP first argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "TO_TIMESTAMP first argument must be a column of type string");
 
         std::string format_str = StringUtil::removeEncapsulation(arg_tokens[1], encapsulation_character);
         computed_col = cudf::strings::to_timestamps(column, cudf::data_type{cudf::type_id::TIMESTAMP_NANOSECONDS}, format_str);
@@ -550,7 +554,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         RAL_EXPECTS(!is_literal(arg_tokens[0]), "LOWER operator not supported for literals");
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "LOWER argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "LOWER argument must be a column of type string");
 
         computed_col = cudf::strings::to_lower(column);
         break;
@@ -561,7 +565,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         RAL_EXPECTS(!is_literal(arg_tokens[0]), "UPPER operator not supported for literals");
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "UPPER argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "UPPER argument must be a column of type string");
 
         computed_col = cudf::strings::to_upper(column);
         break;
@@ -572,7 +576,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         RAL_EXPECTS(!is_literal(arg_tokens[0]), "INITCAP operator not supported for literals");
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "INITCAP argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "INITCAP argument must be a column of type string");
 
         computed_col = cudf::strings::title(column);
         break;
@@ -584,10 +588,10 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
 
         std::string trim_flag = StringUtil::removeEncapsulation(arg_tokens[0], "\"");
         std::string to_strip = StringUtil::removeEncapsulation(arg_tokens[1], encapsulation_character);
-        cudf::strings::strip_type enumerated_trim_flag = map_trim_flag_to_strip_type(trim_flag);
+        cudf::strings::strip_type enumerated_trim_flag = voltron::compute::cudf_backend::types::map_trim_flag_to_strip_type(trim_flag);
 
         cudf::column_view column = table.column(get_index(arg_tokens[2]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "TRIM argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "TRIM argument must be a column of type string");
 
         computed_col = cudf::strings::strip(column, enumerated_trim_flag, to_strip);
         break;
@@ -598,7 +602,7 @@ std::unique_ptr<cudf::column> evaluate_string_functions(const cudf::table_view &
         RAL_EXPECTS(!is_literal(arg_tokens[0]), "REVERSE operator not supported for literals");
 
         cudf::column_view column = table.column(get_index(arg_tokens[0]));
-        RAL_EXPECTS(is_type_string(column.type().id()), "REVERSE argument must be a column of type string");
+        RAL_EXPECTS(voltron::compute::cudf_backend::types::is_type_string_cudf(column.type().id()), "REVERSE argument must be a column of type string");
 
         computed_col = cudf::strings::slice_strings(
             column,
@@ -724,7 +728,7 @@ std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
         tree.transform(evaluator);
 
         if (tree.root().type == parser::node_type::LITERAL) {
-            cudf::data_type literal_type = static_cast<const ral::parser::literal_node&>(tree.root()).type();
+            cudf::data_type literal_type = voltron::compute::cudf_backend::types::arrow_type_to_cudf_data_type_cudf(static_cast<const ral::parser::literal_node&>(tree.root()).type_id());
             std::unique_ptr<cudf::scalar> literal_scalar = get_scalar_from_string(tree.root().value, literal_type);
             out_columns[i] = std::make_unique<ral::frame::BlazingColumnOwner>(cudf::make_column_from_scalar(*literal_scalar, table.num_rows()));
         } else if (tree.root().type == parser::node_type::VARIABLE) {
@@ -735,10 +739,10 @@ std::vector<std::unique_ptr<ral::frame::BlazingColumn>> evaluate_expressions(
                 out_idx_computed_idx_pair.push_back({i, idx - table.num_columns()});
             }
         } else {
-        	expr_output_type_visitor visitor{cudf::table_view{{table, evaluator.computed_columns_view()}}};
+        	voltron::compute::cudf_backend::types::expr_output_type_visitor visitor{cudf::table_view{{table, evaluator.computed_columns_view()}}};
 	        tree.visit(visitor);
 
-            cudf::data_type expr_out_type = visitor.get_expr_output_type();
+            auto expr_out_type = voltron::compute::cudf_backend::types::arrow_type_to_cudf_data_type_cudf(visitor.get_expr_output_type());
 
             auto new_column = cudf::make_fixed_width_column(expr_out_type, table.num_rows(), cudf::mask_state::UNINITIALIZED);
             interpreter_out_column_views.push_back(new_column->mutable_view());

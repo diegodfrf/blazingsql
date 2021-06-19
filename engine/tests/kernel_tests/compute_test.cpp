@@ -53,9 +53,16 @@ std::shared_ptr<Context> make_context(const std::string& output_type = "cudf",
   std::string logicalPlan;
   std::map<std::string, std::string> config_options;
   std::string current_timestamp;
+  
+  // TODO percy arrow improve pyblazing dont use strings
+  ral::io::DataType output_type_t =
+      output_type=="pandas"? ral::io::DataType::PANDAS_DF : ral::io::DataType::CUDF;
+  ral::execution::execution_backend preferred_compute_t(
+    preferred_compute=="arrow"? ral::execution::backend_id::ARROW : ral::execution::backend_id::CUDF);
+  
   std::shared_ptr<Context> context =
       std::make_shared<Context>(0, nodes, master_node, logicalPlan, config_options,
-                                current_timestamp, output_type, preferred_compute);
+                                current_timestamp, output_type_t, preferred_compute_t);
   return context;
 }
 
@@ -94,7 +101,7 @@ struct ComputeTestParam {
         ral::frame::BlazingCudfTable blazingCudfTable =
             ral::frame::BlazingCudfTable(std::move(arrow_table));  //
         auto result_view = blazingCudfTable.to_table_view();
-        ral::utilities::print_blazing_cudf_table_view(result_view, "result");
+//        ral::utilities::print_blazing_cudf_table_view(result_view, "result");
         auto* result_view_ptr =
             dynamic_cast<ral::frame::BlazingCudfTableView*>(result_view.get());
 
@@ -103,8 +110,8 @@ struct ComputeTestParam {
             ral::execution::execution_backend{ral::execution::backend_id::CUDF});
         auto expected_result = runQuery(this->logical_plan, "cudf", "cudf", data_loader);
         auto expected_result_view = expected_result->to_table_view();
-        ral::utilities::print_blazing_cudf_table_view(expected_result_view,
-                                                      "expected_result");
+//        ral::utilities::print_blazing_cudf_table_view(expected_result_view,
+//                                                      "expected_result");
         auto* expect_cudf_table =
             dynamic_cast<ral::frame::BlazingCudfTableView*>(expected_result_view.get());
 
@@ -113,9 +120,9 @@ struct ComputeTestParam {
                                              result_view_ptr->view());
       } else if (this->preferred_compute.id() == ral::execution::backend_id::CUDF) {
         auto result_view = result->to_table_view();
-        ral::utilities::print_blazing_cudf_table_view(result_view, "result");
-        auto* result_view_ptr =
-            dynamic_cast<ral::frame::BlazingCudfTableView*>(result_view.get());
+//        ral::utilities::print_blazing_cudf_table_view(result_view, "result");
+//        auto* result_view_ptr =
+//            dynamic_cast<ral::frame::BlazingCudfTableView*>(result_view.get());
 
         // TODO: compare cudf results with some expected result
         /*auto data_loader = blazingdb::test::load_table(DATASET_PATH, "nation",
@@ -143,7 +150,13 @@ struct ComputeTest : public ::testing::TestWithParam<ComputeTestParam> {
     BlazingRMMInitialize("pool_memory_resource", 32 * 1024 * 1024, 256 * 1024 * 1024);
     float host_memory_quota = 0.75;  // default value
     blazing_host_memory_resource::getInstance().initialize(host_memory_quota);
+
+#ifdef CUDF_SUPPORT
     ral::memory::set_allocation_pools(4000000, 10, 4000000, 10, false, nullptr);
+#else
+    ral::memory::set_allocation_pools(4000000, 10, 4000000, 10, false);
+#endif
+
     int executor_threads = 10;
     ral::execution::executor::init_executor(executor_threads, 0.8,
                                             this->parameter.preferred_compute);

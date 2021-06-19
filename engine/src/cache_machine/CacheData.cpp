@@ -2,7 +2,11 @@
 #include "CacheDataLocalFile.h"
 #include "ArrowCacheData.h"
 #include "CPUCacheData.h"
+
+#ifdef CUDF_SUPPORT
 #include "GPUCacheData.h"
+#endif
+
 #include "communication/CommunicationData.h"
 
 namespace ral {

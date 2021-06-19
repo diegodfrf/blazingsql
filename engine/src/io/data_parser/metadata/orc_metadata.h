@@ -3,6 +3,8 @@
         
 #include "common_metadata.h"
 #include "blazing_table/BlazingTable.h"
+
+#ifdef CUDF_SUPPORT
 #include <cudf/io/orc_metadata.hpp>
 
 void set_min_max(
@@ -13,5 +15,6 @@ void set_min_max(
 std::unique_ptr<ral::frame::BlazingTable> get_minmax_metadata(
     std::vector<cudf::io::parsed_orc_statistics> & statistics,
     size_t total_stripes, int metadata_offset);
+#endif
 
 #endif	// ORC_METADATA_H_
