@@ -8,8 +8,6 @@
 #include <execinfo.h>
 #include <signal.h>
 
-#include <ucp/api/ucp.h>
-
 #include <spdlog/spdlog.h>
 #include <spdlog/async.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -19,6 +17,7 @@
 #include <algorithm>
 
 #ifdef CUDF_SUPPORT
+#include <ucp/api/ucp.h>
 #include <cuda_runtime.h>
 #include "communication/ucx_init.h"
 #include "cudf/detail/gather.hpp"

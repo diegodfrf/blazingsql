@@ -7,6 +7,7 @@
 
 #include "Schema.h"
 #include "parser/types_parser_utils.h"
+#include <algorithm>
 
 namespace ral {
 namespace io {

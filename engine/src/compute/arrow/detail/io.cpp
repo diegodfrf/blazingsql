@@ -117,7 +117,7 @@ std::unique_ptr<ral::frame::BlazingTable> read_csv_file(
         std::vector<int> /*row_groups*/,
         const std::map<std::string, std::string> &args_map)
 {
-    arrow::MemoryPool* pool = arrow::default_memory_pool();
+    arrow::io::IOContext io_context;
 
     arrow::csv::ReadOptions    read_options;
     arrow::csv::ParseOptions   parse_options;
@@ -126,7 +126,7 @@ std::unique_ptr<ral::frame::BlazingTable> read_csv_file(
     getCsvReaderOptions(args_map, read_options, parse_options, convert_options);
 
     auto maybe_reader =
-            arrow::csv::TableReader::Make(pool,
+            arrow::csv::TableReader::Make(io_context,
                                           file,
                                           read_options,
                                           parse_options,
@@ -227,7 +227,7 @@ void parse_csv_schema(
         std::shared_ptr<arrow::io::RandomAccessFile> file,
         const std::map<std::string, std::string> &args_map)
 {
-    arrow::MemoryPool* pool = arrow::default_memory_pool();
+    arrow::io::IOContext io_context;
 
     arrow::csv::ReadOptions    read_options;
     arrow::csv::ParseOptions   parse_options;
@@ -236,7 +236,7 @@ void parse_csv_schema(
     getCsvReaderOptions(args_map, read_options, parse_options, convert_options);
 
     auto maybe_reader =
-            arrow::csv::TableReader::Make(pool,
+            arrow::csv::TableReader::Make(io_context,
                                           file,
                                           read_options,
                                           parse_options,

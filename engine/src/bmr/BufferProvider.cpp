@@ -7,9 +7,8 @@
 #ifdef CUDF_SUPPORT
 #include <cuda.h>
 #include <cuda_runtime.h>
-#endif
-
 #include <ucs/type/status.h>
+#endif
 
 #include <spdlog/spdlog.h>
 #include <spdlog/async.h>
