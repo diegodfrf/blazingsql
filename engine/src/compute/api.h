@@ -12,7 +12,7 @@
 #include "io/Schema.h"
 
 #include "operators/operators_definitions.h"
-
+#include "cache_machine/CacheData.h"
 // WARNING NEVER INVOKE backend_dispatcher in the api_x.cpp files
 //namespace voltron {
 //namespace compute {
@@ -32,6 +32,9 @@ struct sorted_merger_functor {
 
 // TODO percy arrow rommel enable this when we have arrow 4
 #ifdef CUDF_SUPPORT
+#include <cudf/copying.hpp>
+#include <cudf/detail/gather.hpp>
+
 struct gather_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
@@ -194,16 +197,6 @@ struct evaluate_expressions_wo_filter_functor {
   const std::vector<std::string> column_names) const
   {
     throw std::runtime_error("ERROR: evaluate_expressions_wo_filter_functor This default dispatcher operator should not be called.");
-    return nullptr;
-  }
-};
-
-struct apply_boolean_functor {
-  template <typename T>
-  std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view,
-  std::shared_ptr<ral::frame::BlazingTableView> bool_column_values) const
-  {
-    throw std::runtime_error("ERROR: apply_boolean_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
@@ -403,15 +396,15 @@ struct make_blazinghosttable_functor {
 	}
 };
 
-struct write_orc_functor {
+
+struct make_cachedata_functor {
   template <typename T>
-  void operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> table_view,
-      std::string file_path) const
-  {
-    throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
+  std::unique_ptr<ral::cache::CacheData> operator()(std::unique_ptr<ral::frame::BlazingTable> table) {
+    throw std::runtime_error("ERROR: make_cachedata_functor This default dispatcher operator should not be called.");
+    return nullptr;
   }
 };
+
 
 //} // compute
 //} // voltron

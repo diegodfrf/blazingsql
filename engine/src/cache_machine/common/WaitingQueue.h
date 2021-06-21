@@ -9,6 +9,9 @@
 #include <vector>
 #include <map>
 
+#include "execution_graph/Context.h"
+#include "utilities/CodeTimer.h"
+#include "utilities/error.hpp"
 #include <spdlog/spdlog.h>
 #include <exception>
 
@@ -36,7 +39,7 @@ public:
 	/**
 	* Constructor
 	*/
-	WaitingQueue(std::string queue_name, int timeout = 60000, bool log_timeout = true) : 
+	WaitingQueue(std::string queue_name, int timeout = 60000, bool log_timeout = true) :
 		queue_name(queue_name), finished{false}, timeout(timeout), log_timeout(log_timeout) {}
 
 	/**
@@ -245,7 +248,7 @@ public:
 	* batch.
 	* @param num_bytes The number of bytes that we will wait to exist in the
 	* WaitingQueue unless the WaitingQueue has already had finished() called.
-	* @param num_bytes_timeout A timeout in ms where if there is data and the timeout 
+	* @param num_bytes_timeout A timeout in ms where if there is data and the timeout
 	* expires, then it will return, even if not the requested num_bytes is available.
 	* If its set to -1, then it disables this timeout
 	*/
@@ -256,7 +259,7 @@ public:
 		while(!condition_variable_.wait_for(lock, cond_var_timeout*1ms, [&blazing_timer, num_bytes, num_bytes_timeout, this] {
 				bool done_waiting = this->finished.load(std::memory_order_seq_cst);
 				size_t total_bytes = 0;
-				if (!done_waiting) {					
+				if (!done_waiting) {
 					for (auto & message : message_queue_){
 						total_bytes += message->get_data().size_in_bytes();
 					}
@@ -377,7 +380,7 @@ public:
 					}
 				}
 				return done_waiting;
-				
+
 			})){
 
 			}

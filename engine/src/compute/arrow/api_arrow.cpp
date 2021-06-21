@@ -13,6 +13,7 @@
 #include "compute/arrow/detail/types.h"
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
+#include "cache_machine/common/ArrowCacheData.h"
 
 // TODO percy arrow 4 move these functions into hosttbale ctor
 #include "communication/messages/GPUComponentMessage.h"
@@ -477,6 +478,7 @@ inline std::shared_ptr<ral::frame::BlazingTableView> select_functor::operator()<
 
 // TODO percy arrow rommel enable this when we have arrow 4
 #ifdef CUDF_SUPPORT
+#include <thrust/binary_search.h>
 template <>
 inline std::vector<std::shared_ptr<ral::frame::BlazingTableView>>
 upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
@@ -525,7 +527,7 @@ upper_bound_split_functor::operator()<ral::frame::BlazingArrowTable>(
   auto split_indexes = pivot_indexes;
 
 //  auto pivot_indexes = cudf::upper_bound(columns_to_search, partitionPlan->view(), column_order, null_precedence);
-//	std::vector<cudf::size_type> split_indexes = ral::utilities::column_to_vector<cudf::size_type>(pivot_indexes->view());
+//	std::vector<int> split_indexes = ral::utilities::column_to_vector<int>(pivot_indexes->view());
 //  auto tbs = cudf::split(sortedTable->view(), split_indexes);
 //  std::vector<std::shared_ptr<ral::frame::BlazingTableView>> ret;
 //  for (auto tb : tbs) {
@@ -649,13 +651,42 @@ inline std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_funct
   return ral::communication::messages::serialize_arrow_message_to_host_table(arrow_table_ptr->to_table_view(), use_pinned);
 }
 
-template <>
-inline void write_orc_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::string file_path) const
-{
-  throw std::runtime_error("ERROR: write_orc_functor BlazingSQL doesn't support this Arrow operator yet.");
+
+template<>
+inline
+std::unique_ptr<ral::cache::CacheData> make_cachedata_functor::operator()<ral::frame::BlazingArrowTable>(std::unique_ptr<ral::frame::BlazingTable> table){
+  std::unique_ptr<ral::frame::BlazingArrowTable> arrow_table(dynamic_cast<ral::frame::BlazingArrowTable*>(table.release()));
+  return std::make_unique<ral::cache::ArrowCacheData>(std::move(arrow_table));
 }
 
+template <> template <>
+inline void
+io_parse_file_schema_functor<ral::io::DataType::CSV>::operator()<ral::frame::BlazingArrowTable>(
+        ral::io::Schema & schema_out,
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        const std::map<std::string, std::string> &args_map) const
+{
+    voltron::compute::arrow_backend::io::parse_csv_schema(schema_out, file, args_map);
+}
+
+template <> template <>
+inline void
+io_parse_file_schema_functor<ral::io::DataType::ORC>::operator()<ral::frame::BlazingArrowTable>(
+        ral::io::Schema & schema_out,
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        const std::map<std::string, std::string> &args_map) const
+{
+    voltron::compute::arrow_backend::io::parse_orc_schema(schema_out, file, args_map);
+}
+
+template <> template <>
+inline void
+io_parse_file_schema_functor<ral::io::DataType::JSON>::operator()<ral::frame::BlazingArrowTable>(
+        ral::io::Schema & schema_out,
+        std::shared_ptr<arrow::io::RandomAccessFile> file,
+        const std::map<std::string, std::string> &args_map) const
+{
+    voltron::compute::arrow_backend::io::parse_json_schema(schema_out, file, args_map);
+}
 //} // compute
 //} // voltron

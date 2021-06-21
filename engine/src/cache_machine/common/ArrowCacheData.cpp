@@ -1,6 +1,10 @@
 #include "ArrowCacheData.h"
 #include "parser/CalciteExpressionParsing.h"
 
+#ifdef CUDF_SUPPORT
+#include "blazing_table/BlazingCudfTable.h"
+#endif
+
 namespace ral {
 namespace cache {
 

@@ -1,40 +1,33 @@
 #pragma once
 
 #include <atomic>
-#include <deque>
-#include <memory>
 #include <condition_variable>
+#include <deque>
+#include <exception>
+#include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
-#include <map>
+#include <numeric>
+#include <cassert>
 
-#include <spdlog/spdlog.h>
-#include "utilities/error.hpp"
-#include "utilities/CodeTimer.h"
 #include "blazing_table/BlazingTable.h"
 #include "execution_graph/Context.h"
-#include <bmr/BlazingMemoryResource.h>
-#include "communication/CommunicationData.h"
-#include <exception>
-#include "io/data_provider/DataProvider.h"
-#include "io/data_parser/DataParser.h"
-
-#include "communication/messages/GPUComponentMessage.h"
+#include "utilities/CodeTimer.h"
+#include "utilities/error.hpp"
 
 namespace ral {
 namespace cache {
 
 using Context = blazingdb::manager::Context;
-using namespace fmt::literals;
-
 
 /**
-* Indicates a type of CacheData
-* CacheData are type erased so we need to know if they reside in GPU,
-* CPU, or a file. We can also have GPU messages that contain metadata
-* which are used for sending CacheData from node to node
-*/
+ * Indicates a type of CacheData
+ * CacheData are type erased so we need to know if they reside in GPU,
+ * CPU, or a file. We can also have GPU messages that contain metadata
+ * which are used for sending CacheData from node to node
+ */
 enum class CacheDataType { GPU, CPU, LOCAL_FILE, IO_FILE, CONCATENATING, PINNED, ARROW };
 
 const std::string KERNEL_ID_METADATA_LABEL = "kernel_id"; /**< A message metadata field that indicates which kernel owns this message. */
@@ -62,247 +55,228 @@ const std::string OVERLAP_TARGET_NODE_INDEX = "overlap_target_node_index"; /**< 
 const std::string OVERLAP_TARGET_BATCH_INDEX = "overlap_target_batch_index"; /**< A message metadata field that contains an integer indicating the batch index for the node to whom it will be sent*/
 
 /**
-* Lightweight wrapper for a map that will one day be used for compile time checks.
-* Currently it is just a wrapper for map but in the future the intention is for
-* us to manage the Metadata in a struct as opposed to a map of string to string.
-*/
-class MetadataDictionary{
-public:
+ * Lightweight wrapper for a map that will one day be used for compile time checks.
+ * Currently it is just a wrapper for map but in the future the intention is for
+ * us to manage the Metadata in a struct as opposed to a map of string to string.
+ */
+class MetadataDictionary {
+ public:
+  /**
+   * Gets the type of CacheData that was used to construct this CacheData
+   * @param key The key in the map that we will be modifying.
+   * @param value The value that we will set the key to.
+   */
+  void add_value(std::string key, std::string value) { this->values[key] = value; }
 
-	/**
-	* Gets the type of CacheData that was used to construct this CacheData
-	* @param key The key in the map that we will be modifying.
-	* @param value The value that we will set the key to.
-	*/
-	void add_value(std::string key, std::string value){
-		this->values[key] = value;
-	}
+  /**
+   * Gets the type of CacheData that was used to construct this CacheData
+   * @param key The key in the map that we will be modifying.
+   * @param value The value that we will set the key to.
+   */
+  void add_value(std::string key, int value) {
+    this->values[key] = std::to_string(value);
+  }
 
-	/**
-	* Gets the type of CacheData that was used to construct this CacheData
-	* @param key The key in the map that we will be modifying.
-	* @param value The value that we will set the key to.
-	*/
-	void add_value(std::string key, int value){
-		this->values[key] = std::to_string(value);
-	}
+  /**
+   * Gets id of creating kernel.
+   * @return Get the id of the kernel that created this message.
+   */
+  int get_kernel_id() {
+    if (this->values.find(KERNEL_ID_METADATA_LABEL) == this->values.end()) {
+      throw BlazingMissingMetadataException(KERNEL_ID_METADATA_LABEL);
+    }
+    return std::stoi(values[KERNEL_ID_METADATA_LABEL]);
+  }
 
-	/**
-	* Gets id of creating kernel.
-	* @return Get the id of the kernel that created this message.
-	*/
-	int get_kernel_id(){
-		if( this->values.find(KERNEL_ID_METADATA_LABEL) == this->values.end()){
-			throw BlazingMissingMetadataException(KERNEL_ID_METADATA_LABEL);
-		}
-		return std::stoi(values[KERNEL_ID_METADATA_LABEL]);
-	}
+  /**
+   * Print every key => value pair in the map.
+   * Only used for debugging purposes.
+   */
+  void print() {
+    for (auto elem : this->values) {
+      std::cout << elem.first << " " << elem.second << "\n";
+    }
+  }
+  /**
+   * Gets the map storing the metadata.
+   * @return the map storing all of the metadata.
+   */
 
-	/**
-	* Print every key => value pair in the map.
-	* Only used for debugging purposes.
-	*/
-	void print(){
-		for(auto elem : this->values)
-		{
-		   std::cout << elem.first << " " << elem.second<< "\n";
-		}
-	}
-	/**
-	* Gets the map storing the metadata.
-	* @return the map storing all of the metadata.
-	*/
+  std::map<std::string, std::string> get_values() const { return this->values; }
 
-	std::map<std::string,std::string> get_values() const {
-		return this->values;
-	}
+  /**
+   * Erases all current metadata and sets new values.
+   * @param new_values A map to copy into this->values .
+   */
+  void set_values(std::map<std::string, std::string> new_values) {
+    this->values = new_values;
+  }
 
-	/**
-	* Erases all current metadata and sets new values.
-	* @param new_values A map to copy into this->values .
-	*/
-	void set_values(std::map<std::string,std::string> new_values){
-		this->values= new_values;
-	}
+  /**
+   * Checks if metadata has a specific key
+   * @param key The key to check if is in the metadata
+   * @return true if the key is in the metadata, otherwise return false
+   */
+  bool has_value(std::string key) {
+    auto it = this->values.find(key);
+    return it != this->values.end();
+  }
 
-	/**
-	* Checks if metadata has a specific key
-	* @param key The key to check if is in the metadata
-	* @return true if the key is in the metadata, otherwise return false
-	*/
-	bool has_value(std::string key){
-		auto it = this->values.find(key);
-		return it != this->values.end();
-	}
+  std::string get_value(std::string key);
 
-    std::string get_value(std::string key);
+  void set_value(std::string key, std::string value);
 
-    void set_value(std::string key, std::string value);
-
-private:
-	std::map<std::string,std::string> values; /**< Stores the mapping of metdata label to metadata value */
+ private:
+  std::map<std::string, std::string>
+      values; /**< Stores the mapping of metdata label to metadata value */
 };
 
 /**
-* Base Class for all CacheData
-* A CacheData represents a combination of a schema along with a container for
-* a dataframe. This gives us one type that can be sent around and whose only
-* purpose is to hold data until it is ready to be operated on by calling
-* the decache method.
-*/
+ * Base Class for all CacheData
+ * A CacheData represents a combination of a schema along with a container for
+ * a dataframe. This gives us one type that can be sent around and whose only
+ * purpose is to hold data until it is ready to be operated on by calling
+ * the decache method.
+ */
 class CacheData {
-public:
+ public:
+  /**
+   * Constructor for CacheData
+   * This is only invoked by the derived classes when constructing.
+   * @param cache_type The CacheDataType of this cache letting us know where the data is
+   * stored.
+   * @param col_names The names of the columns in the dataframe.
+   * @param schema The types of the columns in the dataframe.
+   * @param n_rows The number of rows in the dataframe.
+   */
+  CacheData(CacheDataType cache_type, std::vector<std::string> col_names,
+            std::vector<std::shared_ptr<arrow::DataType>> schema, size_t n_rows)
+      : cache_type(cache_type),
+        col_names(col_names),
+        schema(std::move(schema)),
+        n_rows(n_rows) {}
 
-	/**
-	* Constructor for CacheData
-	* This is only invoked by the derived classes when constructing.
-	* @param cache_type The CacheDataType of this cache letting us know where the data is stored.
-	* @param col_names The names of the columns in the dataframe.
-	* @param schema The types of the columns in the dataframe.
-	* @param n_rows The number of rows in the dataframe.
-	*/
-	CacheData(CacheDataType cache_type, std::vector<std::string> col_names, std::vector<std::shared_ptr<arrow::DataType>> schema, size_t n_rows)
-		: cache_type(cache_type), col_names(col_names), schema(std::move(schema)), n_rows(n_rows)
-	{
-	}
+  CacheData() {}
 
-	CacheData()
-	{
-	}
+  /**
+   * @brief Remove the payload from this CacheData. A pure virtual function.
+   * This removes the payload for the CacheData. After this the CacheData will
+   * almost always go out of scope and be destroyed.
+   * @param backend the execution backend
+   * @return a BlazingTable generated from the source of data for this CacheData. The type
+   * of BlazingTable returned will depend on the backend
+   */
+  virtual std::unique_ptr<ral::frame::BlazingTable> decache(
+      execution::execution_backend backend) = 0;
 
-	/**
-	* @brief Remove the payload from this CacheData. A pure virtual function.
-	* This removes the payload for the CacheData. After this the CacheData will
-	* almost always go out of scope and be destroyed.
-	* @param backend the execution backend
-	* @return a BlazingTable generated from the source of data for this CacheData. The type of BlazingTable returned will depend on the backend
-	*/
-	virtual std::unique_ptr<ral::frame::BlazingTable> decache(execution::execution_backend backend) = 0;
+  /**
+   * . A pure virtual function.
+   * This removes the payload for the CacheData. After this the CacheData will
+   * almost always go out of scope and be destroyed.
+   * @return the number of bytes our dataframe occupies in whatever format it is being
+   * stored
+   */
+  virtual size_t size_in_bytes() const = 0;
 
-	/**
-	* . A pure virtual function.
-	* This removes the payload for the CacheData. After this the CacheData will
-	* almost always go out of scope and be destroyed.
-	* @return the number of bytes our dataframe occupies in whatever format it is being stored
-	*/
-	virtual size_t size_in_bytes() const = 0;
+  /**
+   * Set the names of the columns.
+   * @param names a vector of the column names.
+   */
+  virtual void set_names(const std::vector<std::string>& names) = 0;
 
-	/**
-	* Set the names of the columns.
-	* @param names a vector of the column names.
-	*/
-	virtual void set_names(const std::vector<std::string> & names) = 0;
+  /**
+   * Destructor
+   */
+  virtual ~CacheData() {}
 
-	/**
-	* Destructor
-	*/
-	virtual ~CacheData() {}
+  virtual std::unique_ptr<CacheData> clone() = 0;
 
-	virtual std::unique_ptr<CacheData> clone() = 0;
+  /**
+   * Get the names of the columns.
+   * @return a vector of the column names
+   */
+  std::vector<std::string> column_names() const { return col_names; }
 
-	/**
-	* Get the names of the columns.
-	* @return a vector of the column names
-	*/
-	std::vector<std::string> column_names() const {
-		return col_names;
-	}
+  /**
+   * Get the cudf::data_type of each column.
+   * @return a vector of the cudf::data_type of each column.
+   */
+  std::vector<std::shared_ptr<arrow::DataType>> get_schema() const { return schema; }
 
-	/**
-	* Get the cudf::data_type of each column.
-	* @return a vector of the cudf::data_type of each column.
-	*/
-	std::vector<std::shared_ptr<arrow::DataType>> get_schema() const {
-		return schema;
-	}
+  /**
+   * Get the number of columns this CacheData will generate with decache.
+   */
+  size_t num_columns() const { return col_names.size(); }
 
-	/**
-	* Get the number of columns this CacheData will generate with decache.
-	*/
-	size_t num_columns() const {
-		return col_names.size();
-	}
+  /**
+   * Get the number of rows this CacheData will generate with decache.
+   */
+  size_t num_rows() const { return n_rows; }
 
-	/**
-	* Get the number of rows this CacheData will generate with decache.
-	*/
-	size_t num_rows() const {
-		return n_rows;
-	}
+  /**
+   * Gets the type of CacheData that was used to construct this CacheData
+   * @return The CacheDataType that is used to store the dataframe representation.
+   */
+  CacheDataType get_type() const { return cache_type; }
 
-	/**
-	* Gets the type of CacheData that was used to construct this CacheData
-	* @return The CacheDataType that is used to store the dataframe representation.
-	*/
-	CacheDataType get_type() const {
-		return cache_type;
-	}
+  /**
+   * Set the MetadataDictionary
+   */
+  void setMetadata(MetadataDictionary new_metadata) { this->metadata = new_metadata; }
 
-	/**
-	* Set the MetadataDictionary
-	*/
-	void setMetadata(MetadataDictionary new_metadata){
-		this->metadata = new_metadata;
-	}
+  /**
+   * Get the MetadataDictionary
+   * @return The MetadataDictionary which is used in routing and planning.
+   */
+  MetadataDictionary getMetadata() { return this->metadata; }
 
-	/**
-	* Get the MetadataDictionary
-	* @return The MetadataDictionary which is used in routing and planning.
-	*/
-	MetadataDictionary getMetadata(){
-		return this->metadata;
-	}
+  /**
+   * @brief Factory function that can take a BlazingTable of any type, and convert it to a
+   * CacheData of the correct type for its backend without data conversion
+   * @param table is a BlazingTable of any type
+   * @return  a CacheData of the correct type for its backend without data conversion
+   */
+  static std::unique_ptr<CacheData> MakeCacheData(
+      std::unique_ptr<ral::frame::BlazingTable> table);
 
-	/**
-	 * Utility function which can take a CacheData and if its a standard GPU cache data, it will downgrade it to CPU or Disk
-	 * @return If the input CacheData is not of a type that can be downgraded, it will just return the original input, otherwise it will return the downgraded CacheData.
-	 */
-	static std::unique_ptr<CacheData> downgradeGPUCacheData(std::unique_ptr<CacheData> cacheData, std::string id, std::shared_ptr<Context> ctx);
-
-
-	/**
-	 * @brief Factory function that can take a BlazingTable of any type, and convert it to a CacheData of the correct type for its backend without data conversion
-	 * @param table is a BlazingTable of any type
-	 * @return  a CacheData of the correct type for its backend without data conversion
-	 */
-	static std::unique_ptr<CacheData> MakeCacheData(std::unique_ptr<ral::frame::BlazingTable> table);
-
-protected:
-	CacheDataType cache_type; /**< The CacheDataType that is used to store the dataframe representation. */
-	std::vector<std::string> col_names; /**< A vector storing the names of the columns in the dataframe representation. */
-	std::vector<std::shared_ptr<arrow::DataType>> schema; /**< A vector storing the cudf::data_type of the columns in the dataframe representation. */
-	size_t n_rows; /**< Stores the number of rows in the dataframe representation. */
-    MetadataDictionary metadata; /**< The metadata used for routing and planning. */
+ protected:
+  CacheDataType cache_type; /**< The CacheDataType that is used to store the dataframe
+                               representation. */
+  std::vector<std::string> col_names; /**< A vector storing the names of the columns in
+                                         the dataframe representation. */
+  std::vector<std::shared_ptr<arrow::DataType>>
+      schema;    /**< A vector storing the cudf::data_type of the columns in the dataframe
+                    representation. */
+  size_t n_rows; /**< Stores the number of rows in the dataframe representation. */
+  MetadataDictionary metadata; /**< The metadata used for routing and planning. */
 };
 
-
 /**
-* A wrapper for a CacheData object with a message_id.
-* Bundles together a String mesage_id with a CacheData object. Really not very
-* necessary as we could just as easily store this in the CacheData object.
-*/
-class message { //TODO: the cache_data object can store its id. This is not needed.
-public:
-	message(std::unique_ptr<CacheData> content, std::string message_id = "")
-		: data(std::move(content)), message_id(message_id)
-	{
-		assert(data != nullptr);
-	}
+ * A wrapper for a CacheData object with a message_id.
+ * Bundles together a String mesage_id with a CacheData object. Really not very
+ * necessary as we could just as easily store this in the CacheData object.
+ */
+class message {  // TODO: the cache_data object can store its id. This is not needed.
+ public:
+  message(std::unique_ptr<CacheData> content, std::string message_id = "")
+      : data(std::move(content)), message_id(message_id) {
+    assert(data != nullptr);
+  }
 
-	~message() = default;
+  ~message() = default;
 
-	std::string get_message_id() const { return (message_id); }
+  std::string get_message_id() const { return (message_id); }
 
-	CacheData& get_data() const { return *data; }
+  CacheData& get_data() const { return *data; }
 
-	std::unique_ptr<CacheData> release_data() { return std::move(data); }
+  std::unique_ptr<CacheData> release_data() { return std::move(data); }
 
-	std::unique_ptr<CacheData> clone() { return data->clone(); }
+  std::unique_ptr<CacheData> clone() { return data->clone(); }
 
-protected:
-	std::unique_ptr<CacheData> data;
-	const std::string message_id;
+ protected:
+  std::unique_ptr<CacheData> data;
+  const std::string message_id;
 };
 
 }  // namespace cache
-} // namespace ral
+}  // namespace ral

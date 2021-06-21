@@ -24,7 +24,6 @@
 #include <cudf/scalar/scalar_factories.hpp>
 #include <cudf/reduction.hpp>
 #include <cudf/detail/interop.hpp>
-#include <cudf/io/orc.hpp> // TODO percy arrow move this or writer to io
 
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
@@ -45,6 +44,7 @@
 #include "utilities/error.hpp"
 #include "blazing_table/BlazingCudfTable.h"
 #include "communication/messages/GPUComponentMessage.h"
+#include "cache_machine/cudf/GPUCacheData.h"
 
 //namespace voltron {
 //namespace compute {
@@ -593,22 +593,11 @@ std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::ope
     return ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
 }
 
-template <>
-inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::string file_path) const
-{
-	auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
-
-	cudf::io::table_metadata metadata;
-	for(auto name : cudf_table_view->column_names()) {
-		metadata.column_names.emplace_back(name);
-	}
-
-	cudf::io::orc_writer_options out_opts = cudf::io::orc_writer_options::builder(cudf::io::sink_info{file_path}, cudf_table_view->view())
-		.metadata(&metadata);
-
-	cudf::io::write_orc(out_opts);
+template<>
+inline
+std::unique_ptr<ral::cache::CacheData> make_cachedata_functor::operator()<ral::frame::BlazingCudfTable>(std::unique_ptr<ral::frame::BlazingTable> table){
+	std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
+	return std::make_unique<ral::cache::GPUCacheData>(std::move(cudf_table));
 }
 
 //} // compute

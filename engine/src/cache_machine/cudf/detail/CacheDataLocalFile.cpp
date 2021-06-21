@@ -1,7 +1,9 @@
 #include "CacheDataLocalFile.h"
 #include <random>
 #include "compute/backend_dispatcher.h"
-#include "compute/api.h"
+#include <spdlog/logger.h>
+#include <spdlog/spdlog.h>
+using namespace fmt::literals;
 
 
 // TODO percy arrow
@@ -31,6 +33,44 @@ std::string randomString(std::size_t length) {
 }
 
 //////////////////////////////////// write_orc_functor
+
+struct write_orc_functor {
+  template <typename T>
+  void operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_view,
+      std::string file_path) const
+  {
+    throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
+  }
+};
+
+template <>
+inline void write_orc_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::string file_path) const
+{
+  throw std::runtime_error("ERROR: write_orc_functor BlazingSQL doesn't support this Arrow operator yet.");
+}
+
+template <>
+inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::string file_path) const
+{
+#ifdef CUDF_SUPPORT
+	auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
+
+	cudf::io::table_metadata metadata;
+	for(auto name : cudf_table_view->column_names()) {
+		metadata.column_names.emplace_back(name);
+	}
+
+	cudf::io::orc_writer_options out_opts = cudf::io::orc_writer_options::builder(cudf::io::sink_info{file_path}, cudf_table_view->view())
+		.metadata(&metadata);
+
+	cudf::io::write_orc(out_opts);
+#endif
+}
 
 CacheDataLocalFile::CacheDataLocalFile(std::unique_ptr<ral::frame::BlazingTable> table, std::string orc_files_path, std::string ctx_token)
 	: CacheData(CacheDataType::LOCAL_FILE, table->column_names(), table->column_types(), table->num_rows())

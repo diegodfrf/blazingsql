@@ -1,7 +1,9 @@
 #pragma once
 
-#include "CacheData.h"
 #include <arrow/table.h>
+#include <blazing_table/BlazingArrowTable.h>
+
+#include "../CacheData.h"
 
 namespace ral {
 namespace cache {
@@ -19,7 +21,7 @@ public:
 	*/
 	ArrowCacheData(std::unique_ptr<ral::frame::BlazingArrowTable> table)
 		: CacheData(CacheDataType::ARROW, table->column_names(), table->column_types(), table->num_rows()), data_{std::move(table)} {
-			
+
 		}
 
 	/**
