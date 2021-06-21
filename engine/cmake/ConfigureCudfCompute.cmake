@@ -33,13 +33,13 @@ set(COMPUTE_CUDF_SRC_FILES
 
     ${PROJECT_SOURCE_DIR}/src/cache_machine/cudf/detail/CacheDataLocalFile.cpp
     ${PROJECT_SOURCE_DIR}/src/cache_machine/cudf/CacheMachine.cpp
+    ${PROJECT_SOURCE_DIR}/src/cache_machine/cudf/GPUCacheData.cpp
 
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTableView.cpp
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingColumnOwner.cpp
 
     ${PROJECT_SOURCE_DIR}/src/communication/messages/MessageUtil.cu
-    ${PROJECT_SOURCE_DIR}/src/cache_machine/GPUCacheData.cpp
     ${PROJECT_SOURCE_DIR}/src/config/GPUManager.cu
     ${PROJECT_SOURCE_DIR}/src/io/data_provider/GDFDataProvider.cpp
     ${PROJECT_SOURCE_DIR}/src/io/data_parser/GDFParser.cpp

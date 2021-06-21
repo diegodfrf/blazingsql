@@ -52,12 +52,15 @@ public:
   REGISTER_ARCH_DISPATCH(name, CUDA_BACKEND, fn)
                                          \
 #if defined(CUDF_SUPPORT)
-#define REGISTER_DISPATCH(name, fn)                                            \
-  REGISTER_CUDA_DISPATCH(name, fn)
+  #define REGISTER_DISPATCH(name, fn)                                            \
+    REGISTER_CUDA_DISPATCH(name, fn)                                              
 #else
-#define REGISTER_DISPATCH(name, fn)                                            \
-  REGISTER_ARCH_DISPATCH(name, CPU_BACKEND, fn)
+  #define REGISTER_DISPATCH(name, fn)                                            \
+    REGISTER_ARCH_DISPATCH(name, CPU_BACKEND, fn)
 #endif
+
+#define REGISTER_CPU_DISPATCH(name, fn)                                          \
+  REGISTER_ARCH_DISPATCH(name, CPU_BACKEND, fn)
 
 #define REGISTER_NO_CPU_DISPATCH(name, fn_type)                                \
   REGISTER_ARCH_DISPATCH(name, CPU_BACKEND, static_cast<fn_type>(nullptr))

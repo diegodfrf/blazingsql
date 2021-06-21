@@ -229,7 +229,6 @@ std::unique_ptr<ral::frame::BlazingTable> runQuery(std::string& json, std::strin
   std::replace(json.begin(), json.end(), '\'', '\"');
 
   std::shared_ptr<Context> context = make_context(output_type, preferred_compute);
-  ral::cache::CacheMachine cacheMachine(context, "");
 
   std::shared_ptr<ral::io::parquet_parser> parser;
   std::shared_ptr<ral::io::uri_data_provider> provider;

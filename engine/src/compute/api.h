@@ -201,6 +201,17 @@ struct evaluate_expressions_wo_filter_functor {
   }
 };
 
+struct apply_boolean_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view,
+  std::shared_ptr<ral::frame::BlazingTableView> bool_column_values) const
+  {
+    throw std::runtime_error("ERROR: apply_boolean_functor This default dispatcher operator should not be called.");
+    return nullptr;
+  }
+};
+
+
 struct evaluate_expressions_functor {
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(std::shared_ptr<ral::frame::BlazingTableView> table_view,

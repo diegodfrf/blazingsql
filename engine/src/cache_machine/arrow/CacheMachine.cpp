@@ -491,7 +491,6 @@ std::unique_ptr<ral::cache::CacheData> ArrowConcatenatingCacheMachine::pullCache
 
   return output;
 }
- 
 
 std::shared_ptr<CacheMachine> make_arrow_single_machine(
     std::shared_ptr<Context> context, std::string cache_machine_name, bool log_timeout,
@@ -508,10 +507,9 @@ std::shared_ptr<CacheMachine> make_arrow_concatenating_machine(
      new ArrowConcatenatingCacheMachine(context, concat_cache_num_bytes, num_bytes_timeout,
                                    concat_all, cache_machine_name));
 }
- 
 
-REGISTER_DISPATCH(make_single_machine_stub, &ral::cache::make_arrow_single_machine)
-REGISTER_DISPATCH(make_concatenating_machine_stub, &ral::cache::make_arrow_concatenating_machine)
+REGISTER_CPU_DISPATCH(make_single_machine_stub, &ral::cache::make_arrow_single_machine)
+REGISTER_CPU_DISPATCH(make_concatenating_machine_stub, &ral::cache::make_arrow_concatenating_machine)
 
 
 }  // namespace cache
