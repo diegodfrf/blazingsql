@@ -90,6 +90,22 @@ arrowTypeToCsvType = {
     # TODO: Add more types
 }
 
+pyarrowTypeToInt = {
+    "boolean":1,
+    "uint8":2,
+    "int8":3,
+    "uint16":4,
+    "int16":5,
+    "uint32":6,
+    "int32":7,
+    "uint64":8,
+    "int64":9,
+    "float32":11,
+    "float64":12,
+    "string":13,
+    # TODO: Add more types
+}
+
 # TODO: improve the way we are getting these values or move to another place ..
 # and add more types
 np_to_arrow_types_int = {
