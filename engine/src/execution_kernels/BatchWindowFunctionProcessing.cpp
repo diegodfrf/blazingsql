@@ -3,8 +3,8 @@
 #include <iterator>
 
 #include "blazing_table/BlazingColumn.h"
-#include "cache_machine/GPUCacheData.h"
-#include "cache_machine/ConcatCacheData.h"
+#include "cache_machine/cudf/GPUCacheData.h"
+#include "cache_machine/common/ConcatCacheData.h"
 #include "execution_graph/executor.h"
 #include "utilities/CodeTimer.h"
 

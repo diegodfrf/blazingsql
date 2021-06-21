@@ -9,14 +9,16 @@
 #include "execution_kernels/kernel.h"
 #include "blazing_table/BlazingTable.h"
 
-#include "cache_machine/CacheDataIO.h"
-#include "cache_machine/ArrowCacheData.h"
+#include "cache_machine/common/CacheDataIO.h"
+#include "cache_machine/common/ArrowCacheData.h"
 
 #include "io/data_parser/CSVParser.h"
 #include "io/data_parser/JSONParser.h"
 #include "io/data_parser/OrcParser.h"
 #include "io/data_parser/ParquetParser.h"
 #include "io/data_parser/ArrowParser.h"
+
+#include "bmr/BlazingMemoryResource.h"
 
 namespace ral {
 namespace batch {

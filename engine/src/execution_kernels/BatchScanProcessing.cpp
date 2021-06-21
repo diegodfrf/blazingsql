@@ -2,7 +2,7 @@
 #include <src/operators/LogicalFilter.h>
 #include "io/data_parser/CSVParser.h"
 #include "execution_graph/executor.h"
-#include "cache_machine/CacheDataIO.h"
+#include "cache_machine/common/CacheDataIO.h"
 
 #ifdef MYSQL_SUPPORT
 #include "io/data_provider/sql/MySQLDataProvider.h"

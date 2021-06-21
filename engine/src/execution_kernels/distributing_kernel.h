@@ -7,6 +7,7 @@
 #include "cache_machine/CacheMachine.h"
 #include <execution_graph/Context.h>
 #include "kernel.h"
+#include "communication/CommunicationData.h"
 
 namespace ral {
 namespace cache {

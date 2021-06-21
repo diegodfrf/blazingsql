@@ -1,8 +1,8 @@
 #pragma once
 
 #include <iostream>
+#include <cassert>
 #include "backend.h"
-
 
 template <typename FnPtr, typename T> struct DispatchStub;
 
@@ -32,7 +32,7 @@ public:
   static FnPtr CPU_BACKEND;
 #ifdef CUDF_SUPPORT
   static FnPtr CUDA_BACKEND;
-#endif 
+#endif
 };
 
 #define DECLARE_DISPATCH(fn, name)                                             \
@@ -48,7 +48,19 @@ public:
 #define REGISTER_ARCH_DISPATCH(name, arch, fn)                                 \
   template <> decltype(fn) DispatchStub<decltype(fn), struct name>::arch = fn;
 
-#define REGISTER_CUDF_DISPATCH(name, fn)                                            \
+#define REGISTER_CUDA_DISPATCH(name, fn) \
   REGISTER_ARCH_DISPATCH(name, CUDA_BACKEND, fn)
-#define REGISTER_ARROW_DISPATCH(name, fn)                                            \
+                                         \
+#if defined(CUDF_SUPPORT)
+#define REGISTER_DISPATCH(name, fn)                                            \
+  REGISTER_CUDA_DISPATCH(name, fn)
+#else
+#define REGISTER_DISPATCH(name, fn)                                            \
   REGISTER_ARCH_DISPATCH(name, CPU_BACKEND, fn)
+#endif
+
+#define REGISTER_NO_CPU_DISPATCH(name, fn_type)                                \
+  REGISTER_ARCH_DISPATCH(name, CPU_BACKEND, static_cast<fn_type>(nullptr))
+
+#define REGISTER_NO_CUDA_DISPATCH(name, fn_type)                                \
+  REGISTER_ARCH_DISPATCH(name, CUDA_BACKEND, static_cast<fn_type>(nullptr))

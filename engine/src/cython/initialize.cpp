@@ -475,7 +475,7 @@ std::pair<std::pair<std::shared_ptr<CacheMachine>,std::shared_ptr<CacheMachine> 
 	auto & communicationData = ral::communication::CommunicationData::getInstance();
 	communicationData.initialize(worker_id, orc_files_path);
 
-	auto output_input_caches = std::make_pair(std::make_shared<CacheMachine>(nullptr, "messages_out", false,CACHE_LEVEL_CPU ),std::make_shared<CacheMachine>(nullptr, "messages_in", false));
+	auto output_input_caches = std::make_pair(ral::cache::CacheMachine::make_single_machine(nullptr, "messages_out", false,CACHE_LEVEL_CPU ),ral::cache::CacheMachine::make_single_machine(nullptr, "messages_in", false));
 
 #ifdef CUDF_SUPPORT
 	ucp_context_h ucp_context = nullptr;

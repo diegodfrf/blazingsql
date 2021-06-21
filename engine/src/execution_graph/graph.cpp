@@ -2,6 +2,7 @@
 #include "operators/OrderBy.h"
 #include "execution_kernels/BatchProcessing.h"
 #include "parser/orderby_parser_utils.h"
+#include "communication/CommunicationData.h"
 
 namespace ral {
 namespace cache {

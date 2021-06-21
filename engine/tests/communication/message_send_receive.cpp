@@ -426,8 +426,8 @@ std::shared_ptr<ral::cache::graph> create_graph(){
   cache_machine_config.context = context->clone();
   graph->add_edge(kernel_filter, kernel_project, "0", "1", cache_machine_config);
 
-  // auto inputCacheMachine = std::make_shared<ral::cache::CacheMachine>(context);
-	// auto outputCacheMachine = std::make_shared<ral::cache::CacheMachine>(context);
+  // auto inputCacheMachine = ral::cache::CacheMachine::make_single_machine(context);
+	// auto outputCacheMachine = ral::cache::CacheMachine::make_single_machine(context);
 	// kernel->input_.register_cache("1", inputCacheMachine);
 	// kernel->output_.register_cache("1", outputCacheMachine);
 
@@ -758,7 +758,7 @@ void SenderCall(const UcpWorkerAddress &peerUcpWorkerAddress,
   std::map<std::string, comm::node> nodes_info_map;
   nodes_info_map.emplace("server", comm::node(1, "server", ucp_ep, ucp_worker));
 
-  auto output_cache = std::make_shared<ral::cache::CacheMachine>(nullptr, "output");
+  auto output_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "output");
 
   for (size_t i = 0; i < 30; i++)
   {
@@ -784,8 +784,8 @@ void ReceiverCall(const UcpWorkerAddress &peerUcpWorkerAddress,
   std::map<std::string, comm::node> nodes_info_map;
   nodes_info_map.emplace("client", comm::node(0, "client", ucp_ep, ucp_worker));
 
-  auto output_cache = std::make_shared<ral::cache::CacheMachine>(nullptr, "output");
-  auto input_cache = std::make_shared<ral::cache::CacheMachine>(nullptr, "input");
+  auto output_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "output");
+  auto input_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "input");
 
   auto graph = create_graph();
   graph->set_input_and_output_caches(input_cache, output_cache);

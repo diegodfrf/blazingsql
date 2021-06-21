@@ -86,7 +86,7 @@ void SenderCall(const UcpWorkerAddress &peerUcpWorkerAddress,
   std::map<std::string, comm::node> nodes_info_map;
   nodes_info_map.emplace("server", comm::node(other_ralId, "server", ucp_ep, ucp_worker));
 
-  std::shared_ptr<ral::cache::CacheMachine> output_cache = std::make_shared<CacheMachine>(nullptr, "messages_out", false,CACHE_LEVEL_CPU );
+  std::shared_ptr<ral::cache::CacheMachine> output_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "messages_out", false,CACHE_LEVEL_CPU );
   
   bool require_acknowledge = false;
   comm::message_sender::initialize_instance(output_cache, nodes_info_map, num_comm_threads, ucp_context, 
@@ -149,7 +149,7 @@ void ReceiverCall(const UcpWorkerAddress &peerUcpWorkerAddress,
   std::map<std::string, comm::node> nodes_info_map;
   nodes_info_map.emplace("client", comm::node(other_ralId, "client", ucp_ep, ucp_worker));
 
-  std::shared_ptr<ral::cache::CacheMachine> input_cache = std::make_shared<CacheMachine>(nullptr, "messages_in", false);
+  std::shared_ptr<ral::cache::CacheMachine> input_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "messages_in", false);
 
   comm::ucx_message_listener::initialize_message_listener(
     ucp_context, ucp_worker, nodes_info_map,num_comm_threads, input_cache);

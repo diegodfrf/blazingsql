@@ -80,8 +80,8 @@ std::tuple<std::shared_ptr<CacheMachine>, std::shared_ptr<CacheMachine>> registe
 	std::shared_ptr<kernel> project_kernel,
 	std::shared_ptr<Context> context,
 	int cache_level_override) {
-	std::shared_ptr<CacheMachine>  inputCacheMachine = std::make_shared<CacheMachine>(context, "", true, cache_level_override);
-	std::shared_ptr<CacheMachine> outputCacheMachine = std::make_shared<CacheMachine>(context, "", true, 0);
+	std::shared_ptr<CacheMachine>  inputCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "", true, cache_level_override);
+	std::shared_ptr<CacheMachine> outputCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "", true, 0);
 	project_kernel->input_.register_cache("1", inputCacheMachine);
 	project_kernel->output_.register_cache("1", outputCacheMachine);
 
@@ -93,9 +93,9 @@ std::tuple<std::shared_ptr<CacheMachine>, std::shared_ptr<CacheMachine>, std::sh
 	std::shared_ptr<kernel> union_kernel,
 	std::shared_ptr<Context> context,
 	int cache_level_override) {
-	std::shared_ptr<CacheMachine>  inputCacheMachineA = std::make_shared<CacheMachine>(context, "", true, cache_level_override);
-	std::shared_ptr<CacheMachine>  inputCacheMachineB = std::make_shared<CacheMachine>(context, "", true, cache_level_override);
-	std::shared_ptr<CacheMachine> outputCacheMachine = std::make_shared<CacheMachine>(context, "", true, 0);
+	std::shared_ptr<CacheMachine>  inputCacheMachineA = ral::cache::CacheMachine::make_single_machine(context, "", true, cache_level_override);
+	std::shared_ptr<CacheMachine>  inputCacheMachineB = ral::cache::CacheMachine::make_single_machine(context, "", true, cache_level_override);
+	std::shared_ptr<CacheMachine> outputCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "", true, 0);
 	union_kernel->input_.register_cache("input_a", inputCacheMachineA);
 	union_kernel->input_.register_cache("input_b", inputCacheMachineB);
 	union_kernel->output_.register_cache("1", outputCacheMachine);
@@ -108,8 +108,8 @@ std::tuple<std::shared_ptr<CacheMachine>, std::shared_ptr<CacheMachine>> registe
 	std::shared_ptr<kernel> sort_kernel,
 	std::shared_ptr<Context> context,
 	int cache_level_override) {
-	std::shared_ptr<CacheMachine>  inputCacheMachine = std::make_shared<CacheMachine>(context, "", true, cache_level_override);
-	std::shared_ptr<CacheMachine> outputCacheMachine = std::make_shared<CacheMachine>(context, "", true, 0);
+	std::shared_ptr<CacheMachine>  inputCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "", true, cache_level_override);
+	std::shared_ptr<CacheMachine> outputCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "", true, 0);
 	sort_kernel->input_.register_cache("1", inputCacheMachine);
 	sort_kernel->output_.register_cache("1", outputCacheMachine);
 

@@ -3,6 +3,11 @@
 #include "execution_graph/PhysicalPlanGenerator.h"
 #include "execution_graph/executor.h"
 
+
+#ifdef CUDF_SUPPORT
+#include "cache_machine/cudf/GPUCacheData.h"
+#endif 
+
 namespace ral {
 
     MemoryMonitor::MemoryMonitor(std::shared_ptr<ral::batch::tree_processor> tree,
@@ -41,6 +46,7 @@ namespace ral {
                     std::vector<std::unique_ptr<ral::execution::task>> tasks;
                      // if after downgrading all caches there is still too much consumption, lets try to downgrade data in tasks
                      // Lets pull tasks from the back of the queue, since they are ones that will not be operated on immediatelly
+                    #ifdef CUDF_SUPPORT
                     while (need_to_free_memory()){
 
                         std::unique_ptr<ral::execution::task> task = ral::execution::executor::get_instance()->remove_task_from_back();
@@ -52,7 +58,7 @@ namespace ral {
                             }
                             std::vector<std::unique_ptr<ral::cache::CacheData > > inputs = task->release_inputs();
                             for (std::size_t i = 0; i < inputs.size(); i++){
-                                inputs[i] = std::move(inputs[i]->downgradeGPUCacheData(std::move(inputs[i]), "", tree->context));
+                                inputs[i] = std::move(ral::cache::downgradeGPUCacheData(std::move(inputs[i]), "", tree->context));
                             }
                             task->set_inputs(std::move(inputs));
                             tasks.push_back(std::move(task));
@@ -60,6 +66,7 @@ namespace ral {
                             break;
                         }
                     }
+                    #endif
                     // we have now decached the inputs from either enough tasks to get below the memory limit or there are no more tasks to work with
                     // Now lets add the tasks back to the queue in the same order they were in
                     if (tasks.size() > 0){

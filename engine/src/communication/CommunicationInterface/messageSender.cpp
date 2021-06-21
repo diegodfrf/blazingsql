@@ -1,6 +1,6 @@
 #include "messageSender.hpp"
 #include <algorithm>
-#include "cache_machine/CPUCacheData.h"
+#include "cache_machine/common/CPUCacheData.h"
 
 using namespace fmt::literals;
 

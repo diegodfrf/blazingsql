@@ -6,7 +6,7 @@
 #include "utilities/CodeTimer.h"
 #include <src/operators/LogicalFilter.h>
 #include "execution_graph/executor.h"
-#include "cache_machine/CPUCacheData.h"
+#include "cache_machine/common/CPUCacheData.h"
 #include "compute/backend_dispatcher.h"
 #include "compute/api.h"
 #include "operators/Types.h"

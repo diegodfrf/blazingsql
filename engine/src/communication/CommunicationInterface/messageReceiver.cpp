@@ -1,7 +1,7 @@
 #include "messageReceiver.hpp"
 #include "protocols.hpp"
 #include <spdlog/spdlog.h>
-#include "cache_machine/CPUCacheData.h"
+#include "cache_machine/common/CPUCacheData.h"
 
 
 namespace comm {
@@ -58,13 +58,14 @@ size_t message_receiver::buffer_size(u_int16_t index){
   return _buffer_sizes[index];
 }
 
+#ifdef CUDF_SUPPORT
 void message_receiver::allocate_buffer(uint16_t index, cudaStream_t stream){
   if (index >= _raw_buffers.size()) {
     throw std::runtime_error("Invalid access to raw buffer");
   }
   _raw_buffers[index] = ral::memory::buffer_providers::get_pinned_buffer_provider()->get_chunk();
 }
-
+#endif
 node message_receiver::get_sender_node(){
   return _nodes_info_map.at(_metadata.get_values()[ral::cache::SENDER_WORKER_ID_METADATA_LABEL]);
 }

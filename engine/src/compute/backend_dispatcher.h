@@ -6,6 +6,7 @@
 
 #include "blazing_table/BlazingArrowTable.h"
 
+#include "backend_register.h"
 namespace ral{
 namespace execution {
 

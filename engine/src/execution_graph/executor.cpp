@@ -1,10 +1,11 @@
 #include "executor.h"
 
 #ifdef CUDF_SUPPORT
-#include "cache_machine/GPUCacheData.h"
+#include "cache_machine/cudf/GPUCacheData.h"
 #endif
 
-#include "cache_machine/CacheDataIO.h"
+#include "cache_machine/common/CacheDataIO.h"
+#include "bmr/BlazingMemoryResource.h"
 
 using namespace fmt::literals;
 

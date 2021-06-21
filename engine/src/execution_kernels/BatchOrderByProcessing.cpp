@@ -2,10 +2,10 @@
 #include "utilities/CodeTimer.h"
 #include "execution_graph/executor.h"
 #include "parser/expression_utils.hpp"
-#include "cache_machine/CPUCacheData.h"
+#include "cache_machine/common/CPUCacheData.h"
 
 #ifdef CUDF_SUPPORT
-#include "cache_machine/GPUCacheData.h"
+#include "cache_machine/cudf/GPUCacheData.h"
 #endif
 
 #include "cache_machine/CacheMachine.h"
@@ -279,7 +279,7 @@ ral::execution::task_result SortAndSampleKernel::do_process(std::vector< std::un
                     total_bytes_for_sampling += input->size_in_bytes();
 
                     std::unique_ptr<ral::cache::CacheData> cache_data = ral::execution::backend_dispatcher(sampledTable->get_execution_backend(),
-                                    ral::cache::make_cachedata_functor(), std::move(sampledTable));
+                                    make_cachedata_functor(), std::move(sampledTable));
                     this->samples_cache_machine->addCacheData(std::move(cache_data));
 
                     if (population_sampled > max_order_by_samples) {
