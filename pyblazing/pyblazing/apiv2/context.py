@@ -1,10 +1,7 @@
 # NOTE WARNING NEVER CHANGE THIS FIRST LINE!!!! NEVER EVER
-import cudf
+#import cudf
 
-
-from cudf.core.column.column import build_column
-from cudf.utils.dtypes import is_decimal_dtype
-from dask.distributed import get_worker
+#from dask.distributed import get_worker
 from datetime import datetime
 
 from collections import OrderedDict
@@ -13,19 +10,18 @@ from urllib.parse import urlparse
 
 from threading import Lock
 from weakref import ref
-from distributed.comm import parse_address
 from pyblazing.apiv2.filesystem import FileSystem
 from pyblazing.apiv2 import DataType
-from pyblazing.apiv2.comms import listen
 from pyblazing.apiv2.sqlengines_utils import (
     SQLEngineDataTypeMap,
     UnsupportedSQLEngineError,
 )
 from pyblazing.apiv2.algebra import get_json_plan, format_json_plan
+from pyblazing.apiv2.context_def import has_cudf, has_dask_cudf
 
 import json
 import collections
-from pyhive import hive
+#from pyhive import hive
 from .hive import (
     convertTypeNameStrToCudfType,
     cudfTypeToCsvType,
@@ -33,7 +29,8 @@ from .hive import (
     getFolderListFromPartitions,
     getPartitionsFromUserPartitions,
     get_hive_table,
-    np_to_arrow_types_int
+    np_to_arrow_types_int,
+    pyarrowTypeToInt
 )
 import time
 import socket
@@ -46,10 +43,10 @@ import pyarrow
 from pathlib import PurePath
 from glob import glob
 import cio
-import dask_cudf
-import dask
+#import dask_cudf
+#import dask
 import jpype
-import dask.distributed
+#import dask.distributed
 import netifaces as ni
 
 import random
@@ -226,11 +223,10 @@ def initializeBlazing(
     elif pool and allocator == "managed":
         allocator = "managed_pool_memory_resource"
 
-    import ucp.core as ucp_core
-
     workers_ucp_info = []
     self_port = 0
     if singleNode is False:
+        import ucp.core as ucp_core
         worker = get_worker()
         for dask_addr in worker.ucx_addresses:
             other_worker = worker.ucx_addresses[dask_addr]
@@ -1539,6 +1535,7 @@ class BlazingContext(object):
         if dask_client is not None:
             # if the user does not explicitly set it, it will be set by whatever dask client is using
             if self.config_options["PROTOCOL".encode()] == "AUTO".encode():
+                from distributed.comm import parse_address
                 self.config_options["PROTOCOL".encode()] = parse_address(
                     dask_client.scheduler.addr
                 )[0].encode()
@@ -1584,6 +1581,7 @@ class BlazingContext(object):
                 host_memory_quota * len(set(host_list)) / len(workers_info)
             ).encode()
             # Start listener on each worker to send received messages to router
+            from pyblazing.apiv2.comms import listen
             worker_maps = listen(self.dask_client, network_interface=network_interface)
             workers = list(self.dask_client.scheduler_info()["workers"])
 
@@ -1934,7 +1932,11 @@ class BlazingContext(object):
                 arr = ArrayClass()
                 for order, column in enumerate(table.column_names):
                     type_id = table.column_types[order]
-                    dataType = ColumnTypeClass.fromTypeId(type_id)
+                    if isinstance(type_id, pyarrow.lib.DataType):
+                        int_arrow_type = pyarrowTypeToInt[str(type_id)]
+                        dataType = ColumnTypeClass.fromTypeId(int_arrow_type)
+                    else:
+                        dataType = ColumnTypeClass.fromTypeId(type_id)
                     column = ColumnClass(column, dataType, order)
                     arr.add(column)
                 tableJava = TableClass(tableName, self.db, arr)
@@ -2206,7 +2208,7 @@ class BlazingContext(object):
                 )
                 return
 
-        if isinstance(input, hive.Cursor):
+        if has_cudf() and isinstance(input, hive.Cursor): # TODO: arrow only build
             hive_table_name = kwargs.get("hive_table_name", table_name)
             hive_database_name = kwargs.get("hive_database_name", "default")
             (
@@ -2328,7 +2330,7 @@ class BlazingContext(object):
         if isinstance(input, pyarrow.Table):
             table = BlazingTable(table_name, input, DataType.ARROW)
 
-        if isinstance(input, cudf.DataFrame):
+        if has_cudf() and isinstance(input, cudf.DataFrame): # TODO: arrow only build
             if self.dask_client is not None:
                 table = BlazingTable(
                     table_name,
@@ -2546,8 +2548,7 @@ class BlazingContext(object):
                 table.row_groups_ids = row_groups_ids
                 """
 
-
-        elif isinstance(input, dask_cudf.core.DataFrame):
+        elif has_dask_cudf() and isinstance(input, dask_cudf.core.DataFrame): # TODO: arrow only build
             table = BlazingTable(
                 table_name, input, DataType.DASK_CUDF, client=self.dask_client
             )

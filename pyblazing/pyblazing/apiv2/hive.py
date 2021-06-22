@@ -1,8 +1,5 @@
 from itertools import repeat
 import numpy as np
-import cudf
-
-from TCLIService.ttypes import TOperationState
 
 
 def convertTypeNameStrToCudfType(hiveType):
@@ -362,6 +359,7 @@ def get_hive_table(cursor, tableName, hive_database_name, user_partitions):
 def runHiveDDL(cursor, query):
     cursor.execute(query, async_=True)
     status = cursor.poll().operationState
+    from TCLIService.ttypes import TOperationState
     while status in (TOperationState.INITIALIZED_STATE, TOperationState.RUNNING_STATE):
         status = cursor.poll().operationState
 
@@ -369,12 +367,14 @@ def runHiveDDL(cursor, query):
 def runHiveQuery(cursor, query):
     cursor.execute(query, async_=True)
     status = cursor.poll().operationState
+    from TCLIService.ttypes import TOperationState
     while status in (TOperationState.INITIALIZED_STATE, TOperationState.RUNNING_STATE):
         status = cursor.poll().operationState
     return cursor.fetchall(), cursor.description
 
 
 def convertHiveToCudf(cursor, query):
+    import cudf
     df = cudf.DataFrame()
     result, description = runHiveQuery(cursor, query)
     arrays = [[] for i in repeat(None, len(result[0]))]
