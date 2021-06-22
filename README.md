@@ -15,6 +15,8 @@ Try our 5-min [Welcome Notebook](https://app.blazingsql.com/jupyter/user-redirec
 
 # Getting Started
 
+## Using CUDF
+
 Here's two copy + paste reproducable BlazingSQL snippets, keep scrolling to find [example Notebooks](#examples) below.
 
 Create and query a table from a `cudf.DataFrame` with progress bar:
@@ -35,10 +37,37 @@ bc.create_table('game_1', df)
 bc.sql('SELECT * FROM game_1 WHERE val > 4') # the query progress will be shown
 ```
 
-| | Key | Value |
+| | key | val |
 | - | -:| ---:|
 | 0 | a | 7.6 |
 | 1 | b | 7.1 |
+
+## Using ARROW
+
+Create and query a table from a `pyarrow.Table` with progress bar:
+
+```python
+import pyarrow as pa
+import pandas as pd
+
+df = pd.DataFrame({"key": ['a', 'b', 'c', 'd', 'e'], "val": [7.6, 2.9, 7.1, 1.6, 2.2]})
+arrow_table = pa.Table.from_pandas(df)
+
+from blazingsql import BlazingContext
+bc = BlazingContext(output_type="pandas", preferred_compute="arrow")
+
+bc.create_table('game_1', arrow_table)
+
+bc.sql('SELECT * FROM game_1 WHERE val > 4')
+```
+
+| | key | val |
+| - | -:| ---:|
+| 0 | a | 7.6 |
+| 1 | b | 7.1 |
+
+
+## Using a S3 bucket
 
 Create and query a table from a AWS S3 bucket:
 
@@ -144,7 +173,7 @@ $CONDA_PREFIX now has a folder for the blazingsql repository.
 
 ## Nightly Version
 
-### Install build dependencies
+### Install build dependencies (using CUDF)
 For nightly version cuda 11+ are only supported, see https://github.com/rapidsai/cudf#cudagpu-requirements
 ```bash
 conda create -n bsql python=$PYTHON_VERSION
@@ -159,21 +188,44 @@ conda activate bsql
 ./dependencies.sh rapids=21.06 cuda=11.2 nightly
 ```
 
-### Build
-The build process will checkout the BlazingSQL repository and will build and install into the conda environment.
+### Build (using CUDF)
+The build process will checkout the voltrondata repository and will build and install into the conda environment.
 
 ```bash
 cd $CONDA_PREFIX
-git clone https://github.com/BlazingDB/blazingsql.git
-cd blazingsql
+git clone https://github.com/voltrondata/ADistributedArrowExecutionEngine.git
+cd voltrondata
 export CUDACXX=/usr/local/cuda/bin/nvcc
-./build.sh
+./build.sh enable-cudf
 ```
 NOTE: You can do `./build.sh -h` to see more build options.
 
 NOTE: You can perform static analysis with cppcheck with the command `cppcheck  --project=compile_commands.json` in any of the cpp project build directories.
 
-$CONDA_PREFIX now has a folder for the blazingsql repository.
+$CONDA_PREFIX now has a folder for the voltrondata repository.
+
+
+### Install build dependencies (ARROW only)
+For nightly version review the Building requires section of https://arrow.apache.org/docs/developers/cpp/building.html
+```bash
+conda create -n bsql
+conda activate bsql
+./dependencies.sh nightly
+```
+### Build (ARROW only)
+The build process will checkout the voltrondata repository and will build and install into the conda environment.
+
+```bash
+cd $CONDA_PREFIX
+git clone https://github.com/voltrondata/ADistributedArrowExecutionEngine.git
+cd voltrondata
+./build.sh disable-aws-s3 disable-google-gs disable-mysql disable-sqlite disable-postgresql disable-snowflake
+```
+NOTE: You can do `./build.sh -h` to see more build options.
+
+NOTE: You can perform static analysis with cppcheck with the command `cppcheck  --project=compile_commands.json` in any of the cpp project build directories.
+
+$CONDA_PREFIX now has a folder for the voltrondata repository.
 
 #### Storage plugins
 To build without the storage plugins (AWS S3, Google Cloud Storage) use the next arguments:

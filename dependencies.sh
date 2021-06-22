@@ -105,3 +105,10 @@ if [ $? -eq 0 ]; then
 else
   echo -e "${RED}Installation failed${ENDCOLOR}"
 fi
+
+
+# TODO: cordova improve this, For ARROW only
+#conda install -c conda-forge pyarrow=4.0.1
+#conda install --yes -c conda-forge spdlog=1.8.5 ninja nlohmann_json libpq=13
+#conda install --yes -c conda-forge cmake=3.18 gtest==1.10.0=h0efe328_4 gmock cppzmq cython=0.29 openjdk=8.0 maven jpype1 netifaces tqdm ipywidgets boost-cpp=1.72.0
+#conda install -c anaconda pandas=1.2.4

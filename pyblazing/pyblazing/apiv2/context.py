@@ -1518,11 +1518,15 @@ class BlazingContext(object):
             ].decode()
 
         if dask_client == "autocheck":
-            try:
-                dask_client = dask.distributed.default_client()
-            except ValueError:
+            # TODO: For now arrow doens't support distribution
+            if preferred_compute == "arrow":
                 dask_client = None
-                pass
+            else:
+                try:
+                    dask_client = dask.distributed.default_client()
+                except ValueError:
+                    dask_client = None
+                    pass
 
         self.dask_client = dask_client
 

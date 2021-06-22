@@ -10,6 +10,8 @@ def has_cudf():
 def has_dask_cudf():
   try: # TODO percy cordova improve this approach
     import dask_cudf
+    import dask.distributed
+    import dask
   except ImportError as error:
     return False
   return True
