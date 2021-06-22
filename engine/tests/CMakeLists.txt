@@ -90,11 +90,13 @@ message(STATUS "******** Configuring tests ********")
 
 if(CUDF_SUPPORT)
     add_subdirectory(skipdata)
+    add_subdirectory(dispatcher)
 endif()
 # add_subdirectory(sort)
 # add_subdirectory(communication)
 # add_subdirectory(waiting_queue)
 add_subdirectory(kernel_tests)
+
 # add_subdirectory(provider)
 # add_subdirectory(logic_controllers)
 #add_subdirectory(host-table)
