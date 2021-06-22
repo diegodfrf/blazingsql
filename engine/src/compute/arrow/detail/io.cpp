@@ -12,6 +12,7 @@
 #include <arrow/csv/api.h>
 #include <arrow/json/api.h>
 #include <arrow/adapters/orc/adapter.h>
+#include <arrow/io/interfaces.h>
 
 namespace voltron {
 namespace compute {
@@ -125,15 +126,16 @@ std::unique_ptr<ral::frame::BlazingTable> read_csv_file(
     getCsvReaderOptions(args_map, read_options, parse_options, convert_options);
 
     arrow::Result<std::shared_ptr<arrow::csv::TableReader>> maybe_reader;
-            
-#if ARROW_VERSION_MAJOR > GARROW_VERSION_1_0
+
+#ifdef GARROW_VERSION_4_0
     arrow::io::IOContext io_context;
     maybe_reader = arrow::csv::TableReader::Make(io_context,
                                           file,
                                           read_options,
                                           parse_options,
                                           convert_options);
-#else
+//#else
+#elseif GARROW_VERSION_1_0
     arrow::MemoryPool* pool = arrow::default_memory_pool();
     maybe_reader = arrow::csv::TableReader::Make(pool,
                                           file,
@@ -245,15 +247,15 @@ void parse_csv_schema(
     getCsvReaderOptions(args_map, read_options, parse_options, convert_options);
 
     arrow::Result<std::shared_ptr<arrow::csv::TableReader>> maybe_reader;
-            
-#if ARROW_VERSION_MAJOR > GARROW_VERSION_1_0
+
+#ifdef GARROW_VERSION_4_0
     arrow::io::IOContext io_context;
     maybe_reader = arrow::csv::TableReader::Make(io_context,
                                           file,
                                           read_options,
                                           parse_options,
                                           convert_options);
-#else
+#elseif GARROW_VERSION_1_0
     arrow::MemoryPool* pool = arrow::default_memory_pool();
     maybe_reader = arrow::csv::TableReader::Make(pool,
                                           file,

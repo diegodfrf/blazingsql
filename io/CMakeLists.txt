@@ -81,13 +81,13 @@ message(STATUS "ARROW: ARROW_LIB set to ${ARROW_LIB}")
 message(STATUS "ARROW: ARROW_CUDA_LIB set to ${ARROW_CUDA_LIB}")
 add_library(arrow SHARED IMPORTED ${ARROW_LIB})
 # TODOL ARROW_CUDA_LIB
-#add_library(arrow_cuda SHARED IMPORTED ${ARROW_CUDA_LIB})
 
 if (ARROW_INCLUDE_DIR AND ARROW_LIB AND NOT ARROW_CUDA_LIB)
     set_target_properties(arrow PROPERTIES IMPORTED_LOCATION ${ARROW_LIB})
 elseif(ARROW_INCLUDE_DIR AND ARROW_LIB AND ARROW_CUDA_LIB)
-  set_target_properties(arrow PROPERTIES IMPORTED_LOCATION ${ARROW_LIB})
-  set_target_properties(arrow_cuda PROPERTIES IMPORTED_LOCATION ${ARROW_CUDA_LIB})
+    add_library(arrow_cuda SHARED IMPORTED ${ARROW_CUDA_LIB})
+    set_target_properties(arrow PROPERTIES IMPORTED_LOCATION ${ARROW_LIB})
+    set_target_properties(arrow_cuda PROPERTIES IMPORTED_LOCATION ${ARROW_CUDA_LIB})
 endif()
 # END find arrow
 
