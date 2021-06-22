@@ -44,7 +44,7 @@ bc.sql('SELECT * FROM game_1 WHERE val > 4') # the query progress will be shown
 
 ## Using ARROW
 
-Create and query a table from a `pyarrow.Table` with progress bar:
+Create and query a table from a `pyarrow.Table`:
 
 ```python
 import pyarrow as pa

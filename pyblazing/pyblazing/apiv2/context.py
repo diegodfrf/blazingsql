@@ -17,7 +17,7 @@ from pyblazing.apiv2.sqlengines_utils import (
     UnsupportedSQLEngineError,
 )
 from pyblazing.apiv2.algebra import get_json_plan, format_json_plan
-from pyblazing.apiv2.context_def import has_cudf, has_dask_cudf
+from pyblazing.apiv2.context_def import has_cudf
 
 import json
 import collections
@@ -2552,7 +2552,7 @@ class BlazingContext(object):
                 table.row_groups_ids = row_groups_ids
                 """
 
-        elif has_dask_cudf() and isinstance(input, dask_cudf.core.DataFrame): # TODO: arrow only build
+        elif has_cudf() and isinstance(input, dask_cudf.core.DataFrame): # TODO: arrow only build
             table = BlazingTable(
                 table_name, input, DataType.DASK_CUDF, client=self.dask_client
             )

@@ -97,8 +97,8 @@ pyarrowTypeToInt = {
     "int32":7,
     "uint64":8,
     "int64":9,
-    "float32":11,
-    "float64":12,
+    "float":11,
+    "double":12,
     "string":13,
     # TODO: Add more types
 }
