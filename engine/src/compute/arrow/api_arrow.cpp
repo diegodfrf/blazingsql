@@ -147,18 +147,13 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator
   return nullptr;
 }
 
-// TODO percy arrow rommel enable this when we have arrow 4
-#ifdef CUDF_SUPPORT
 template <>
-inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingArrowTable>(
-		std::shared_ptr<ral::frame::BlazingTableView> table,
-		std::unique_ptr<cudf::column> column,
-		voltron::compute::OutOfBoundsPolicy out_of_bounds_policy,
-		voltron::compute::NegativeIndexPolicy negative_index_policy) const
+inline std::unique_ptr<ral::frame::BlazingTable> get_pivot_points_table_functor::operator()<ral::frame::BlazingArrowTable>(
+    int number_partitions,
+    std::shared_ptr<ral::frame::BlazingTableView> sortedSamples) const
 {
-  // TODO percy arrow
-  throw std::runtime_error("ERROR: gather_functor BlazingSQL doesn't support this Arrow operator yet.");
 
+//  TODO percy arrow rommel enable this when we have arrow 4: ex gather_functor
 //  std::vector<std::unique_ptr<cudf::column>> cs;
 //  cs.push_back(std::make_unique<cudf::column>(column->view()));
 //  auto ct = std::make_unique<cudf::table>(std::move(cs));
@@ -171,8 +166,9 @@ inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral:
 //  std::shared_ptr<arrow::Table> ret = arrow::compute::Take(*arrow_table, *idx).ValueOrDie();
 //  return std::make_unique<ral::frame::BlazingArrowTable>(ret);
 
+  throw std::runtime_error("ERROR: get_pivot_points_table_functor BlazingSQL doesn't support this Arrow operator yet.");
+  return nullptr;
 }
-#endif
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> groupby_without_aggregations_functor::operator()<ral::frame::BlazingArrowTable>(
