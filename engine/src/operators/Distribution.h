@@ -36,7 +36,7 @@ namespace distribution {
 		std::vector<voltron::compute::SortOrder> sortOrderTypes,
 		const std::vector<voltron::compute::NullOrder> & sortOrderNulls);
 
-	std::unique_ptr<BlazingTable> getPivotPointsTable(int number_pivots, std::shared_ptr<BlazingTableView> sortedSamples);
+	// std::unique_ptr<BlazingTable> getPivotPointsTable(int number_pivots, std::shared_ptr<BlazingTableView> sortedSamples);
 
 }  // namespace distribution
 }  // namespace ral
