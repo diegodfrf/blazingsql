@@ -185,7 +185,7 @@ Where $CUDA_VERSION is 11.0 or 11.2 and $PYTHON_VERSION is 3.7 or 3.8
 ```bash
 conda create -n bsql python=3.8
 conda activate bsql
-./dependencies.sh rapids=21.06 cuda=11.2 nightly
+./dependencies.sh rapids=21.06 cuda=11.2 nightly  # once cloned and cd to the repository
 ```
 
 ### Build (using CUDF)
@@ -194,7 +194,7 @@ The build process will checkout the voltrondata repository and will build and in
 ```bash
 cd $CONDA_PREFIX
 git clone https://github.com/voltrondata/ADistributedArrowExecutionEngine.git
-cd voltrondata
+cd ADistributedArrowExecutionEngine
 export CUDACXX=/usr/local/cuda/bin/nvcc
 ./build.sh enable-cudf
 ```
@@ -210,7 +210,7 @@ For nightly version review the Building requires section of https://arrow.apache
 ```bash
 conda create -n bsql
 conda activate bsql
-./dependencies.sh nightly
+./dependencies.sh nightly   # once cloned and cd to the repository
 ```
 ### Build (ARROW only)
 The build process will checkout the voltrondata repository and will build and install into the conda environment.
@@ -218,7 +218,7 @@ The build process will checkout the voltrondata repository and will build and in
 ```bash
 cd $CONDA_PREFIX
 git clone https://github.com/voltrondata/ADistributedArrowExecutionEngine.git
-cd voltrondata
+cd ADistributedArrowExecutionEngine
 ./build.sh disable-aws-s3 disable-google-gs disable-mysql disable-sqlite disable-postgresql disable-snowflake
 ```
 NOTE: You can do `./build.sh -h` to see more build options.
