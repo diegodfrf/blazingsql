@@ -22,6 +22,12 @@
 #include <thrust/binary_search.h>
 #endif
 
+#include <arrow/api.h>
+#include <arrow/io/api.h>
+#include <parquet/arrow/reader.h>
+#include <parquet/arrow/writer.h>
+#include <parquet/exception.h>
+
 inline std::unique_ptr<ral::frame::BlazingTable> applyBooleanFilter(
   std::shared_ptr<arrow::Table> table,
   std::shared_ptr<arrow::ChunkedArray> boolValues){
@@ -688,5 +694,36 @@ io_parse_file_schema_functor<ral::io::DataType::JSON>::operator()<ral::frame::Bl
 {
     voltron::compute::arrow_backend::io::parse_json_schema(schema_out, file, args_map);
 }
+
+template <>
+inline void write_orc_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::string file_path) const
+{
+	auto arrow_table_view = std::dynamic_pointer_cast<ral::frame::BlazingArrowTableView>(table_view);
+
+	std::shared_ptr<::arrow::io::FileOutputStream> outfile;
+	PARQUET_ASSIGN_OR_THROW(outfile, ::arrow::io::FileOutputStream::Open(file_path));
+	parquet::arrow::WriteTable(*arrow_table_view->view(), ::arrow::default_memory_pool(), outfile, 100);
+}
+
+
+template <>
+inline std::unique_ptr<ral::frame::BlazingTable>  read_orc_functor::operator()<ral::frame::BlazingArrowTable>(
+    std::string file_path, const std::vector<std::string> &col_names) const
+{
+  std::shared_ptr<::arrow::io::ReadableFile> infile;
+  const char *orc_path_file = file_path.c_str();
+  PARQUET_ASSIGN_OR_THROW(infile, ::arrow::io::ReadableFile::Open(orc_path_file, ::arrow::default_memory_pool()));
+
+  std::unique_ptr<::parquet::arrow::FileReader> reader;
+  PARQUET_THROW_NOT_OK(::parquet::arrow::OpenFile(infile, ::arrow::default_memory_pool(), &reader));
+  std::shared_ptr<::arrow::Table> table;
+  PARQUET_THROW_NOT_OK(reader->ReadTable(&table));
+
+  remove(orc_path_file);
+  return std::make_unique<ral::frame::BlazingArrowTable>(table);
+}
+
 //} // compute
 //} // voltron

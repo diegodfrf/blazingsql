@@ -207,8 +207,6 @@ set(COMPUTE_ARROW_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/types.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/scalars.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/arrow/detail/io.cpp
-    ${PROJECT_SOURCE_DIR}/src/cache_machine/arrow/detail/CacheDataLocalFile.cpp
-    ${PROJECT_SOURCE_DIR}/src/cache_machine/arrow/CacheMachine.cpp
 )
 
 ## Target source files
@@ -222,12 +220,14 @@ set(SRC_FILES
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
 
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheData.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/AbstractCacheMachine.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheMachine.cpp
 
         ${PROJECT_SOURCE_DIR}/src/cache_machine/common/CacheDataIO.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/common/ConcatCacheData.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/common/CPUCacheData.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/common/ArrowCacheData.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/common/CacheDataLocalFile.cpp
 
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTableView.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTable.cpp

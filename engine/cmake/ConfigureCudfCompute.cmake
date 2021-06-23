@@ -31,8 +31,6 @@ set(COMPUTE_CUDF_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/scalars.cpp
     ${PROJECT_SOURCE_DIR}/src/compute/cudf/detail/io.cpp
 
-    ${PROJECT_SOURCE_DIR}/src/cache_machine/cudf/detail/CacheDataLocalFile.cpp
-    ${PROJECT_SOURCE_DIR}/src/cache_machine/cudf/CacheMachine.cpp
     ${PROJECT_SOURCE_DIR}/src/cache_machine/cudf/GPUCacheData.cpp
 
     ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingCudfTable.cpp

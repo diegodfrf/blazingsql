@@ -3,10 +3,10 @@
 #include "compute/backend_dispatcher.h"
 #include <spdlog/logger.h>
 #include <spdlog/spdlog.h>
+#include "compute/api.h"
+
 using namespace fmt::literals;
 
-#include <cudf/io/orc.hpp>
-#include <cudf/io/orc_metadata.hpp>
 
 namespace ral {
 namespace cache {
@@ -28,44 +28,6 @@ std::string randomString(std::size_t length) {
 	return random_string;
 }
 
-//////////////////////////////////// write_orc_functor
-
-struct write_orc_functor {
-  template <typename T>
-  void operator()(
-      std::shared_ptr<ral::frame::BlazingTableView> table_view,
-      std::string file_path) const
-  {
-    throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
-  }
-};
-
-template <>
-inline void write_orc_functor::operator()<ral::frame::BlazingArrowTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::string file_path) const
-{
-  throw std::runtime_error("ERROR: write_orc_functor BlazingSQL doesn't support this Arrow operator yet.");
-}
-
-template <>
-inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
-    std::shared_ptr<ral::frame::BlazingTableView> table_view,
-    std::string file_path) const
-{
-	auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
-
-	cudf::io::table_metadata metadata;
-	for(auto name : cudf_table_view->column_names()) {
-		metadata.column_names.emplace_back(name);
-	}
-
-	cudf::io::orc_writer_options out_opts = cudf::io::orc_writer_options::builder(cudf::io::sink_info{file_path}, cudf_table_view->view())
-		.metadata(&metadata);
-
-	cudf::io::write_orc(out_opts);
-}
-
 CacheDataLocalFile::CacheDataLocalFile(std::unique_ptr<ral::frame::BlazingTable> table, std::string orc_files_path, std::string ctx_token)
 	: CacheData(CacheDataType::LOCAL_FILE, table->column_names(), table->column_types(), table->num_rows())
 {
@@ -83,10 +45,13 @@ CacheDataLocalFile::CacheDataLocalFile(std::unique_ptr<ral::frame::BlazingTable>
 	while(attempts <= attempts_limit){
 		try {
 			ral::execution::backend_dispatcher(table_view->get_execution_backend(), write_orc_functor(), table_view, this->filePath_);
-
 			
 		}
+	#ifdef CUDF_SUPPORT
     catch (cudf::logic_error & err){
+    #else
+    catch (std::exception & err){
+    #endif			
 			std::shared_ptr<spdlog::logger> logger = spdlog::get("batch_logger");
 			if(logger) {
 				logger->error("|||{info}||||rows|{rows}",
@@ -116,18 +81,7 @@ size_t CacheDataLocalFile::size_in_bytes() const {
 }
 
 std::unique_ptr<ral::frame::BlazingTable> CacheDataLocalFile::decache(execution::execution_backend backend) {
-	if (backend.id() == ral::execution::backend_id::CUDF) {
-		cudf::io::orc_reader_options read_opts = cudf::io::orc_reader_options::builder(cudf::io::source_info{this->filePath_});
-		auto result = cudf::io::read_orc(read_opts);
-
-		// Remove temp orc files
-		const char *orc_path_file = this->filePath_.c_str();
-		remove(orc_path_file);
-		return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result.tbl), this->col_names);
-	} else {
-		// WSM TODO need to implement this
-	}
-  return nullptr;
+  ral::execution::backend_dispatcher(backend, read_orc_functor(), this->filePath_, this->col_names);
 }
 
 std::unique_ptr<CacheData> CacheDataLocalFile::clone() {

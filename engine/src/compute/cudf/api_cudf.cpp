@@ -46,6 +46,11 @@
 #include "communication/messages/GPUComponentMessage.h"
 #include "cache_machine/cudf/GPUCacheData.h"
 
+
+#include "blazing_table/BlazingCudfTable.h"
+#include <cudf/io/orc.hpp>
+#include <cudf/io/orc_metadata.hpp>
+
 //namespace voltron {
 //namespace compute {
 
@@ -600,5 +605,36 @@ std::unique_ptr<ral::cache::CacheData> make_cachedata_functor::operator()<ral::f
 	return std::make_unique<ral::cache::GPUCacheData>(std::move(cudf_table));
 }
 
+template <>
+inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::shared_ptr<ral::frame::BlazingTableView> table_view,
+    std::string file_path) const
+{
+	auto cudf_table_view = std::dynamic_pointer_cast<ral::frame::BlazingCudfTableView>(table_view);  
+
+	cudf::io::table_metadata metadata;
+	for(auto name : cudf_table_view->column_names()) {
+		metadata.column_names.emplace_back(name);
+	}
+
+	cudf::io::orc_writer_options out_opts = cudf::io::orc_writer_options::builder(cudf::io::sink_info{file_path}, cudf_table_view->view())
+		.metadata(&metadata);
+
+	cudf::io::write_orc(out_opts);
+}
+
+
+template <>
+inline std::unique_ptr<ral::frame::BlazingTable>  read_orc_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::string file_path, const std::vector<std::string> &col_names) const
+{
+  cudf::io::orc_reader_options read_opts = cudf::io::orc_reader_options::builder(cudf::io::source_info{file_path});
+  auto result = cudf::io::read_orc(read_opts);
+
+  // Remove temp orc files
+  const char *orc_path_file = file_path.c_str();
+  remove(orc_path_file);
+  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result.tbl), col_names);
+}
 //} // compute
 //} // voltron

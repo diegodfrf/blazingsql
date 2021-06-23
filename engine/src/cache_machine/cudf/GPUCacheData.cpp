@@ -3,7 +3,7 @@
 #include "../common/CPUCacheData.h"
 #include "bmr/BlazingMemoryResource.h"
 #include "communication/CommunicationData.h"
-#include "cache_machine/cudf/detail/CacheDataLocalFile.h"
+#include "cache_machine/common/CacheDataLocalFile.h"
 #include <spdlog/logger.h>
 #include <spdlog/spdlog.h>
 using namespace fmt::literals;

@@ -417,6 +417,25 @@ struct make_cachedata_functor {
 };
 
 
+struct write_orc_functor {
+  template <typename T>
+  void operator()(
+      std::shared_ptr<ral::frame::BlazingTableView> table_view,
+      std::string file_path) const
+  {
+    throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
+  }
+};
+
+struct read_orc_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(std::string file_path, const std::vector<std::string> &col_names) const
+  {
+    throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
+  }
+};
+
+
 //} // compute
 //} // voltron
 
