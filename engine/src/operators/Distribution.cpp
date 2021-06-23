@@ -55,7 +55,8 @@ std::unique_ptr<BlazingTable> generatePartitionPlans(
 		throw std::runtime_error("ERROR in generatePartitionPlans. names.size() == 0");
 	}
 
-	return getPivotPointsTable(number_partitions, sortedSamples->to_table_view());
+	return ral::execution::backend_dispatcher(sortedSamples->get_execution_backend(), get_pivot_points_table_functor(),
+													number_partitions, sortedSamples->to_table_view());
 }
 
 // This function locates the pivots in the table and partitions the data on those pivot points.
@@ -98,29 +99,6 @@ std::vector<NodeColumnView> partitionData(Context * context,
 	}
 
 	return partitioned_node_column_views;
-}
-
-std::unique_ptr<BlazingTable> getPivotPointsTable(int number_partitions, std::shared_ptr<BlazingTableView> sortedSamples){
-
-	int outputRowSize = sortedSamples->num_rows();
-	int pivotsSize = outputRowSize > 0 ? number_partitions - 1 : 0;
-
-	int32_t step = outputRowSize / number_partitions;
-
-	std::vector<int32_t> sequence(pivotsSize);
-	std::iota(sequence.begin(), sequence.end(), 1);
-	std::transform(sequence.begin(), sequence.end(), sequence.begin(), [step](int32_t i){ return i*step;});
-
-#ifdef CUDF_SUPPORT
-	auto gather_map = voltron::compute::cudf_backend::types::vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
-
-	// TODO percy rommel arrow
-	std::unique_ptr<ral::frame::BlazingTable> pivots = ral::execution::backend_dispatcher(sortedSamples->get_execution_backend(), gather_functor(),
-													sortedSamples, std::move(gather_map), voltron::compute::OutOfBoundsPolicy::DONT_CHECK, voltron::compute::NegativeIndexPolicy::NOT_ALLOWED);
-	return std::move(pivots);
-#else
-  return nullptr; // TODO percy arrow 4
-#endif
 }
 
 }  // namespace distribution
