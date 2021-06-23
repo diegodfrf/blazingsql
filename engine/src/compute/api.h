@@ -30,21 +30,17 @@ struct sorted_merger_functor {
   }
 };
 
-// TODO percy arrow rommel enable this when we have arrow 4
-#ifdef CUDF_SUPPORT
-struct gather_functor {
+struct get_pivot_points_table_functor{
   template <typename T>
   std::unique_ptr<ral::frame::BlazingTable> operator()(
-		std::shared_ptr<ral::frame::BlazingTableView> table,
-		std::unique_ptr<cudf::column> column,
-		voltron::compute::OutOfBoundsPolicy out_of_bounds_policy,
-		voltron::compute::NegativeIndexPolicy negative_index_policy) const
+    int number_partitions,
+    std::shared_ptr<ral::frame::BlazingTableView> sortedSamples) const
   {
-    throw std::runtime_error("ERROR: gather_functor This default dispatcher operator should not be called.");
+    throw std::runtime_error("ERROR: get_pivot_points_table_functor This default dispatcher operator should not be called.");
     return nullptr;
   }
 };
-#endif
+
 
 struct groupby_without_aggregations_functor {
   template <typename T>

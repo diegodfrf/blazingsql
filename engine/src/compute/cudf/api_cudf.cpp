@@ -58,42 +58,26 @@ inline std::unique_ptr<ral::frame::BlazingTable> sorted_merger_functor::operator
 	return sorted_merger(tables, sortOrderTypes, sortColIndices, sortOrderNulls);
 }
 
-// TODO percy arrow rommel enable this when we have arrow 4
-#ifdef CUDF_SUPPORT
 template <>
-inline std::unique_ptr<ral::frame::BlazingTable> gather_functor::operator()<ral::frame::BlazingCudfTable>(
-		std::shared_ptr<ral::frame::BlazingTableView> table,
-		std::unique_ptr<cudf::column> column,
-		voltron::compute::OutOfBoundsPolicy out_of_bounds_policy,
-		voltron::compute::NegativeIndexPolicy negative_index_policy) const
+inline std::unique_ptr<ral::frame::BlazingTable> get_pivot_points_table_functor::operator()<ral::frame::BlazingCudfTable>(
+    int number_partitions,
+    std::shared_ptr<ral::frame::BlazingTableView> sortedSamples) const
 {
-	cudf::out_of_bounds_policy out_of_bounds_policy_cudf;
-	switch (out_of_bounds_policy) {
-		case voltron::compute::OutOfBoundsPolicy::NULLIFY: {
-			out_of_bounds_policy_cudf = cudf::out_of_bounds_policy::NULLIFY; break;
-		}
-		case voltron::compute::OutOfBoundsPolicy::DONT_CHECK: {
-			out_of_bounds_policy_cudf = cudf::out_of_bounds_policy::DONT_CHECK; break;
-		}
-	} ;
+  int outputRowSize = sortedSamples->num_rows();
+  int pivotsSize = outputRowSize > 0 ? number_partitions - 1 : 0;
 
-	cudf::detail::negative_index_policy negative_index_policy_cudf;
-	switch (negative_index_policy) {
-		case voltron::compute::NegativeIndexPolicy::ALLOWED: {
-			negative_index_policy_cudf = cudf::detail::negative_index_policy::ALLOWED; break;
-		}
-		case voltron::compute::NegativeIndexPolicy::NOT_ALLOWED: {
-			negative_index_policy_cudf = cudf::detail::negative_index_policy::NOT_ALLOWED; break;
-		}
-	}
+  int32_t step = outputRowSize / number_partitions;
 
-	// TODO percy rommel arrow
-	ral::frame::BlazingCudfTableView *table_ptr = dynamic_cast<ral::frame::BlazingCudfTableView*>(table.get());
-	std::unique_ptr<cudf::table> pivots = cudf::detail::gather(table_ptr->view(), column->view(), out_of_bounds_policy_cudf, negative_index_policy_cudf);
+  std::vector<int32_t> sequence(pivotsSize);
+  std::iota(sequence.begin(), sequence.end(), 1);
+  std::transform(sequence.begin(), sequence.end(), sequence.begin(), [step](int32_t i){ return i*step;});
 
-	return std::make_unique<ral::frame::BlazingCudfTable>(std::move(pivots), table->column_names());
+  auto gather_map = voltron::compute::cudf_backend::types::vector_to_column(sequence, cudf::data_type(cudf::type_id::INT32));
+
+  ral::frame::BlazingCudfTableView *table_ptr = dynamic_cast<ral::frame::BlazingCudfTableView*>(sortedSamples.get());
+  std::unique_ptr<cudf::table> pivots = cudf::detail::gather(table_ptr->view(), gather_map->view(), cudf::out_of_bounds_policy::DONT_CHECK, cudf::detail::negative_index_policy::NOT_ALLOWED);
+  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(pivots), sortedSamples->column_names());
 }
-#endif
 
 template <>
 inline std::unique_ptr<ral::frame::BlazingTable> groupby_without_aggregations_functor::operator()<ral::frame::BlazingCudfTable>(
