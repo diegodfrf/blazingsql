@@ -8,9 +8,11 @@
 #include "io/data_parser/ArgsUtil.h"
 #include "parser/types_parser_utils.h"
 
+#include "arrow/config.h"
 #include <arrow/csv/api.h>
 #include <arrow/json/api.h>
 #include <arrow/adapters/orc/adapter.h>
+#include <arrow/io/interfaces.h>
 
 namespace voltron {
 namespace compute {
@@ -117,20 +119,31 @@ std::unique_ptr<ral::frame::BlazingTable> read_csv_file(
         std::vector<int> /*row_groups*/,
         const std::map<std::string, std::string> &args_map)
 {
-    arrow::MemoryPool* pool = arrow::default_memory_pool();
-
     arrow::csv::ReadOptions    read_options;
     arrow::csv::ParseOptions   parse_options;
     arrow::csv::ConvertOptions convert_options;
 
     getCsvReaderOptions(args_map, read_options, parse_options, convert_options);
 
-    auto maybe_reader =
-            arrow::csv::TableReader::Make(pool,
+    arrow::Result<std::shared_ptr<arrow::csv::TableReader>> maybe_reader;
+
+#ifdef GARROW_VERSION_4_0
+    arrow::io::IOContext io_context;
+    maybe_reader = arrow::csv::TableReader::Make(io_context,
                                           file,
                                           read_options,
                                           parse_options,
                                           convert_options);
+//#else
+#elseif GARROW_VERSION_1_0
+    arrow::MemoryPool* pool = arrow::default_memory_pool();
+    maybe_reader = arrow::csv::TableReader::Make(pool,
+                                          file,
+                                          read_options,
+                                          parse_options,
+                                          convert_options);
+#endif
+    
     if (!maybe_reader.ok()) {
         throw std::runtime_error("Error read_csv_file: " + maybe_reader.status().message());
     }
@@ -227,20 +240,30 @@ void parse_csv_schema(
         std::shared_ptr<arrow::io::RandomAccessFile> file,
         const std::map<std::string, std::string> &args_map)
 {
-    arrow::MemoryPool* pool = arrow::default_memory_pool();
-
     arrow::csv::ReadOptions    read_options;
     arrow::csv::ParseOptions   parse_options;
     arrow::csv::ConvertOptions convert_options;
 
     getCsvReaderOptions(args_map, read_options, parse_options, convert_options);
 
-    auto maybe_reader =
-            arrow::csv::TableReader::Make(pool,
+    arrow::Result<std::shared_ptr<arrow::csv::TableReader>> maybe_reader;
+
+#ifdef GARROW_VERSION_4_0
+    arrow::io::IOContext io_context;
+    maybe_reader = arrow::csv::TableReader::Make(io_context,
                                           file,
                                           read_options,
                                           parse_options,
                                           convert_options);
+#elseif GARROW_VERSION_1_0
+    arrow::MemoryPool* pool = arrow::default_memory_pool();
+    maybe_reader = arrow::csv::TableReader::Make(pool,
+                                          file,
+                                          read_options,
+                                          parse_options,
+                                          convert_options);
+#endif
+
     if (!maybe_reader.ok()) {
         throw std::runtime_error("Error parse_csv_schema: " + maybe_reader.status().message());
     }

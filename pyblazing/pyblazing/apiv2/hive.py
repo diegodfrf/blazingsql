@@ -1,8 +1,5 @@
 from itertools import repeat
 import numpy as np
-import cudf
-
-from TCLIService.ttypes import TOperationState
 
 
 def convertTypeNameStrToCudfType(hiveType):
@@ -87,6 +84,22 @@ arrowTypeToCsvType = {
     19: "time32",
     20: "time64",
     32: "duration"
+    # TODO: Add more types
+}
+
+pyarrowTypeToInt = {
+    "boolean":1,
+    "uint8":2,
+    "int8":3,
+    "uint16":4,
+    "int16":5,
+    "uint32":6,
+    "int32":7,
+    "uint64":8,
+    "int64":9,
+    "float":11,
+    "double":12,
+    "string":13,
     # TODO: Add more types
 }
 
@@ -346,6 +359,7 @@ def get_hive_table(cursor, tableName, hive_database_name, user_partitions):
 def runHiveDDL(cursor, query):
     cursor.execute(query, async_=True)
     status = cursor.poll().operationState
+    from TCLIService.ttypes import TOperationState
     while status in (TOperationState.INITIALIZED_STATE, TOperationState.RUNNING_STATE):
         status = cursor.poll().operationState
 
@@ -353,12 +367,14 @@ def runHiveDDL(cursor, query):
 def runHiveQuery(cursor, query):
     cursor.execute(query, async_=True)
     status = cursor.poll().operationState
+    from TCLIService.ttypes import TOperationState
     while status in (TOperationState.INITIALIZED_STATE, TOperationState.RUNNING_STATE):
         status = cursor.poll().operationState
     return cursor.fetchall(), cursor.description
 
 
 def convertHiveToCudf(cursor, query):
+    import cudf
     df = cudf.DataFrame()
     result, description = runHiveQuery(cursor, query)
     arrays = [[] for i in repeat(None, len(result[0]))]
