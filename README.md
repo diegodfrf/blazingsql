@@ -194,7 +194,7 @@ The build process will checkout the BlazingSQL repository and will build and ins
 ```bash
 cd $CONDA_PREFIX
 git clone https://github.com/BlazingDB/blazingsql.git
-cd ADistributedArrowExecutionEngine
+cd blazingsql
 export CUDACXX=/usr/local/cuda/bin/nvcc
 ./build.sh enable-cudf
 ```
@@ -218,7 +218,7 @@ The build process will checkout the BlazingSQL repository and will build and ins
 ```bash
 cd $CONDA_PREFIX
 git clone https://github.com/BlazingDB/blazingsql.git
-cd ADistributedArrowExecutionEngine
+cd blazingsql
 ./build.sh disable-aws-s3 disable-google-gs disable-mysql disable-sqlite disable-postgresql disable-snowflake
 ```
 NOTE: You can do `./build.sh -h` to see more build options.

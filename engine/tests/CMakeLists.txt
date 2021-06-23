@@ -16,8 +16,7 @@ function(configure_test TEST_NAME Tests_SRCS)
     add_executable(${TEST_NAME}
                    ${Tests_SRCS}
                    ${PROJECT_SOURCE_DIR}/tests/cython_errors_dummy.cpp
-                   #${PROJECT_SOURCE_DIR}/tests/utilities/BlazingUnitTest.cpp
-                   )
+                   ${PROJECT_SOURCE_DIR}/tests/utilities/BlazingUnitTest.cpp)
     link_directories($ENV{PREFIX}/lib)
 
     target_link_libraries(${TEST_NAME}
@@ -60,7 +59,7 @@ function(configure_test TEST_NAME Tests_SRCS)
         libspdlog.so
 
         # TODO percy arrow 4 unit tests!
-        #cudftestutil
+        cudftestutil
 
         # TODO percy use cmake::find
         ${MYSQL_LIBRARY}
