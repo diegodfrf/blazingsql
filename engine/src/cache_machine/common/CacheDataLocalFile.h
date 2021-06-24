@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CacheData.h"
+#include "cache_machine/CacheData.h"
 
 namespace ral {
 namespace cache {
@@ -73,6 +73,7 @@ private:
 	std::string filePath_; /**< The path to the ORC file. Is usually generated randomly. */
 	size_t size_in_bytes_; /**< The size of the file being stored. */
 };
+
 
 } // namespace cache
 } // namespace ral

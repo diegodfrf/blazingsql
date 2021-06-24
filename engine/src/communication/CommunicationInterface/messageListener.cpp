@@ -152,8 +152,9 @@ void tcp_message_listener::start_polling() {
 				pool.push([this, connection_fd](int /*thread_num*/) {
 					try{
 						CodeTimer timer;
+						#ifdef CUDF_SUPPORT
 						cudaStream_t stream = 0;
-				
+						#endif
 						size_t message_size;
 						io::read_from_socket(connection_fd, &message_size, sizeof(message_size));
 						std::vector<char> data(message_size);
@@ -172,7 +173,9 @@ void tcp_message_listener::start_polling() {
 							//   size_t total_read_time = 0 ;
 							//   size_t total_sync_time = 0;
 							while(buffer_position < receiver->num_buffers()) {
+#ifdef CUDF_SUPPORT
 								receiver->allocate_buffer(buffer_position, stream);
+#endif
 								void * buffer = receiver->get_buffer(buffer_position);
 								size_t buffer_size = receiver->buffer_size(buffer_position);
 								io::read_from_socket(connection_fd, buffer, buffer_size);

@@ -1,20 +1,15 @@
 #include <spdlog/spdlog.h>
-// #include "tests/utilities/BlazingUnitTest.h"
-
 #include <chrono>
 #include <thread>
 #include <iostream>
 
-#include "blazing_table/BlazingCudfTable.h"
+#include "blazing_table/BlazingArrowTable.h"
 #include "execution_kernels/BatchProjectionProcessing.h"
 //#include <gtest/gtest.h>
-#include <cudf_test/table_utilities.hpp>
 #include <arrow/pretty_print.h>
+#include <gtest/gtest.h>
 
 #include "bmr/initializer.h"
-#include "compute/cudf/detail/types.h"
-#include "cudf_test/column_wrapper.hpp"
-#include "cudf_test/type_lists.hpp"  // cudf::test::NumericTypes
 #include "execution_graph/Context.h"
 #include "execution_graph/PhysicalPlanGenerator.h"
 #include "execution_graph/executor.h"
@@ -33,7 +28,6 @@ using blazingdb::transport::Node;
 using ral::cache::CacheMachine;
 using ral::cache::kernel;
 using ral::cache::kstatus;
-using ral::frame::BlazingCudfTable;
 using Context = blazingdb::manager::Context;
 
 #ifndef DATASET_PATH
@@ -96,44 +90,8 @@ struct ComputeTestParam {
             static_unique_pointer_cast<ral::frame::BlazingArrowTable>(std::move(result));
 
         auto status = arrow::PrettyPrint(*arrow_table->to_table_view()->view(), {0}, &std::cout);
-	      ASSERT_EQ(status.ok(), true);
+         ASSERT_EQ(status.ok(), true);
 
-        ral::frame::BlazingCudfTable blazingCudfTable =
-            ral::frame::BlazingCudfTable(std::move(arrow_table));  //
-        auto result_view = blazingCudfTable.to_table_view();
-//        ral::utilities::print_blazing_cudf_table_view(result_view, "result");
-        auto* result_view_ptr =
-            dynamic_cast<ral::frame::BlazingCudfTableView*>(result_view.get());
-
-        auto data_loader = blazingdb::test::load_table(
-            DATASET_PATH, "nation",
-            ral::execution::execution_backend{ral::execution::backend_id::CUDF});
-        auto expected_result = runQuery(this->logical_plan, "cudf", "cudf", data_loader);
-        auto expected_result_view = expected_result->to_table_view();
-//        ral::utilities::print_blazing_cudf_table_view(expected_result_view,
-//                                                      "expected_result");
-        auto* expect_cudf_table =
-            dynamic_cast<ral::frame::BlazingCudfTableView*>(expected_result_view.get());
-
-        // TODO: use cudf::test::expect_tables_equal only when nulls are really important
-        cudf::test::expect_tables_equivalent(expect_cudf_table->view(),
-                                             result_view_ptr->view());
-      } else if (this->preferred_compute.id() == ral::execution::backend_id::CUDF) {
-        auto result_view = result->to_table_view();
-//        ral::utilities::print_blazing_cudf_table_view(result_view, "result");
-//        auto* result_view_ptr =
-//            dynamic_cast<ral::frame::BlazingCudfTableView*>(result_view.get());
-
-        // TODO: compare cudf results with some expected result
-        /*auto data_loader = blazingdb::test::load_table(DATASET_PATH, "nation",
-        ral::execution::execution_backend{ral::execution::backend_id::CUDF}); auto
-        expected_result = runQuery(this->logical_plan, "cudf", "cudf", data_loader); auto
-        expected_result_view = expected_result->to_table_view();
-        ral::utilities::print_blazing_cudf_table_view(expected_result_view,
-        "expected_result"); auto *expect_cudf_table =
-        dynamic_cast<ral::frame::BlazingCudfTableView*>(expected_result_view.get());
-        cudf::test::expect_tables_equivalent(expect_cudf_table->view(),
-        result_view_ptr->view());*/
       }
     }
   }
@@ -150,21 +108,20 @@ struct ComputeTest : public ::testing::TestWithParam<ComputeTestParam> {
     BlazingRMMInitialize("pool_memory_resource", 32 * 1024 * 1024, 256 * 1024 * 1024);
     float host_memory_quota = 0.75;  // default value
     blazing_host_memory_resource::getInstance().initialize(host_memory_quota);
-
-#ifdef CUDF_SUPPORT
+    #ifdef CUDF_SUPPORT
     ral::memory::set_allocation_pools(4000000, 10, 4000000, 10, false, nullptr);
-#else
+    #else
     ral::memory::set_allocation_pools(4000000, 10, 4000000, 10, false);
-#endif
-
+    #endif 
     int executor_threads = 10;
     ral::execution::executor::init_executor(executor_threads, 0.8,
                                             this->parameter.preferred_compute);
   }
 
   virtual void TearDown() override {
-    ral::memory::empty_pools();
-    BlazingRMMFinalize();
+// TODO: aocsa review empty_pools()
+//    ral::memory::empty_pools();
+//    BlazingRMMFinalize();
   }
   ComputeTestParam parameter;
 };
@@ -182,19 +139,19 @@ const std::vector<ComputeTestParam> compute_test_params = {
     },
     // TODO: Fix this case: Error converting arrowTable to cudfTable
     // query = "select n_regionkey, n_nationkey from nation group by n_regionkey, n_nationkey"
-    ComputeTestParam{
-        .logical_plan = R"({
-                'expr': 'LogicalAggregate(group=[{0, 1}])',
-                'children': [
-                              {
-                                      'expr': 'BindableTableScan(table=[[main, nation]], projects=[[0, 2]], aliases=[[n_nationkey, n_regionkey]]',
-                                      'children': []
-                              }
-                            ]
-              })",
-        .preferred_compute = ral::execution::execution_backend{ral::execution::backend_id::ARROW},
-        .compare_with = ral::execution::backend_id::NONE // change to CUDF when this is fixed
-    },
+     ComputeTestParam{
+         .logical_plan = R"({
+                 'expr': 'LogicalAggregate(group=[{0, 1}])',
+                 'children': [
+                               {
+                                       'expr': 'BindableTableScan(table=[[main, nation]], projects=[[0, 2]], aliases=[[n_nationkey, n_regionkey]]',
+                                       'children': []
+                               }
+                             ]
+               })",
+         .preferred_compute = ral::execution::execution_backend{ral::execution::backend_id::ARROW},
+         .compare_with = ral::execution::backend_id::NONE // change to CUDF when this is fixed
+     },
 };
 
 TEST_P(ComputeTest, SimpleQueriesTest){

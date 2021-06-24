@@ -1,5 +1,5 @@
 #include "distributing_kernel.h"
-#include "cache_machine/CPUCacheData.h"
+#include "cache_machine/common/CPUCacheData.h"
 #include "compute/api.h"
 #include "compute/backend_dispatcher.h"
 

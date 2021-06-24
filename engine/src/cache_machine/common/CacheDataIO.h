@@ -1,6 +1,8 @@
 #pragma once
 
-#include "CacheData.h"
+#include "cache_machine/CacheData.h"
+#include "io/data_provider/DataProvider.h"
+#include "io/data_parser/DataParser.h"
 
 namespace ral {
 namespace cache {
@@ -10,6 +12,7 @@ namespace cache {
 * This allows us to cache onto filesystems to allow larger queries to run on
 * limited resources. This is the least performant cache in most instances.
 */
+// TODO: arrow version of this
 class CacheDataIO : public CacheData {
 public:
 

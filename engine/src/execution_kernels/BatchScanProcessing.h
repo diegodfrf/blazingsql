@@ -3,6 +3,9 @@
 #include "execution_kernels/kernel.h"
 #include "execution_graph/Context.h"
 
+#include "io/data_provider/DataProvider.h"
+#include "io/data_parser/DataParser.h"
+
 using namespace ral::cache;
 using namespace blazingdb::manager;
 

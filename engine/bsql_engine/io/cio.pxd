@@ -229,7 +229,7 @@ cdef extern from "../src/cache_machine/CacheData.h" namespace "ral::cache":
             MetadataDictionary getMetadata()
 
 IF CUDF_SUPPORT == 1:
-    cdef extern from "../src/cache_machine/GPUCacheData.h" namespace "ral::cache":
+    cdef extern from "../src/cache_machine/cudf/GPUCacheData.h" namespace "ral::cache":
             cdef cppclass GPUCacheData:
                 MetadataDictionary getMetadata()
 

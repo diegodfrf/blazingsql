@@ -18,7 +18,7 @@
 #include "execution_kernels/BatchWindowFunctionProcessing.h"
 #include "execution_graph/executor.h"
 #include "cache_machine/CacheData.h"
-#include "cache_machine/GPUCacheData.h"
+#include "cache_machine/cudf/GPUCacheData.h"
 
 using blazingdb::transport::Node;
 using ral::cache::kstatus;
@@ -100,8 +100,8 @@ std::tuple<std::shared_ptr<kernel>, std::shared_ptr<ral::cache::CacheMachine>, s
 		make_overlap_Accumulator_kernel(std::string project_plan, std::shared_ptr<Context> context) {
 	std::size_t kernel_id = 1;
 	std::shared_ptr<ral::cache::graph> graph = std::make_shared<ral::cache::graph>();
-	std::shared_ptr<ral::cache::CacheMachine> input_cache = std::make_shared<CacheMachine>(nullptr, "messages_in", false);
-	std::shared_ptr<ral::cache::CacheMachine> output_cache = std::make_shared<CacheMachine>(nullptr, "messages_out", false, ral::cache::CACHE_LEVEL_CPU );
+	std::shared_ptr<ral::cache::CacheMachine> input_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "messages_in", false);
+	std::shared_ptr<ral::cache::CacheMachine> output_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "messages_out", false, ral::cache::CACHE_LEVEL_CPU );
 	graph->set_input_and_output_caches(input_cache, output_cache);
 	std::shared_ptr<kernel> overlap_accumulator_kernel = std::make_shared<ral::batch::OverlapAccumulatorKernel>(kernel_id, project_plan, context, graph);
 
@@ -113,8 +113,8 @@ std::tuple<std::shared_ptr<kernel>, std::shared_ptr<ral::cache::CacheMachine>, s
 make_overlap_Generator_kernel(std::string project_plan, std::shared_ptr<Context> context) {
     std::size_t kernel_id = 1;
     std::shared_ptr<ral::cache::graph> graph = std::make_shared<ral::cache::graph>();
-    std::shared_ptr<ral::cache::CacheMachine> input_cache = std::make_shared<CacheMachine>(nullptr, "messages_in", false);
-    std::shared_ptr<ral::cache::CacheMachine> output_cache = std::make_shared<CacheMachine>(nullptr, "messages_out", false, ral::cache::CACHE_LEVEL_CPU );
+    std::shared_ptr<ral::cache::CacheMachine> input_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "messages_in", false);
+    std::shared_ptr<ral::cache::CacheMachine> output_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "messages_out", false, ral::cache::CACHE_LEVEL_CPU );
     graph->set_input_and_output_caches(input_cache, output_cache);
     std::shared_ptr<kernel> overlap_generator_kernel = std::make_shared<ral::batch::OverlapGeneratorKernel>(kernel_id, project_plan, context, graph);
 
@@ -125,10 +125,10 @@ make_overlap_Generator_kernel(std::string project_plan, std::shared_ptr<Context>
 std::tuple<std::shared_ptr<CacheMachine>, std::shared_ptr<CacheMachine>, std::shared_ptr<CacheMachine>, std::shared_ptr<CacheMachine>> register_kernel_overlap_accumulator_with_cache_machines(
 	std::shared_ptr<kernel> overlap_accumulator_kernel,
 	std::shared_ptr<Context> context) {
-	std::shared_ptr<CacheMachine>  batchesCacheMachine = std::make_shared<CacheMachine>(context, "batches");
-	std::shared_ptr<CacheMachine>  precedingCacheMachine = std::make_shared<CacheMachine>(context, "preceding_overlaps");
-	std::shared_ptr<CacheMachine>  followingCacheMachine = std::make_shared<CacheMachine>(context, "following_overlaps");
-	std::shared_ptr<CacheMachine> outputCacheMachine = std::make_shared<CacheMachine>(context, "1");
+	std::shared_ptr<CacheMachine>  batchesCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "batches");
+	std::shared_ptr<CacheMachine>  precedingCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "preceding_overlaps");
+	std::shared_ptr<CacheMachine>  followingCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "following_overlaps");
+	std::shared_ptr<CacheMachine> outputCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "1");
     overlap_accumulator_kernel->input_.register_cache("batches", batchesCacheMachine);
     overlap_accumulator_kernel->input_.register_cache("preceding_overlaps", precedingCacheMachine);
     overlap_accumulator_kernel->input_.register_cache("following_overlaps", followingCacheMachine);
@@ -142,10 +142,10 @@ std::tuple<std::shared_ptr<CacheMachine>, std::shared_ptr<CacheMachine>, std::sh
 register_kernel_overlap_generator_with_cache_machines(
         std::shared_ptr<kernel> overlap_generator_kernel,
         std::shared_ptr<Context> context) {
-    std::shared_ptr<CacheMachine> batchesCacheMachine = std::make_shared<CacheMachine>(context, "batches");
-    std::shared_ptr<CacheMachine> precedingCacheMachine = std::make_shared<CacheMachine>(context, "preceding_overlaps");
-    std::shared_ptr<CacheMachine> followingCacheMachine = std::make_shared<CacheMachine>(context, "following_overlaps");
-    std::shared_ptr<CacheMachine> inputCacheMachine = std::make_shared<CacheMachine>(context, "1");
+    std::shared_ptr<CacheMachine> batchesCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "batches");
+    std::shared_ptr<CacheMachine> precedingCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "preceding_overlaps");
+    std::shared_ptr<CacheMachine> followingCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "following_overlaps");
+    std::shared_ptr<CacheMachine> inputCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "1");
     overlap_generator_kernel->input_.register_cache("1", inputCacheMachine);
     overlap_generator_kernel->output_.register_cache("batches", batchesCacheMachine);
     overlap_generator_kernel->output_.register_cache("preceding_overlaps", precedingCacheMachine);
@@ -1882,11 +1882,11 @@ TEST_F(WindowOverlapTest, BasicSingleNode2) {
     std::tie(overlap_accumulator_kernel, input_accumulator_cache, output_accumulator_cache) = make_overlap_Accumulator_kernel(project_plan, context);
 
 
-    std::shared_ptr<CacheMachine> batchesCacheMachine   = std::make_shared<CacheMachine>(context, "batches");
-    std::shared_ptr<CacheMachine> precedingCacheMachine = std::make_shared<CacheMachine>(context, "preceding_overlaps");
-    std::shared_ptr<CacheMachine> followingCacheMachine = std::make_shared<CacheMachine>(context, "following_overlaps");
-    std::shared_ptr<CacheMachine> inputCacheMachine     = std::make_shared<CacheMachine>(context, "1");
-    std::shared_ptr<CacheMachine> outputCacheMachine    = std::make_shared<CacheMachine>(context, "1");
+    std::shared_ptr<CacheMachine> batchesCacheMachine   = ral::cache::CacheMachine::make_single_machine(context, "batches");
+    std::shared_ptr<CacheMachine> precedingCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "preceding_overlaps");
+    std::shared_ptr<CacheMachine> followingCacheMachine = ral::cache::CacheMachine::make_single_machine(context, "following_overlaps");
+    std::shared_ptr<CacheMachine> inputCacheMachine     = ral::cache::CacheMachine::make_single_machine(context, "1");
+    std::shared_ptr<CacheMachine> outputCacheMachine    = ral::cache::CacheMachine::make_single_machine(context, "1");
 
     overlap_generator_kernel->input_.register_cache("1", inputCacheMachine);
     overlap_generator_kernel->output_.register_cache("batches", batchesCacheMachine);

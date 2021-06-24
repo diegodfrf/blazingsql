@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "cache_machine/CacheMachine.h"  // WaitingQueue
-#include "cache_machine/GPUCacheData.h"
+#include "cache_machine/cudf/GPUCacheData.h"
 #include "blazing_table/BlazingTable.h"  // BlazingTable
 #include "blazing_table/BlazingColumn.h"  // BlazingColumn
 

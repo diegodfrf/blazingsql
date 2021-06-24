@@ -1,9 +1,19 @@
 #pragma once
 
-#include "CacheData.h"
+#include "../CacheData.h"
+#include "blazing_table/BlazingCudfTable.h"
 
 namespace ral {
 namespace cache {
+
+/**
+ * Utility function which can take a CacheData and if its a standard GPU cache data, it
+ * will downgrade it to CPU or Disk
+ * @return If the input CacheData is not of a type that can be downgraded, it will just
+ * return the original input, otherwise it will return the downgraded CacheData.
+ */
+
+std::unique_ptr<CacheData> downgradeGPUCacheData(std::unique_ptr<CacheData> cacheData, std::string id, std::shared_ptr<Context> ctx);
 
 /**
 * A CacheData that keeps its dataframe in GPU memory.

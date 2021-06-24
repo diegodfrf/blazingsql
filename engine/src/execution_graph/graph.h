@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 
 #include "execution_kernels/kernel.h"
 #include "kpair.h"
@@ -13,9 +14,9 @@ class kernel;
 static std::shared_ptr<ral::cache::CacheMachine> create_cache_machine( const cache_settings& config, std::string cache_machine_name) {
 	std::shared_ptr<ral::cache::CacheMachine> machine;
 	if (config.type == CacheType::SIMPLE or config.type == CacheType::FOR_EACH) {
-		machine =  std::make_shared<ral::cache::CacheMachine>(config.context, cache_machine_name, config.log_timeout, config.cache_level_override, config.is_array_access);		
+		machine =  ral::cache::CacheMachine::make_single_machine(config.context, cache_machine_name, config.log_timeout, config.cache_level_override, config.is_array_access);		
 	} else if (config.type == CacheType::CONCATENATING) {
-		machine =  std::make_shared<ral::cache::ConcatenatingCacheMachine>(config.context, 
+		machine =  ral::cache::CacheMachine::make_concatenating_machine(config.context, 
 			config.concat_cache_num_bytes, config.num_bytes_timeout, config.concat_all, cache_machine_name);
 	}
 	return machine;

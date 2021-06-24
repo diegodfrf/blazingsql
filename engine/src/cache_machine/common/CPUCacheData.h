@@ -1,6 +1,10 @@
 #pragma once
 
-#include "CacheData.h"
+#include <transport/ColumnTransport.h>
+#include <bmr/BufferProvider.h>
+
+#include "blazing_table/BlazingHostTable.h"
+#include "../CacheData.h"
 
 namespace ral {
 namespace cache {
@@ -45,12 +49,12 @@ public:
 	* @return a BlazingTable generated from the source of data for this CacheData. The type of BlazingTable returned will depend on the backend
 	*/
 	std::unique_ptr<ral::frame::BlazingTable> decache(execution::execution_backend backend) override {
-    if (backend.id() == ral::execution::backend_id::ARROW) {
-      return std::move(host_table->get_arrow_table());
-    }
-    #ifdef CUDF_SUPPORT
-	  return std::move(host_table->get_cudf_table());
-    #endif
+		if (backend.id() == ral::execution::backend_id::ARROW) {
+			return std::move(host_table->get_arrow_table());
+		}
+		#ifdef CUDF_SUPPORT
+		return std::move(host_table->get_cudf_table());
+		#endif
 	}
 
 	/**
@@ -90,7 +94,7 @@ public:
 	virtual ~CPUCacheData() {}
 
 protected:
-	std::unique_ptr<ral::frame::BlazingHostTable> host_table; /**< The CPU representation of a DataFrame  */ 	
+	std::unique_ptr<ral::frame::BlazingHostTable> host_table; /**< The CPU representation of a DataFrame  */
 };
 
 } // namespace cache

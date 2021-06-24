@@ -24,7 +24,6 @@
 #include <cudf/scalar/scalar_factories.hpp>
 #include <cudf/reduction.hpp>
 #include <cudf/detail/interop.hpp>
-#include <cudf/io/orc.hpp> // TODO percy arrow move this or writer to io
 
 #include "parser/expression_utils.hpp"
 #include "parser/CalciteExpressionParsing.h"
@@ -45,6 +44,12 @@
 #include "utilities/error.hpp"
 #include "blazing_table/BlazingCudfTable.h"
 #include "communication/messages/GPUComponentMessage.h"
+#include "cache_machine/cudf/GPUCacheData.h"
+
+
+#include "blazing_table/BlazingCudfTable.h"
+#include <cudf/io/orc.hpp>
+#include <cudf/io/orc_metadata.hpp>
 
 //namespace voltron {
 //namespace compute {
@@ -577,6 +582,13 @@ std::unique_ptr<ral::frame::BlazingHostTable> make_blazinghosttable_functor::ope
     return ral::communication::messages::serialize_gpu_message_to_host_table(gpu_table_ptr->to_table_view(), use_pinned);
 }
 
+template<>
+inline
+std::unique_ptr<ral::cache::CacheData> make_cachedata_functor::operator()<ral::frame::BlazingCudfTable>(std::unique_ptr<ral::frame::BlazingTable> table){
+	std::unique_ptr<ral::frame::BlazingCudfTable> cudf_table(dynamic_cast<ral::frame::BlazingCudfTable*>(table.release()));
+	return std::make_unique<ral::cache::GPUCacheData>(std::move(cudf_table));
+}
+
 template <>
 inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
     std::shared_ptr<ral::frame::BlazingTableView> table_view,
@@ -595,5 +607,18 @@ inline void write_orc_functor::operator()<ral::frame::BlazingCudfTable>(
 	cudf::io::write_orc(out_opts);
 }
 
+
+template <>
+inline std::unique_ptr<ral::frame::BlazingTable>  read_orc_functor::operator()<ral::frame::BlazingCudfTable>(
+    std::string file_path, const std::vector<std::string> &col_names) const
+{
+  cudf::io::orc_reader_options read_opts = cudf::io::orc_reader_options::builder(cudf::io::source_info{file_path});
+  auto result = cudf::io::read_orc(read_opts);
+
+  // Remove temp orc files
+  const char *orc_path_file = file_path.c_str();
+  remove(orc_path_file);
+  return std::make_unique<ral::frame::BlazingCudfTable>(std::move(result.tbl), col_names);
+}
 //} // compute
 //} // voltron

@@ -4,6 +4,7 @@
 #include "cache_machine/CacheMachine.h"
 #include "ExceptionHandling/BlazingThread.h"
 #include "utilities/ctpl_stl.h"
+#include "communication/CommunicationData.h"
 
 namespace ral {
 namespace execution{

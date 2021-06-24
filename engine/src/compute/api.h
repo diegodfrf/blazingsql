@@ -12,7 +12,7 @@
 #include "io/Schema.h"
 
 #include "operators/operators_definitions.h"
-
+#include "cache_machine/CacheData.h"
 // WARNING NEVER INVOKE backend_dispatcher in the api_x.cpp files
 //namespace voltron {
 //namespace compute {
@@ -203,6 +203,7 @@ struct apply_boolean_functor {
     return nullptr;
   }
 };
+
 
 struct evaluate_expressions_functor {
   template <typename T>
@@ -399,6 +400,16 @@ struct make_blazinghosttable_functor {
 	}
 };
 
+
+struct make_cachedata_functor {
+  template <typename T>
+  std::unique_ptr<ral::cache::CacheData> operator()(std::unique_ptr<ral::frame::BlazingTable> table) {
+    throw std::runtime_error("ERROR: make_cachedata_functor This default dispatcher operator should not be called.");
+    return nullptr;
+  }
+};
+
+
 struct write_orc_functor {
   template <typename T>
   void operator()(
@@ -408,6 +419,15 @@ struct write_orc_functor {
     throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
   }
 };
+
+struct read_orc_functor {
+  template <typename T>
+  std::unique_ptr<ral::frame::BlazingTable> operator()(std::string file_path, const std::vector<std::string> &col_names) const
+  {
+    throw std::runtime_error("ERROR: write_orc_functor This default dispatcher operator should not be called.");
+  }
+};
+
 
 //} // compute
 //} // voltron

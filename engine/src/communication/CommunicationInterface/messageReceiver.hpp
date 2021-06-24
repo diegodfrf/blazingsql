@@ -65,7 +65,9 @@ public:
   virtual ~message_receiver(){}
 
   size_t buffer_size(u_int16_t index);
+#ifdef CUDF_SUPPORT
   void allocate_buffer(uint16_t index, cudaStream_t stream = 0);
+#endif
   node get_sender_node();
   size_t num_buffers();
   void confirm_transmission();

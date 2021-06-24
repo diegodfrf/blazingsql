@@ -97,7 +97,7 @@ std::shared_ptr<ral::cache::CacheMachine> setup_sender(){
   nodes_info_map.emplace(worker_id, comm::node(ralId, worker_id, ip, port));
 
   ucp_context_h ucp_context = nullptr;
-  std::shared_ptr<ral::cache::CacheMachine> output_cache = std::make_shared<CacheMachine>(nullptr, "messages_out", false,CACHE_LEVEL_CPU );
+  std::shared_ptr<ral::cache::CacheMachine> output_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "messages_out", false,CACHE_LEVEL_CPU );
 
   comm::blazing_protocol protocol = comm::blazing_protocol::tcp;
   bool require_acknowledge = false;
@@ -122,7 +122,7 @@ std::shared_ptr<ral::cache::CacheMachine> setup_receiver() {
   std::map<std::string, comm::node> nodes_info_map;
   nodes_info_map.emplace(worker_id, comm::node(ralId, worker_id, ip, port));
 
-  std::shared_ptr<ral::cache::CacheMachine> input_cache = std::make_shared<CacheMachine>(nullptr, "messages_in", false);
+  std::shared_ptr<ral::cache::CacheMachine> input_cache = ral::cache::CacheMachine::make_single_machine(nullptr, "messages_in", false);
 
   int num_comm_threads = 20;
   comm::tcp_message_listener::initialize_message_listener(nodes_info_map,port,num_comm_threads, input_cache);

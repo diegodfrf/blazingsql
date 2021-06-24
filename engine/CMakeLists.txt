@@ -216,13 +216,19 @@ set(SRC_FILES
         ${COMPUTE_ARROW_SRC_FILES}
 
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
+
+        ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingHostTable.cpp
+
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheData.cpp
-        ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheDataIO.cpp
-        ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheDataLocalFile.cpp
-        ${PROJECT_SOURCE_DIR}/src/cache_machine/ConcatCacheData.cpp
-        ${PROJECT_SOURCE_DIR}/src/cache_machine/CPUCacheData.cpp
-        ${PROJECT_SOURCE_DIR}/src/cache_machine/ArrowCacheData.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/AbstractCacheMachine.cpp
         ${PROJECT_SOURCE_DIR}/src/cache_machine/CacheMachine.cpp
+
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/common/CacheDataIO.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/common/ConcatCacheData.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/common/CPUCacheData.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/common/ArrowCacheData.cpp
+        ${PROJECT_SOURCE_DIR}/src/cache_machine/common/CacheDataLocalFile.cpp
+
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTableView.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingTable.cpp
         ${PROJECT_SOURCE_DIR}/src/blazing_table/BlazingArrowTable.cpp
@@ -400,7 +406,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libblazingsql-engine.so DESTINATION li
 
 # Tests
 if(BUILD_TESTING)
-    if(GTEST_FOUND AND CUDF_SUPPORT) # TODO percy arrow unit tests
+    if(GTEST_FOUND) # TODO percy arrow unit tests
         add_subdirectory(tests)
     else()
         message(AUTHOR_WARNING "Google C++ Testing Framework (Google Test) not found: automated tests are disabled.")
