@@ -90,7 +90,6 @@ message(STATUS "******** Configuring tests ********")
 
 if(CUDF_SUPPORT)
     add_subdirectory(skipdata)
-    add_subdirectory(dispatcher)
 endif()
 # add_subdirectory(sort)
 # add_subdirectory(communication)
