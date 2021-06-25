@@ -66,23 +66,27 @@ def get_libs():
         ret.append("gtest")
     return ret
 
+# TODO: cordova Fernando, looks like the order of these values is relevant
 def get_compile_args():
     cpp_args = [
-        "-std=c++17",
-        "-Wno-unknown-pragmas",
-        "-Wno-unused-variable",
-        "-Wno-unused-function",
-        '-isystem' + conda_env_inc,
-        '-isystem' + conda_env_inc_io,
-        '-isystem' + conda_env_inc_communication,
-        '-isystem' + conda_env_inc_manager,
-        '-isystem' + np.get_include()]
+            "-std=c++17",
+            "-Wno-unknown-pragmas",
+            "-Wno-unused-variable",
+            "-Wno-unused-function",
+            '-isystem' + conda_env_inc
+            ]
+
     if get_build_path() == "build-cudf":
         cpp_args.append('-isystem' + conda_env_inc_cudf)
         cpp_args.append('-isystem' + conda_env_inc_cub)
-        cpp_args.append('-isystem' + "/usr/local/cuda/include")
         cpp_args.append('-isystem' + conda_env_inc_libcudacxx)
-    print("C++ compiler args: " + str(cpp_args))
+        cpp_args.append('-isystem' + "/usr/local/cuda/include")
+
+    cpp_args.append('-isystem' + conda_env_inc_io)
+    cpp_args.append('-isystem' + conda_env_inc_communication)
+    cpp_args.append('-isystem' + conda_env_inc_manager)
+    cpp_args.append('-isystem' + np.get_include())
+
     return cpp_args
 
 class BuildExt(build_ext):
