@@ -473,6 +473,10 @@ cpdef runGeneratePhysicalGraphCaller(uint32_t masterIndex, worker_ids, int ctxTo
     physicalPlan = runGeneratePhysicalGraphPython(masterIndex, worker_ids_c, ctxToken, query, output_type, preferred_compute)
     return physicalPlan.decode('UTF-8')
 
+cpdef intToArrowDataTypeCaller(int type):
+    cdef shared_ptr[ArrowDataType] types = intToArrowDataTypePython(type)
+    return pyarrow_wrap_data_type(types)
+
 cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_scans, vector[int] fileTypes, int ctxToken, queryPy, map[string,string] config_options, sql, current_timestamp, output_type_py, preferred_compute_py):
     cdef string output_type
     cdef string preferred_compute

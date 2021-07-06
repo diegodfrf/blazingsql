@@ -505,9 +505,9 @@ def parseHiveMetadata(curr_table, uri_values):
         # TIMESTAMP_DAYS (12) is not supported in cudf/python/cudf/cudf/_lib/types.pyx
         # so just for this case let's get TIMESTAMP_SECONDS
         if t != 12:
-            dtypes.append(cio.cudf_type_int_to_np_types(t))
-        else:
-            dtypes.append(cio.cudf_type_int_to_np_types(13))
+            dtypes.append(np.dtype(cio.intToArrowDataTypeCaller(t).to_pandas_dtype()))
+    else:
+            dtypes.append(np.dtype(cio.intToArrowDataTypeCaller(13).to_pandas_dtype()))
 
     columns = curr_table.column_names
     for index in range(n_cols):
@@ -2677,7 +2677,7 @@ class BlazingContext(object):
             column_names = self.tables[table_name].column_names
             column_types_int = self.tables[table_name].column_types
             column_types_np = [
-                cio.cudf_type_int_to_np_types(t) for t in column_types_int
+                np.dtype(cio.intToArrowDataTypeCaller(t).to_pandas_dtype()) for t in column_types_int
             ]
             column_types = [t.name for t in column_types_np]
             column_types_friendly = convert_friendly_dtype_to_string(column_types)
