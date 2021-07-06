@@ -119,6 +119,10 @@ class InferFolderPartitionMetadataError(BlazingError):
     """InferFolderPartitionMetadata Error."""
 cdef public PyObject * InferFolderPartitionMetadataError_ = <PyObject *>InferFolderPartitionMetadataError
 
+class IntToArrowDataTypeError(BlazingError):
+    """IntToArrowDataType Error."""
+cdef public PyObject * IntToArrowDataTypeError_ = <PyObject *>IntToArrowDataTypeError
+
 cdef cio.TableSchema parseSchemaPython(vector[string] files, string file_format_hint, vector[string] arg_keys, vector[string] arg_values,vector[pair[string, shared_ptr[ArrowDataType]]] extra_columns, bool ignore_missing_paths, string preferred_compute) nogil except *:
     with nogil:
         return cio.parseSchema(files, file_format_hint, arg_keys, arg_values, extra_columns, ignore_missing_paths, preferred_compute)
@@ -126,6 +130,9 @@ cdef cio.TableSchema parseSchemaPython(vector[string] files, string file_format_
 cdef unique_ptr[cio.ResultSet] parseMetadataPython(vector[string] files, pair[int,int] offset, cio.TableSchema schema, string file_format_hint, vector[string] arg_keys, vector[string] arg_values, string preferred_compute) nogil except *:
     with nogil:
         return blaz_move( cio.parseMetadata(files, offset, schema, file_format_hint,arg_keys,arg_values, preferred_compute) )
+
+cdef shared_ptr[ArrowDataType] intToArrowDataTypePython(int type) except *:
+    return cio.intToArrowDataType(type)
 
 cdef shared_ptr[cio.graph] runGenerateGraphPython(uint32_t masterIndex,vector[string] worker_ids, vector[string] tableNames, vector[string] tableScans, vector[TableSchema] tableSchemas, vector[vector[string]] tableSchemaCppArgKeys, vector[vector[string]] tableSchemaCppArgValues, vector[vector[string]] filesAll, vector[int] fileTypes, int ctxToken, string query, vector[vector[map[string,string]]] uri_values_cpp, map[string,string] config_options, string sql, string current_timestamp, string output_type, string preferred_compute) except *:
     return cio.runGenerateGraph(masterIndex, worker_ids, tableNames, tableScans, tableSchemas, tableSchemaCppArgKeys, tableSchemaCppArgValues, filesAll, fileTypes, ctxToken, query, uri_values_cpp, config_options, sql, current_timestamp, output_type, preferred_compute)
@@ -549,7 +556,7 @@ cpdef runGenerateGraphCaller(uint32_t masterIndex, worker_ids, tables,  table_sc
               names.push_back(col_name)
 
       for col_type in table.column_types:
-        types.push_back(pyarrow_unwrap_data_type(col_type))
+        types.push_back(intToArrowDataTypePython(col_type))
 
       IF CUDF_SUPPORT == 1:
           if table.fileType in (4, 5): # if cudf DataFrame or dask.cudf DataFrame

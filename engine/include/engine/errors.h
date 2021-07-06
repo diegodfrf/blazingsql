@@ -14,3 +14,4 @@ void raiseRegisterFileSystemGCSError();
 void raiseRegisterFileSystemS3Error();
 void raiseRegisterFileSystemLocalError();
 void raiseInferFolderPartitionMetadataError();
+void raiseIntToArrowDataTypeError();

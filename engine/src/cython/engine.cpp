@@ -420,6 +420,10 @@ std::unique_ptr<ResultSet> runSkipData(std::shared_ptr<ral::frame::BlazingArrowT
 	}
 }
 
+std::shared_ptr<arrow::DataType> intToArrowDataType(int type) {
+    auto atype = get_right_arrow_datatype(static_cast<arrow::Type::type>(type));
+    return atype;
+}
 
 TableScanInfo getTableScanInfo(std::string logicalPlan){
 

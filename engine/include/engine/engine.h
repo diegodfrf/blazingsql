@@ -44,6 +44,7 @@ std::unique_ptr<ResultSet> runSkipData(
 	std::vector<std::string> all_column_names,
 	std::string query);
 
+std::shared_ptr<arrow::DataType> intToArrowDataType(int type);
 
 extern "C" {
 std::pair<std::unique_ptr<PartitionedResultSet>, error_code_t> runQuery_C(int32_t masterIndex,

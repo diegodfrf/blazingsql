@@ -60,6 +60,7 @@ cdef extern from "../include/engine/errors.h":
     cdef void raiseRegisterFileSystemS3Error()
     cdef void raiseRegisterFileSystemLocalError()
     cdef void raiseInferFolderPartitionMetadataError()
+    cdef void raiseIntToArrowDataTypeError()
 
 
 cdef extern from "../include/io/io.h" nogil:
@@ -265,6 +266,7 @@ cdef extern from "../include/engine/common.h" nogil:
 
 cdef extern from "../include/engine/engine.h" nogil:
 
+        shared_ptr[ArrowDataType] intToArrowDataType(int type) except +raiseIntToArrowDataTypeError
         shared_ptr[graph] runGenerateGraph(uint32_t masterIndex,vector[string] worker_ids, vector[string] tableNames, vector[string] tableScans, vector[TableSchema] tableSchemas, vector[vector[string]] tableSchemaCppArgKeys, vector[vector[string]] tableSchemaCppArgValues, vector[vector[string]] filesAll, vector[int] fileTypes, int ctxToken, string query, vector[vector[map[string,string]]] uri_values_cpp, map[string,string] config_options, string sql, string current_timestamp, string output_type, string preferred_compute) except +raiseRunGenerateGraphError
         string runGeneratePhysicalGraph(uint32_t masterIndex, vector[string] worker_ids, int ctxToken, string query, string output_type, string preferred_compute) except +raiseRunGenerateGraphError
         void startExecuteGraph(shared_ptr[graph], int ctx_token) nogil except +raiseRunExecuteGraphError
